@@ -120,14 +120,24 @@ struct ScoreDetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
                 if let r = result(b) {
+                    // Same look as Today sample 1 (big centered ring), per David 7:56: the Today card stays, tapping it opens this.
                     Card {
-                        VStack(spacing: 8) {
-                            ScoreRing(score: r.score, size: 132)
-                            Text(r.label).font(.title.bold()).foregroundStyle(Theme.scoreColor(r.score))
-                            Text(r.summary.isEmpty ? (r.tip ?? "") : r.summary).font(.subheadline).foregroundStyle(.secondary)
-                                .multilineTextAlignment(.center)
+                        VStack(spacing: 10) {
+                            if b == 0 {
+                                let behind = r.pace?.behind ?? false
+                                ScoreRing(score: r.score, size: 150, lost: r.pace?.net, good: r.pace?.good)
+                                Text(StatusPhrase.text(behind: behind, score: r.score)).font(.title2.bold())
+                                    .foregroundStyle(behind ? Theme.bad : Theme.accent)
+                                Text(r.tip ?? r.summary).font(.subheadline).foregroundStyle(.secondary)
+                                    .multilineTextAlignment(.center)
+                            } else {
+                                ScoreRing(score: r.score, size: 150)
+                                Text(r.label).font(.title2.bold()).foregroundStyle(Theme.scoreColor(r.score))
+                                Text(r.summary.isEmpty ? (r.tip ?? "") : r.summary).font(.subheadline).foregroundStyle(.secondary)
+                                    .multilineTextAlignment(.center)
+                            }
                         }
-                        .frame(maxWidth: .infinity)
+                        .frame(maxWidth: .infinity).padding(.vertical, 6)
                     }
                     if !r.factors.isEmpty {
                         SectionHeader(b == 0 ? "What shaped today" : "What shaped \(title(b).lowercased() == "yesterday" ? "yesterday" : title(b))")

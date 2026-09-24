@@ -1448,6 +1448,19 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Today card (current look) and the day score page it opens (big centered ring), top and scrolled.
+    func testScoreDetailBig() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo"]
+        app.launchEnvironment["TZ"] = Self.zone(localHour: 15)
+        app.launch(); pause(2.5)
+        shot("sd-today")
+        let card = app.descendants(matching: .any)["scoreCard"]
+        if card.waitForExistence(timeout: 5) { card.tap() }
+        pause(2); shot("sd-detail-1")
+        app.swipeUp(); pause(1.2); shot("sd-detail-2")
+    }
+
     /// Timeline Day page samples 1-5 plus the current page (top and scrolled).
     func testTimelinePages() throws {
         for v in ["", "1", "2", "3", "4", "5"] {
