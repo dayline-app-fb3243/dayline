@@ -33,7 +33,9 @@ struct JournalView: View {
                         Text(Calendar.current.isDateInToday(day) ? "Today" : day.formatted(.dateTime.weekday(.wide).month(.abbreviated).day()))
                             .font(.footnote).helperText().textCase(.uppercase)
                             .padding(.leading, 4).padding(.top, 6)
-                        ForEach(groups) { JournalCard(group: $0) }
+                        ForEach(groups) { g in
+                            NavigationLink { JournalEntryView(group: g) } label: { JournalCard(group: g) }.buttonStyle(.plain)
+                        }
                     }
                 }
                 .padding(.horizontal, 18).padding(.bottom, 30)
@@ -140,3 +142,37 @@ struct JournalCard: View {
     }
 }
 
+
+
+/// A journal entry opened full screen: place and time, photos, words and the voice note.
+struct JournalEntryView: View {
+    let group: JournalGroup
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 14) {
+                Text(group.date.formatted(.dateTime.weekday(.wide).month(.wide).day().hour().minute()))
+                    .font(.subheadline).foregroundStyle(.secondary)
+                ForEach(Array(group.photos.enumerated()), id: \.offset) { _, data in
+                    if let image = UIImage(data: data) {
+                        Image(uiImage: image).resizable().scaledToFit()
+                            .clipShape(.rect(cornerRadius: Theme.cardRadius, style: .continuous))
+                    }
+                }
+                if let text = group.text { Text(text).font(.body) }
+                if let voice = group.voice {
+                    VoiceBubble(seconds: voice.audioDuration, words: voice.text, transcribed: voice.isTranscribed,
+                                seed: voice.audioFileName ?? "\(voice.date)",
+                                audioURL: voice.audioFileName.map { VoiceNoteService.folder.appending(path: $0) })
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 18).padding(.bottom, 30)
+        }
+        .background(AppBackgroundView())
+        .navigationTitle(group.place ?? "Journal")
+        .navigationBarTitleDisplayMode(.large)
+        .backgroundNavBar()
+        .toolbarVisibility(.hidden, for: .tabBar)
+        .accessibilityIdentifier("journalEntry")
+    }
+}

@@ -167,6 +167,10 @@ final class DemoTourTests: XCTestCase {
                 tab(app, "Today"); pause(2); tapID(app, "scoreCard"); pause(2); app.swipeUp(); pause(1.2); shot("c10-factor-tiles")
                 goBack(app)
                 tab(app, "Timeline"); pause(3); shot("c11-timeline-tiles")
+                app.swipeUp(); pause(1.2); shot("c11b-timeline-voice")
+                let office = app.descendants(matching: .any)["stop-Office"].firstMatch
+                if office.waitForExistence(timeout: 3) { office.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.12)).tap(); pause(2); shot("c12-journal-entry"); goBack(app) }
+                app.swipeDown(); pause(1)
                 let card = app.descendants(matching: .any)["mapCard"].firstMatch
                 if card.waitForExistence(timeout: 3) { card.coordinate(withNormalizedOffset: CGVector(dx: 0.4, dy: 0.5)).tap() }
                 pause(2.5); shot("c8-full-map")

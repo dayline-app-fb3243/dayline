@@ -15,7 +15,7 @@ struct InsightsView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
-                    Picker("Range", selection: $range) { ForEach(InsightRange.allCases, id: \.self) { Text($0.rawValue).tag($0) } }.pickerStyle(.segmented)
+                    CapsuleSegmented(selection: $range, options: InsightRange.allCases.map { ($0, $0.rawValue) }, plain: true).glassEffect(.regular, in: .capsule)
                     switch range {
                     case .day: dayView
                     case .month: monthView

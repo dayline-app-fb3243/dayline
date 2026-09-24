@@ -255,10 +255,9 @@ struct TimelineScreen: View {
 
     private var rangeControls: some View {
         VStack(spacing: 8) {
-            Picker("Range", selection: $range) {
-                ForEach(MapRange.allCases, id: \.self) { Text($0.rawValue).tag($0) }
-            }
-            .pickerStyle(.segmented)
+            // Real Liquid Glass bar, same material as the chips below.
+            CapsuleSegmented(selection: $range, options: MapRange.allCases.map { ($0, $0.rawValue) }, plain: true)
+                .glassEffect(.regular, in: .capsule)
             if range != .day {
                 HStack {
                     Button("Previous", systemImage: "chevron.left") { step(-1) }.labelStyle(.iconOnly)
@@ -360,6 +359,7 @@ struct MostVisitedList: View {
 struct DayPhotoCards: View {
     var visits: [Visit]
     var journal: [JournalEntry]
+    @State private var openGroup: JournalGroup?
 
     var body: some View {
         VStack(spacing: 10) {
@@ -397,16 +397,10 @@ struct DayPhotoCards: View {
                             }
                         }
                         if let voice {
-                            HStack(spacing: 10) {
-                                Image(systemName: "play.fill").font(.system(size: 10, weight: .bold)).foregroundStyle(.white)
-                                    .frame(width: 28, height: 28).background(Theme.accent, in: .circle)
-                                Text(voice.text.isEmpty ? "Voice note" : "\"\(voice.text)\"").font(.footnote).lineLimit(1)
-                                Spacer()
-                                Text(Duration.seconds(voice.audioDuration).formatted(.time(pattern: .minuteSecond)))
-                                    .font(.caption).monospacedDigit().foregroundStyle(.secondary)
-                            }
-                            .padding(8)
-                            .background(Color(.tertiarySystemFill), in: .rect(cornerRadius: 14, style: .continuous))
+                            // Same voice-note design as the Journal.
+                            VoiceBubble(seconds: voice.audioDuration, words: voice.text, transcribed: voice.isTranscribed,
+                                        seed: voice.audioFileName ?? "\(voice.date)",
+                                        audioURL: voice.audioFileName.map { VoiceNoteService.folder.appending(path: $0) })
                         }
                     }
                     .padding(.horizontal, 14).padding(.vertical, 12)
@@ -414,7 +408,13 @@ struct DayPhotoCards: View {
                 .background(Color(.secondarySystemGroupedBackground).opacity(0.92), in: .rect(cornerRadius: Theme.cardRadius, style: .continuous))
                 .clipShape(.rect(cornerRadius: Theme.cardRadius, style: .continuous))
                 .shadow(color: .black.opacity(0.06), radius: 10, y: 4)
+                .contentShape(.rect(cornerRadius: Theme.cardRadius))
+                .onTapGesture { if !items.isEmpty { openGroup = JournalGroup(entries: items, place: visit.placeName) } }
+                .accessibilityIdentifier("stop-\(visit.placeName)")
             }
+        }
+        .navigationDestination(isPresented: Binding(get: { openGroup != nil }, set: { if !$0 { openGroup = nil } })) {
+            if let openGroup { JournalEntryView(group: openGroup) }
         }
     }
 
