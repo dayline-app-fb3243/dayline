@@ -5,10 +5,7 @@ import MapKit
 struct SiriAppLine: View {
     var body: some View {
         HStack(spacing: 6) {
-            Image(systemName: "point.topleft.down.to.point.bottomright.curvepath")
-                .font(.system(size: 9, weight: .bold)).foregroundStyle(.white)
-                .frame(width: 18, height: 18)
-                .background(Theme.accent, in: .rect(cornerRadius: 5, style: .continuous))
+            AppMark(size: 18, shadow: false)
             Text("DAYLINE").font(.caption.weight(.semibold)).foregroundStyle(.white.opacity(0.6))
         }
     }

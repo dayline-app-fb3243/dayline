@@ -31,16 +31,38 @@ struct OnboardingFlow: View {
 
 struct AppMark: View {
     var size: CGFloat = 96
+    var shadow = true
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: size * 0.225, style: .continuous)
                 .fill(LinearGradient(colors: [Color(red: 0.29, green: 0.64, blue: 1), Color(red: 0.04, green: 0.36, blue: 0.9)],
                                      startPoint: .top, endPoint: .bottom))
-            Image(systemName: "point.topleft.down.to.point.bottomright.curvepath.fill")
-                .font(.system(size: size * 0.46, weight: .semibold)).foregroundStyle(.white)
+            DayRings(size: size)
         }
         .frame(width: size, height: size)
-        .shadow(color: .blue.opacity(0.3), radius: 18, y: 8)
+        .shadow(color: .blue.opacity(shadow ? 0.3 : 0), radius: size * 0.19, y: size * 0.08)
+    }
+}
+
+/// Icon #5 "Two rings": outer ring 80% full, inner ring 60%, white on blue.
+struct DayRings: View {
+    var size: CGFloat
+    var body: some View {
+        let u = size / 100
+        ZStack {
+            ring(r: 30 * u, w: 11 * u, frac: 0.8, color: .white)
+            ring(r: 17 * u, w: 11 * u, frac: 0.6, color: .white.opacity(0.72))
+        }
+        .frame(width: size, height: size)
+    }
+    private func ring(r: CGFloat, w: CGFloat, frac: CGFloat, color: Color) -> some View {
+        ZStack {
+            Circle().stroke(.white.opacity(0.18), lineWidth: w)
+            Circle().trim(from: 0, to: frac)
+                .stroke(color, style: StrokeStyle(lineWidth: w, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+        }
+        .frame(width: r * 2, height: r * 2)
     }
 }
 

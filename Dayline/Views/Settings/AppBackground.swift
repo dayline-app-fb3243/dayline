@@ -284,12 +284,14 @@ struct ProfileView: View {
                         Button { openSettings() } label: { ProfileRow(symbol: "bell.fill", title: "Notifications", value: "Follows · 80 score") }
                     }
                 }
-                SectionHeader("Siri")
-                Card(padding: 0) {
-                    NavigationLink { SiriCommandsView() } label: {
-                        ProfileRow(symbol: "waveform", title: "Use with Siri", value: "Examples")
+                if SiriSupport.isAvailable {
+                    SectionHeader("Siri")
+                    Card(padding: 0) {
+                        NavigationLink { SiriCommandsView() } label: {
+                            ProfileRow(symbol: "waveform", title: "Use with Siri", value: "Examples")
+                        }
+                        .accessibilityIdentifier("useWithSiriRow")
                     }
-                    .accessibilityIdentifier("useWithSiriRow")
                 }
                 SectionHeader("Privacy")
                 Card(padding: 0) {
