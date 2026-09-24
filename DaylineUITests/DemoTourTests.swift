@@ -882,8 +882,12 @@ final class DemoTourTests: XCTestCase {
         }
         for (i, q) in ["where was I 4 days ago", "the place I ate 4 days ago", "croissant"].enumerated() {
             let app = XCUIApplication()
-            app.launchArguments = ["-demo", "-journal.search", i == 2 ? "C" : "A", "-journal.searchQuery", q]
+            app.launchArguments = ["-demo", "-journal.search", i == 2 ? "C" : "B", "-journal.searchQuery", q]
             app.launch(); pause(1.5); tab(app, "Journal"); pause(3); shot("js-q\(i + 1)")
+            if i == 0 {
+                // Tap the first result: jumps to the Timeline map at that place.
+                app.descendants(matching: .any)["searchHit"].firstMatch.tap(); pause(5); shot("js-jump")
+            }
             app.terminate()
         }
     }

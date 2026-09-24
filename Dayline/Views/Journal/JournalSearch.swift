@@ -3,6 +3,17 @@ import SwiftData
 import Vision
 import CoreLocation
 
+/// Tapping a search result: switch to the Timeline tab and open the full map on that day, at that place.
+extension Notification.Name { static let showOnMap = Notification.Name("dayline.showOnMap") }
+@MainActor
+enum MapJump {
+    static var pending: (date: Date, coordinate: CLLocationCoordinate2D?)?
+    static func go(_ hit: SearchHit) {
+        pending = (hit.date, hit.coordinate)
+        NotificationCenter.default.post(name: .showOnMap, object: nil)
+    }
+}
+
 /// One search result: a place (and when you were there), with the reason it matched.
 struct SearchHit: Identifiable {
     let id = UUID()
@@ -178,7 +189,9 @@ struct SearchResultsList: View {
                 ContentUnavailableView.search(text: query)
             } else {
                 Text(hits.count == 1 ? "1 place" : "\(hits.count) places").font(.subheadline.weight(.semibold)).foregroundStyle(.secondary).padding(.leading, 4)
-                ForEach(hits) { h in SearchHitRow(hit: h) }
+                ForEach(hits) { h in
+                    Button { MapJump.go(h) } label: { SearchHitRow(hit: h) }.buttonStyle(.plain)
+                }
             }
         }
     }

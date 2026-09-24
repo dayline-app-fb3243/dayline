@@ -92,6 +92,20 @@ struct TimelineScreen: View {
             }
             .onChange(of: range) { camera = .automatic }
             .onChange(of: anchor) { camera = .automatic }
+            .onReceive(NotificationCenter.default.publisher(for: .showOnMap)) { _ in openJump() }
+            .onAppear { openJump() }
+        }
+    }
+
+    /// A search result was tapped: show that day, and open the full map at that place.
+    private func openJump() {
+        guard let p = MapJump.pending else { return }
+        MapJump.pending = nil
+        range = .day
+        anchor = p.date
+        DispatchQueue.main.async {
+            if let c = p.coordinate { camera = .camera(MapCamera(centerCoordinate: c, distance: 900)) }
+            expanded = true
         }
     }
 

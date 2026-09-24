@@ -23,6 +23,7 @@ struct RootView: View {
         .tint((UserDefaults.standard.string(forKey: "pill.style") ?? "flat") == "old" ? ChromeStyle.tint : Theme.accent) // blue selected tab on gray
         .sheet(isPresented: $showVoice) { CaptureSheet(mode: .voice) }
         .onReceive(NotificationCenter.default.publisher(for: .openVoiceCapture)) { _ in showVoice = true }
+        .onReceive(NotificationCenter.default.publisher(for: .showOnMap)) { _ in tab = .timeline }
         .onOpenURL { url in if url.host() == "voice" { showVoice = true } else if url.host() == "timeline" { tab = .timeline } else if url.host() == "streak" { tab = .insights; showStreak = true } else if url.host() == "today" { tab = .today } }
     }
 }

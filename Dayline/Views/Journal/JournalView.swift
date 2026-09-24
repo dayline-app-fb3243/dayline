@@ -21,9 +21,9 @@ struct JournalView: View {
     }
 
     @State private var composing = false
-    /// Preview flag "journal.search" (none picked yet): A = its own glass circle next to +,
-    /// B = one glass capsule holding search and +, C = a search field under the title.
-    @AppStorage("journal.search") private var searchStyle = ""
+    /// Search button style "journal.search": B (default) = one glass capsule holding search and +.
+    /// A = its own glass circle next to +, C = a search field under the title (kept as preview options).
+    @AppStorage("journal.search") private var searchStyle = "B"
     @AppStorage("journal.searchQuery") private var demoQuery = ""
     @State private var searching = false
     @State private var inlineQuery = ""
@@ -60,6 +60,7 @@ struct JournalView: View {
             .navigationTitle("Journal")
             .tabRoot()
             .navigationDestination(isPresented: $searching) { JournalSearchView(barAtBottom: false, query: demoQuery) }
+            .onReceive(NotificationCenter.default.publisher(for: .showOnMap)) { _ in searching = false }
             .onAppear {
                 guard !demoQuery.isEmpty else { return }
                 if searchStyle == "C" { inlineQuery = demoQuery } else if !searchStyle.isEmpty { searching = true }
