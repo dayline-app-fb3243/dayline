@@ -75,7 +75,7 @@ struct ScoreRing: View {
     /// Preview flag "rings.thick": thick proportions like the Streak ring (~17% of the diameter). Off until David approves.
     var lineWidthOverride: CGFloat? = nil
     var size: CGFloat = 88
-    /// Color by pace (Today card). "ring.pace" sets how "behind" looks (default B, picked by David):
+    /// Color by pace (Today card). "ring.pace" sets how "behind" looks (default B):
     /// A = whole ring orange, B = blue blending into orange along the fill, C = blue fill plus an orange arc up to where you should be.
     /// Points already out of reach today (ScoreEngine.Pace.lost). nil = not colored by pace.
     var lost: Int? = nil
