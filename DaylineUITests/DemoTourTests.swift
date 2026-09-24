@@ -622,6 +622,20 @@ final class DemoTourTests: XCTestCase {
     }
 
     /// Video: Apple's own segmented control (pill.native) on the Timeline: taps, fast drags, and drags past the ends.
+    /// Native pill with the selected word in theme blue (David 2:20).
+    func testNativePillBlue() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo", "-pill.native", "YES"]
+        app.launchEnvironment["TZ"] = Self.morningZone
+        app.launch(); pause(1.5)
+        tab(app, "Timeline"); pause(1.5)
+        let seg = app.segmentedControls.firstMatch
+        guard seg.waitForExistence(timeout: 5) else { return }
+        pause(1); shot("nb-Day")
+        seg.buttons["Month"].tap(); pause(2); shot("nb-Month")
+        app.terminate()
+    }
+
     func testNativePillVideo() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-demo", "-pill.native", "YES"]
