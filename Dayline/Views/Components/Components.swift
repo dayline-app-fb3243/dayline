@@ -156,7 +156,10 @@ extension Date {
 struct MarkerBackground<S: ShapeStyle>: ViewModifier {
     var fill: S
     var size: CGFloat
-    @AppStorage("icons.markerStyle") private var style = "circle"
+    /// Map pins: David picked C (outlined round) on Sep 24. People initials still follow the preview flag.
+    var isMapPin = false
+    @AppStorage("icons.markerStyle") private var flagStyle = "circle"
+    private var style: String { isMapPin ? "outlined" : flagStyle }
     func body(content: Content) -> some View {
         switch style {
         case "square":
@@ -170,8 +173,8 @@ struct MarkerBackground<S: ShapeStyle>: ViewModifier {
 }
 
 extension View {
-    func markerBackground<S: ShapeStyle>(_ fill: S, size: CGFloat) -> some View {
-        frame(width: size, height: size).modifier(MarkerBackground(fill: fill, size: size))
+    func markerBackground<S: ShapeStyle>(_ fill: S, size: CGFloat, isMapPin: Bool = false) -> some View {
+        frame(width: size, height: size).modifier(MarkerBackground(fill: fill, size: size, isMapPin: isMapPin))
     }
 }
 
