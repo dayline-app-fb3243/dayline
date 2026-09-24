@@ -51,33 +51,103 @@ enum DemoData {
         var s = UserSchedule(); s.gym = true; s.walk = false; s.outside = false; s.gymBy = 20 * 60; return s
     }
 
+    /// Screenshot-only day stories ("-demo.pace <name>"). The hour comes from the simulator clock, so each
+    /// story can be shot at several times of day. Points follow the habit sizes in ScoreEngine (wake 20, bed 10,
+    /// plans 20, work 15, moving 20, getting out 10, journal 5).
     static func paceScore(_ scenario: String) -> ScoreEngine.Result {
-        var f = [ScoreFactor(part: .bed, title: "Bed on time", effect: .up, points: 10, detail: "Asleep by 11:05 PM")]
+        let cal = Calendar.current
+        let hour = cal.component(.hour, from: .now)
+        let today = cal.startOfDay(for: .now)
+        func F(_ part: ScoreEngine.Part, _ title: String, _ points: Int, _ detail: String, _ effect: ScoreFactor.Effect = .up) -> ScoreFactor {
+            ScoreFactor(part: part, title: title, effect: effect, points: points, detail: detail)
+        }
+        func bonus(_ title: String, _ points: Int, _ detail: String) -> ScoreFactor {
+            ScoreFactor(title: title, effect: .up, points: points, detail: detail, part: ScoreEngine.bonusPart)
+        }
+        func planItem(_ title: String, _ h: Int, _ m: Int, minutes: Int, done: Bool) -> PlanItem {
+            let start = cal.date(bySettingHour: h, minute: m, second: 0, of: today)!
+            return PlanItem(title: title, start: start, end: start.addingTimeInterval(Double(minutes) * 60), isAuto: false, isDone: done)
+        }
+        var sched = paceSchedule, day = Date.now, plan: [PlanItem] = []
+        var f: [ScoreFactor] = []
+        var tip = ""
         switch scenario {
         case "notup":
-            f += [ScoreFactor(part: .wake, title: "Wake-up", effect: .pending, points: 0, detail: "Not up yet · goal 7:00"),
-                  ScoreFactor(part: .moving, title: "Gym", effect: .pending, points: 0, detail: "Open until 8 PM")]
+            f = [F(.wake, "Wake-up", 0, "Not up yet · goal 7:00", .pending), F(.moving, "Gym", 0, "Open until 8 PM", .pending)]
+            tip = "Up now still gets you most of the wake-up points."
         case "gym":
-            f += [ScoreFactor(part: .wake, title: "Woke up on time", effect: .up, points: 20, detail: "Up at 6:50 · goal 7:00"),
-                  ScoreFactor(part: .work, title: "Work", effect: .up, points: 9, detail: "At the office since 9:00"),
-                  ScoreFactor(part: .plans, title: "Plans", effect: .up, points: 11, detail: "2 of 4 done so far"),
-                  ScoreFactor(part: .moving, title: "Gym", effect: .pending, points: 0, detail: "Still time · open until 8 PM")]
+            f = [F(.wake, "Woke up on time", 20, "Up at 6:50"), F(.work, "Work", 9, "At the office since 9:00"),
+                 F(.plans, "Plans", 11, "2 of 4 done so far"), F(.moving, "Gym", 0, "Still time · open until 8 PM", .pending)]
+            tip = "Gym before 8 PM keeps you on track."
+        case "nogym", "late":
+            f = [F(.wake, "Woke up on time", 20, "Up at 6:50"), F(.work, "Work", 15, "9:00 to 5:10"), F(.plans, "Plans", 16, "3 of 4 done"),
+                 F(.moving, "Gym", 0, "Missed · closed at 8 PM", .pending), F(.gotOut, "1 place", 4, "Blue Door Coffee")]
+            tip = scenario == "late" ? "Tomorrow: gym before 8 PM keeps you on track." : "A journal tonight wins back a little."
+        case "g3":
+            // A night owl: up at 11, bed at 3:30 AM. Everything done, 3 AM is still their day.
+            sched.wake = 11 * 60; sched.bed = 3 * 60 + 30; sched.gymBy = 22 * 60
+            day = cal.date(byAdding: .day, value: -1, to: today)!
+            f = [F(.wake, "Woke up on time", 20, "Up at 10:50"), F(.work, "Work", 15, "Full day"), F(.plans, "Plans", 20, "4 of 4 done"),
+                 F(.moving, "Gym", 20, "Done · 9:30 PM"), F(.gotOut, "3 places", 10, "Out and about"), F(.journal, "Journaled", 5, "2 notes")]
+            tip = "Bed by 3:30 keeps a great day great."
+        case "b3":
+            // Usual schedule (bed at 11), still up at 3 AM after a day that already slipped.
+            day = cal.date(byAdding: .day, value: -1, to: today)!
+            f = [F(.wake, "Woke up on time", 20, "Up at 6:55"), F(.work, "Work", 15, "9:00 to 5:05"), F(.plans, "Plans", 15, "3 of 4 done"),
+                 F(.moving, "Gym", 0, "Missed · closed at 8 PM", .pending), F(.gotOut, "3 places", 10, "Out and about"),
+                 F(.journal, "Journal", 0, "No note", .pending), F(.bed, "Still up", 0, "Phone at 3:00 AM · goal 11 PM", .pending)]
+            tip = "Sleep now. Tomorrow starts fresh."
+        case "g9":
+            f = [F(.wake, "Woke up on time", 20, "Up at 6:45"), F(.moving, "Gym", 20, "Done · 7:05")]
+            tip = "Great start. Work next."
+        case "g15":
+            f = [F(.wake, "Woke up on time", 20, "Up at 6:45"), F(.moving, "Gym", 20, "Done · 7:05"), F(.work, "Work", 11, "At the office since 8:55"),
+                 F(.plans, "Plans", 10, "2 of 4 done")]
+            tip = "Right on track. Finish your plans to keep it."
+        case "b15":
+            f = [F(.wake, "Late start", 0, "Up at 10:40 · goal 7:00", .pending), F(.work, "Work", 5, "Got in at 11:50"),
+                 F(.plans, "Plans", 5, "1 of 4 done"), F(.moving, "Gym", 0, "Still open until 8 PM", .pending)]
+            plan = [planItem("Lunch with Sam", 12, 30, minutes: 45, done: false), planItem("Standup", 11, 0, minutes: 15, done: false),
+                    planItem("Call mom", 17, 0, minutes: 20, done: false), planItem("Groceries", 18, 30, minutes: 30, done: false)]
+            tip = "Gym before 8 PM wins a lot back."
+        case "b21":
+            f = [F(.wake, "Up at 7:45", 12, "45 min late"), F(.work, "Work", 8, "Left at 1:30"), F(.plans, "Plans", 8, "1 of 4 done"),
+                 F(.moving, "Gym", 0, "Missed · closed at 8 PM", .pending)]
+            tip = "A journal tonight wins back a little."
+        case "slip":
+            // Good morning, then it slips from 1:30 PM: left work, missed lunch and coffee plans, then the gym.
+            f = [F(.wake, "Woke up on time", 20, "Up at 6:50")]
+            plan = [planItem("Lunch at Lucia", 12, 30, minutes: 45, done: false), planItem("Coffee with Sam", 15, 0, minutes: 30, done: false),
+                    planItem("Groceries", 18, 0, minutes: 30, done: false), planItem("Read", 21, 30, minutes: 30, done: false)]
+            if hour >= 13 { f.append(F(.work, "Work", 6, "Left at 1:30")) } else { f.append(F(.work, "Work", 2, "At the office since 9:00")) }
+            if hour >= 20 { f.append(F(.moving, "Gym", 0, "Missed · closed at 8 PM", .pending)) }
+            else { f.append(F(.moving, "Gym", 0, "Open until 8 PM", .pending)) }
+            tip = hour < 13 ? "Great morning. Keep it going." : hour < 20 ? "Gym before 8 PM gets you back on track." : "Tomorrow: gym before 8 PM."
+        case "allbad":
+            f = [F(.wake, "Up at 8:50", 4, "Almost 2 hours late")]
+            plan = [planItem("Standup", 10, 0, minutes: 15, done: false), planItem("Lunch with Sam", 12, 30, minutes: 45, done: false),
+                    planItem("Coffee", 16, 0, minutes: 30, done: false), planItem("Groceries", 18, 0, minutes: 30, done: false)]
+            if hour >= 12 { f.append(F(.work, "Work", 3, "Got in at 12:10")) }
+            if hour >= 20 { f.append(F(.moving, "Gym", 0, "Missed · closed at 8 PM", .pending)) }
+            tip = hour < 20 ? "Gym before 8 PM wins a lot back." : "Rest up. Tomorrow starts fresh."
+        case "recover":
+            // Not a gym person: walks are the habit. A late start, then make-up actions win it back.
+            sched = UserSchedule(); sched.gym = false; sched.walk = true
+            f = [F(.wake, "Up at 8:40", 4, "Late start · goal 7:00")]
+            if hour >= 12 {
+                f += [F(.work, "Work", 8, "At the office since 9:40"), F(.journal, "Journaled", 5, "3 notes"),
+                      bonus("Extra journaling", 6, "2 more notes than usual")]
+            }
+            if hour >= 17 {
+                f += [F(.work, "Work", 7, "Full afternoon"), F(.plans, "Plans", 16, "3 of 4 done"),
+                      bonus("Gym (make-up)", 15, "Not one of your habits, so it makes up for the late start")]
+            }
+            tip = hour < 12 ? "A late start. Extra notes or a workout win it back." : hour < 17 ? "Winning it back. A workout would finish the job." : "Made up for the late start."
         default:
-            f += [ScoreFactor(part: .wake, title: "Woke up on time", effect: .up, points: 20, detail: "Up at 6:50 · goal 7:00"),
-                  ScoreFactor(part: .work, title: "Work", effect: .up, points: 15, detail: "9:00 to 5:10"),
-                  ScoreFactor(part: .plans, title: "Plans", effect: .up, points: 16, detail: "3 of 4 done"),
-                  ScoreFactor(part: .moving, title: "Gym", effect: .pending, points: 0, detail: "Missed · closed at 8 PM"),
-                  ScoreFactor(part: .gotOut, title: "1 place", effect: .up, points: 4, detail: "Blue Door Coffee")]
+            f = [F(.wake, "Woke up on time", 20, "Up at 6:50")]
         }
-        let score = f.reduce(0) { $0 + $1.points }
-        let pace = ScoreEngine.pace(factors: f, schedule: paceSchedule)
-        let tip: String
-        switch scenario {
-        case "notup": tip = "Up now still gets you most of the wake-up points."
-        case "gym": tip = "Gym before 8 PM gets you to \(min(100, score + 20))."
-        case "nogym": tip = "A journal tonight gets you to \(min(100, score + 5))."
-        default: tip = "Tomorrow: gym before 8 PM keeps you on track."
-        }
+        let score = min(100, f.reduce(0) { $0 + $1.points })
+        let pace = ScoreEngine.pace(factors: f, schedule: sched, day: day, plan: plan)
         return ScoreEngine.Result(score: score, label: ScoreEngine.label(for: score, finished: false),
                                   summary: tip, tip: tip, factors: f, pace: pace)
     }

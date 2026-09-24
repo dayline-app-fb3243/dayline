@@ -77,16 +77,25 @@ struct ScoreRing: View {
     var size: CGFloat = 88
     /// Color by pace (Today card). "ring.pace" sets how "behind" looks (default B):
     /// A = whole ring orange, B = blue blending into orange along the fill, C = blue fill plus an orange arc up to where you should be.
-    /// Points already out of reach today (ScoreEngine.Pace.lost). nil = not colored by pace.
+    /// Points still counting against you today (ScoreEngine.Pace.net). nil = not colored by pace.
     var lost: Int? = nil
+    /// How well it's going, 0...1 (ScoreEngine.Pace.good): the darker the blue, the better it's going.
+    var good: Double? = nil
     @AppStorage("rings.thick") private var thick = false
     @AppStorage("ring.pace") private var paceStyle = "B"
     private var lineWidth: CGFloat { lineWidthOverride ?? (thick ? (size * 0.17).rounded() : (size >= 120 ? 20 : 14)) }  // 14 pt small, 20 pt large
     private var behind: Bool { !paceStyle.isEmpty && (lost ?? 0) >= 5 }
     /// How far the day has slipped, 0...1: the more points are out of reach, the more orange.
     private var slip: Double { min(1, Double(lost ?? 0) / 30) }
+    /// On track: deeper blue the better it's going.
+    private var blueEnd: Color {
+        guard let good, !paceStyle.isEmpty else { return Theme.accent }
+        let t = max(0, min(1, (good - 0.5) / 0.5))
+        return Theme.ringStart.mix(with: Theme.accent, by: 0.45 + 0.55 * t).mix(with: Color(red: 0.0, green: 0.22, blue: 0.62), by: 0.4 * t)
+    }
+    private static let deepOrange = Color(red: 0.72, green: 0.22, blue: 0.0)
     private var colors: [Color] {
-        guard behind else { return [Theme.ringStart, Theme.accent] }
+        guard behind else { return [Theme.ringStart, blueEnd] }
         switch paceStyle {
         case "A": return [Color.orange.mix(with: .white, by: 0.35), .orange]
         case "B": return [Theme.ringStart, Theme.accent, .orange, Color(red: 0.85, green: 0.35, blue: 0.0)]
@@ -95,9 +104,9 @@ struct ScoreRing: View {
     }
     /// B behind: light blue -> darker blue -> orange -> darker orange, one smooth blend with no hard seam.
     /// The more points slip away, the earlier along the fill the orange starts.
-    /// Preview flag "ring.blend" (awaiting David's pick): 1 = even spread, 2 = mostly blue with a short orange tail,
-    /// 3 = deeper shades with a long soft middle.
-    @AppStorage("ring.blend") private var blend = "1"
+    /// "ring.blend": 2 (default) = mostly blue with a short orange tail; the worse it's going, the darker the orange.
+    /// 1 = even spread, 3 = deeper shades with a long soft middle (other options).
+    @AppStorage("ring.blend") private var blend = "2"
     private var gradient: Gradient {
         guard behind, paceStyle == "B" else { return Gradient(colors: colors) }
         let c = colors
@@ -105,8 +114,8 @@ struct ScoreRing: View {
         case "2":
             return Gradient(stops: [.init(color: c[0], location: 0),
                                     .init(color: c[1], location: 0.6 - 0.15 * slip),
-                                    .init(color: c[2], location: 0.88 - 0.1 * slip),
-                                    .init(color: c[3], location: 1)])
+                                    .init(color: Color.orange.mix(with: Self.deepOrange, by: 0.35 * slip), location: 0.88 - 0.1 * slip),
+                                    .init(color: Color.orange.mix(with: Self.deepOrange, by: 0.3 + 0.7 * slip), location: 1)])
         case "3":
             return Gradient(stops: [.init(color: Color(red: 0.55, green: 0.78, blue: 1), location: 0),
                                     .init(color: Color(red: 0.0, green: 0.36, blue: 0.85), location: 0.3 - 0.1 * slip),

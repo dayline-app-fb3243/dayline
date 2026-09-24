@@ -118,7 +118,7 @@ struct ScoreCard: View {
                 .padding(.vertical, 4)
             } else if !style.isEmpty {
                 HStack(alignment: .center, spacing: 16) {
-                    ScoreRing(score: result.score, size: style == "B" ? 96 : 84, lost: result.pace?.lost)
+                    ScoreRing(score: result.score, size: style == "B" ? 96 : 84, lost: result.pace?.net, good: result.pace?.good)
                     VStack(alignment: .leading, spacing: 2) {
                         Text("DAY SCORE").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
                         Text(statusLabel).font(style == "B" ? .title2.weight(.semibold) : .title2.weight(.bold))

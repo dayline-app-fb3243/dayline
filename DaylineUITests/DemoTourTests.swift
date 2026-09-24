@@ -1000,6 +1000,26 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Day stories with ring B blend 2: darker blue = going better, darker orange = going worse.
+    /// 3am good (night owl) / 3am bad (still up), 9am good, 3pm good / bad, 9pm bad, a day slipping from 1:30pm,
+    /// a whole bad day, and a late start won back with make-up actions (extra journaling, a gym visit).
+    func testDayStories() throws {
+        let stories: [(String, String, Int)] = [
+            ("ds-3am-good", "g3", 3), ("ds-3am-bad", "b3", 3), ("ds-9am-good", "g9", 9),
+            ("ds-3pm-good", "g15", 15), ("ds-3pm-bad", "b15", 15), ("ds-9pm-bad", "b21", 21),
+            ("ds-slip-1-9am", "slip", 9), ("ds-slip-2-2pm", "slip", 14), ("ds-slip-3-4pm", "slip", 16), ("ds-slip-4-9pm", "slip", 21),
+            ("ds-bad-1-9am", "allbad", 9), ("ds-bad-2-3pm", "allbad", 15), ("ds-bad-3-9pm", "allbad", 21),
+            ("ds-recover-1-9am", "recover", 9), ("ds-recover-2-1pm", "recover", 13), ("ds-recover-3-6pm", "recover", 18),
+        ]
+        for (name, story, hour) in stories {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-demo.pace", story, "-status.phrase", "1"]
+            app.launchEnvironment["TZ"] = Self.zone(localHour: hour)
+            app.launch(); pause(2.5); shot(name)
+            app.terminate()
+        }
+    }
+
     /// Rotating status words: every blue phrase (2pm, on track) and every orange phrase (9pm, gym missed), ring B.
     func testStatusPhrases() throws {
         for (scenario, hour, count, tag) in [("gym", 14, 5, "blue"), ("nogym", 21, 4, "orange")] {

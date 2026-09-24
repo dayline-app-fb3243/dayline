@@ -20,25 +20,37 @@ enum ScoreEngine {
     }
 
     /// Pace from your own habits: a habit only counts against you once its time is up
-    /// (wake-up goal, work start, a plan's end, the gym's "go by" time, bedtime for the journal).
+    /// (wake-up goal, work start, a plan's end, the gym's "Go By" time, bedtime for the journal).
+    /// Make-up actions (extra journaling, a gym visit when the gym isn't one of your habits) win points back.
     struct Pace: Equatable {
-        /// Points you can no longer get today.
+        /// Points you can no longer get today from your habits.
         var lost: Int
+        /// Points won back with make-up actions.
+        var madeUp: Int = 0
+        /// How well it's going so far, 0...1: points you have vs. points that were due by now.
+        var good: Double = 1
         /// The habits whose time ran out.
-        var missed: [String]
+        var missed: [String] = []
+        /// What still counts against you after make-up points.
+        var net: Int { max(0, lost - madeUp) }
         /// Small misses (under 5 points) don't count as behind.
-        var behind: Bool { lost >= 5 }
+        var behind: Bool { net >= 5 }
     }
+
+    static let bonusPart = "bonus"
 
     static func pace(factors: [ScoreFactor], schedule s: UserSchedule, day: Date = .now, plan: [PlanItem] = [],
                      remindersTotal: Int = 0, now: Date = .now, calendar: Calendar = .current) -> Pace {
         let input = DayInput(firstActivity: nil, plan: [], visits: [], journal: [], isFinished: false, day: day, schedule: s)
         let w = weights(input, calendar: calendar)
-        let mins = UserSchedule.minutes(of: now, calendar: calendar)
+        // Minutes since the start of this day; past midnight keeps counting (25:30 = 1:30 AM) while the day is still going.
+        let mins = Int(now.timeIntervalSince(calendar.startOfDay(for: day)) / 60)
+        let bed = s.bed < 12 * 60 ? s.bed + 24 * 60 : s.bed
         func earned(_ p: Part) -> Double { Double(max(0, factors.filter { $0.part == p.rawValue }.reduce(0) { $0 + $1.points })) }
-        var lost = 0.0, missed: [String] = []
+        var lost = 0.0, due = 0.0, missed: [String] = []
         func miss(_ p: Part, _ name: String, deadline: Int, share: Double = 1) {
             guard let full = w[p], mins >= deadline else { return }
+            due += full * share
             let gone = max(0, full * share - earned(p))
             if gone >= 1 { lost += gone; missed.append(name) }
         }
@@ -50,16 +62,24 @@ enum ScoreEngine {
         }
         let total = plan.count + remindersTotal
         if total > 0, let full = w[.plans] {
-            let overdue = plan.filter { !$0.isDone && $0.end <= now }.count
+            let over = plan.filter { $0.end <= now }
+            let overdue = over.filter { !$0.isDone }.count
+            due += full * Double(over.count) / Double(total)
             if overdue > 0 { lost += full * Double(overdue) / Double(total); missed.append("Plans") }
         }
         var moveBy = 0
         if s.gym { moveBy = max(moveBy, s.gymDeadline) }
-        if s.walk || s.outside { moveBy = max(moveBy, s.bed - 60) }
+        if s.walk || s.outside { moveBy = max(moveBy, bed - 60) }
         if moveBy > 0 { miss(.moving, s.gym && !(s.walk || s.outside) ? "Gym" : "Moving", deadline: moveBy) }
-        miss(.gotOut, "Getting out", deadline: s.bed - 60)
-        miss(.journal, "Journal", deadline: s.bed)
-        return Pace(lost: Int(lost.rounded()), missed: missed)
+        miss(.gotOut, "Getting out", deadline: bed - 60)
+        miss(.journal, "Journal", deadline: bed)
+        miss(.bed, "Bedtime", deadline: bed + 10)
+        let madeUp = Double(max(0, factors.filter { $0.part == bonusPart }.reduce(0) { $0 + $1.points }))
+        let have = Double(max(0, factors.reduce(0) { $0 + $1.points }))
+        // Points you have vs. points that were due by now (habits done early count on both sides).
+        let early = have - (due - lost) - madeUp
+        let good = min(1, have / max(10, due + max(0, early)))
+        return Pace(lost: Int(lost.rounded()), madeUp: Int(madeUp), good: good, missed: missed)
     }
 
     struct DayInput {
@@ -201,6 +221,16 @@ enum ScoreEngine {
         // 7. Journal
         if w[.journal] != nil, !input.journal.isEmpty {
             factors.append(.init(part: .journal, title: "Journaled", effect: .up, points: pts(.journal, Double(input.journal.count) * 0.4)))
+        }
+
+        // 8. Make-up actions: they win back points for missed habits (and nudge the ring back toward blue).
+        let extraNotes = max(0, input.journal.count - 3)
+        if extraNotes > 0 {
+            factors.append(ScoreFactor(title: "Extra journaling", effect: .up, points: min(15, extraNotes * 3),
+                                       detail: "\(extraNotes) more note\(extraNotes == 1 ? "" : "s") than usual", part: bonusPart))
+        }
+        if !s.gym, outside.contains(where: { $0.category == .gym && $0.duration > 20 * 60 }) {
+            factors.append(ScoreFactor(title: "Gym (make-up)", effect: .up, points: 15, detail: "Not one of your habits, so it makes up for a miss", part: bonusPart))
         }
 
         let score = max(0, min(100, factors.reduce(0) { $0 + $1.points }))
