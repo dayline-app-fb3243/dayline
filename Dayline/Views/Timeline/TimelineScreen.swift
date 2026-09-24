@@ -213,8 +213,8 @@ struct TimelineScreen: View {
             Image(systemName: symbol).font(.system(size: 17, weight: .semibold))
                 .foregroundStyle(on.wrappedValue ? Theme.accent : Color.secondary)
                 .frame(width: 42, height: 42)
-                .background { if on.wrappedValue { Circle().fill(Color(.systemBackground).opacity(0.75)) } }
                 .contentShape(.circle)
+                .glassEffect(on.wrappedValue ? .regular.interactive() : .identity, in: .circle)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(title)
@@ -228,7 +228,7 @@ struct TimelineScreen: View {
             Text(label).font(.footnote).foregroundStyle(.secondary)
         }
         .padding(.horizontal, 11).padding(.vertical, 6)
-        .background(.regularMaterial, in: .capsule)
+        .glassEffect(.regular, in: .capsule)
     }
 
     private func glassChip(_ value: String, _ label: String) -> some View {

@@ -235,6 +235,36 @@ struct CapsuleSegmented<Value: Hashable>: View {
     @Namespace private var ns
 
     var body: some View {
+        if plain {
+            // Inside a glass bar: the selected item is a real Liquid Glass lens that morphs between options.
+            GlassEffectContainer(spacing: 0) {
+                HStack(spacing: 0) {
+                    ForEach(options, id: \.0) { value, title in
+                        Button { withAnimation(.snappy) { selection = value } } label: {
+                            Text(title).font(.subheadline.weight(.semibold))
+                                .foregroundStyle(selection == value ? Color.primary : Color.secondary)
+                                .frame(maxWidth: .infinity).padding(.vertical, 8)
+                                .contentShape(.capsule)
+                        }
+                        .buttonStyle(.plain)
+                        .background {
+                            if selection == value {
+                                Color.clear
+                                    .glassEffect(.regular.interactive(), in: .capsule)
+                                    .glassEffectID("pill", in: ns)
+                            }
+                        }
+                        .accessibilityAddTraits(selection == value ? .isSelected : [])
+                    }
+                }
+                .padding(3)
+            }
+        } else {
+            solid
+        }
+    }
+
+    private var solid: some View {
         HStack(spacing: 0) {
             ForEach(options, id: \.0) { value, title in
                 Button { withAnimation(.snappy) { selection = value } } label: {
@@ -254,7 +284,7 @@ struct CapsuleSegmented<Value: Hashable>: View {
             }
         }
         .padding(3)
-        .background(plain ? Color.clear : Color.primary.opacity(0.07), in: .capsule)
+        .background(Color.primary.opacity(0.07), in: .capsule)
     }
 }
 
