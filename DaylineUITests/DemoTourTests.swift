@@ -193,6 +193,15 @@ final class DemoTourTests: XCTestCase {
         }
         for letter in ["A", "B", "C"] {
             app = XCUIApplication()
+            app.launchArguments = ["-demo", "-notifications.style", letter]
+            app.launchEnvironment["TZ"] = Self.morningZone
+            app.launch()
+            tab(app, "Profile"); pause(1.5)
+            tapID(app, "notificationsRow"); pause(1.8); shot("c24\(letter)-notifications")
+            app.terminate()
+        }
+        for letter in ["A", "B", "C"] {
+            app = XCUIApplication()
             app.launchArguments = ["-demo", "-yourData.style", letter]
             app.launchEnvironment["TZ"] = Self.morningZone
             app.launch()

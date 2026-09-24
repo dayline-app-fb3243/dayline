@@ -48,6 +48,12 @@ enum DayRefresher {
 }
 
 enum Notifications {
+    /// Per-type switches from Profile > Notifications (default on).
+    static func allowed(_ key: String) -> Bool {
+        let d = UserDefaults.standard
+        return (d.object(forKey: "notify.all") as? Bool ?? true) && (d.object(forKey: key) as? Bool ?? true)
+    }
+
     static func requestPermission() async {
         _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])
     }
@@ -57,7 +63,7 @@ enum Notifications {
     static func scoreReached(_ score: Int, day today: Date) async {
         let center = UNUserNotificationCenter.current()
         center.removePendingNotificationRequests(withIdentifiers: ["morning-recap", "evening-checkin"])
-        guard score >= 80, !DemoData.isDemo else { return }
+        guard score >= 80, !DemoData.isDemo, Self.allowed("notify.score80") else { return }
         let day = today.formatted(.iso8601.year().month().day())
         let key = "notified80-\(day)"
         guard !UserDefaults.standard.bool(forKey: key) else { return }
@@ -72,6 +78,7 @@ enum Notifications {
     /// Someone asked to follow your streak. (Friends are demo data for now, so nothing calls this
     /// until real sharing is connected.)
     static func followRequest(from name: String) async {
+        guard allowed("notify.follows") else { return }
         let content = UNMutableNotificationContent()
         content.title = "\(name) wants to follow you"
         content.body = "They'd see your streak only."

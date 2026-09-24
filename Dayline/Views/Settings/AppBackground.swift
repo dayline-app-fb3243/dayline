@@ -305,6 +305,8 @@ struct ProfileView: View {
     @ObservedObject private var auth = AuthService.shared
     @ObservedObject private var location = LocationService.shared
     @AppStorage("background.preset") private var presetRaw = BackgroundPreset.system.rawValue
+    /// Preview flag "notifications.style": now = opens iOS Settings (old); A/B/C = in-app page versions.
+    @AppStorage("notifications.style") private var notifStyle = "now"
     @AppStorage("appearance") private var appearanceRaw = Appearance.system.rawValue
     @AppStorage(CheckInService.enabledKey) private var checkIns = false
     @Environment(\.openURL) private var openURL
@@ -374,7 +376,12 @@ struct ProfileView: View {
                         }
                         .accessibilityIdentifier("checkLocationRow")
                         Divider().padding(.leading, 57)
-                        Button { openSettings() } label: { ProfileRow(symbol: "bell.fill", title: "Notifications", value: "Follows · 80 score") }
+                        if notifStyle == "now" {
+                            Button { openSettings() } label: { ProfileRow(symbol: "bell.fill", title: "Notifications", value: "Follows · 80 score") }
+                        } else {
+                            NavigationLink { NotificationsView() } label: { ProfileRow(symbol: "bell.fill", title: "Notifications", value: "") }
+                                .accessibilityIdentifier("notificationsRow")
+                        }
                         Divider().padding(.leading, 57)
                         HStack(spacing: 13) {
                             ProfileIcon(symbol: "questionmark.bubble.fill")
@@ -763,4 +770,103 @@ extension View {
     func backgroundTitle() -> some View { modifier(BackgroundText(role: .title)) }
     /// Keeps the navigation title readable on dark backgrounds.
     func backgroundNavBar() -> some View { modifier(BackgroundNavBar()) }
+}
+
+
+/// Profile > Notifications: which notifications Dayline sends, as native switches.
+/// Versions (preview flag "notifications.style"): A = Settings-style rows with icon tiles and a note under each group;
+/// B = plain switches, one group, one note; C = like iOS Settings > Notifications: Allow Notifications on top, then the types.
+struct NotificationsView: View {
+    @AppStorage("notifications.style") private var style = "A"
+    @AppStorage("notify.follows") private var follows = true
+    @AppStorage("notify.score80") private var score80 = true
+    @AppStorage(CheckInService.enabledKey) private var checkIns = false
+    @AppStorage("notify.all") private var all = true
+    @Environment(\.openURL) private var openURL
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 8) {
+                switch style {
+                case "B": versionB
+                case "C": versionC
+                default: versionA
+                }
+            }
+            .padding(18)
+        }
+        .background(AppBackgroundView())
+        .navigationTitle("Notifications")
+        .navigationBarTitleDisplayMode(.inline)
+        .backgroundNavBar()
+        .toolbarVisibility(.hidden, for: .tabBar)
+        .onChange(of: checkIns) { _, on in if on { Task { await Notifications.requestPermission() } } }
+        .accessibilityIdentifier("notificationsScreen")
+    }
+
+    private func tileRow(_ symbol: String, _ title: String, _ on: Binding<Bool>) -> some View {
+        HStack(spacing: 13) {
+            ProfileIcon(symbol: symbol)
+            Toggle(title, isOn: on).font(.body)
+        }
+        .padding(.horizontal, 14).padding(.vertical, 7)
+    }
+    private func plainRow(_ title: String, _ on: Binding<Bool>) -> some View {
+        Toggle(title, isOn: on).font(.body).padding(.horizontal, 16).padding(.vertical, 7)
+    }
+    private func note(_ t: String) -> some View {
+        Text(t).font(.footnote).helperText().padding(.horizontal, 16).padding(.bottom, 14)
+    }
+    private var group: some Shape { .rect(cornerRadius: Theme.cardRadius, style: .continuous) }
+
+    @ViewBuilder private var versionA: some View {
+        VStack(spacing: 0) {
+            tileRow("person.2.fill", "Follow Requests", $follows)
+            Divider().padding(.leading, 57)
+            tileRow("star.fill", "Score Reaches 80", $score80)
+        }
+        .background(Color(.secondarySystemGroupedBackground), in: group)
+        note("Get a notification when someone asks to see your streak, and when today's score reaches 80.")
+        VStack(spacing: 0) { tileRow("questionmark.bubble.fill", "Check-in Questions", $checkIns) }
+            .background(Color(.secondarySystemGroupedBackground), in: group)
+        note("Quick yes/no questions, like \u{201C}Going to sleep now?\u{201D}, when Dayline isn't sure. Answer right from the notification.")
+    }
+
+    @ViewBuilder private var versionB: some View {
+        VStack(spacing: 0) {
+            plainRow("Follow Requests", $follows)
+            Divider().padding(.leading, 16)
+            plainRow("Score Reaches 80", $score80)
+            Divider().padding(.leading, 16)
+            plainRow("Check-in Questions", $checkIns)
+        }
+        .background(Color(.secondarySystemGroupedBackground), in: group)
+        note("Choose what Dayline can notify you about. Check-in questions are quick yes/no questions you answer from the notification.")
+    }
+
+    @ViewBuilder private var versionC: some View {
+        VStack(spacing: 0) { plainRow("Allow Notifications", $all) }
+            .background(Color(.secondarySystemGroupedBackground), in: group)
+        note("Turn off to stop all Dayline notifications.")
+        if all {
+            Text("NOTIFY ME ABOUT").font(.footnote).helperText().padding(.horizontal, 16)
+            VStack(spacing: 0) {
+                plainRow("Follow Requests", $follows)
+                Divider().padding(.leading, 16)
+                plainRow("Score Reaches 80", $score80)
+                Divider().padding(.leading, 16)
+                plainRow("Check-in Questions", $checkIns)
+            }
+            .background(Color(.secondarySystemGroupedBackground), in: group)
+            .padding(.bottom, 14)
+        }
+        VStack(spacing: 0) {
+            Button { if let u = URL(string: UIApplication.openNotificationSettingsURLString) { openURL(u) } } label: {
+                HStack { Text("Sounds and Banners").foregroundStyle(.primary); Spacer(); Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(.tertiary) }
+                    .padding(.horizontal, 16).frame(minHeight: 50)
+            }
+        }
+        .background(Color(.secondarySystemGroupedBackground), in: group)
+        note("Opens iOS Settings for Dayline's sounds, banners and badges.")
+    }
 }
