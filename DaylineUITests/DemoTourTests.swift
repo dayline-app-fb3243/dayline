@@ -759,6 +759,27 @@ final class DemoTourTests: XCTestCase {
         app.terminate()
     }
 
+    /// David 2:15: 2D/3D button on top of the location button (one glass capsule), pull-up sheet instead of floating buttons,
+    /// then map gestures: one-finger pan, pinch zoom, two-finger rotate.
+    func testMapButtonsVideo() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo", "-route.style", "snap", "-pin.style", "D", "-map.3d", "YES", "-map.sheet", "A"]
+        app.launchEnvironment["TZ"] = Self.morningZone
+        app.launch(); pause(1.5)
+        tab(app, "Timeline"); pause(3)
+        tapID(app, "mapCard"); pause(6); shot("mb-flat")
+        tapID(app, "toggle3D"); pause(6); shot("mb-3d")
+        let map = app.maps.firstMatch
+        map.swipeLeft(); pause(1.5)
+        map.pinch(withScale: 2.0, velocity: 1.0); pause(2)
+        map.rotate(0.8, withVelocity: 1.0); pause(2)
+        map.pinch(withScale: 0.5, velocity: -1.0); pause(2)
+        tapID(app, "toggle3D"); pause(4)
+        tapID(app, "locateMe"); pause(4); shot("mb-locate")
+        tapID(app, "mapGrabber"); pause(3); shot("mb-sheet")
+        app.terminate()
+    }
+
     /// Splash G/H/I: C's 3D look, new pins, closer and more top-down.
     func testSplashPinDemo() throws {
         for v in ["G", "H", "I"] {

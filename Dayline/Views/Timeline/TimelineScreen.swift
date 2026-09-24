@@ -169,11 +169,15 @@ struct TimelineScreen: View {
                 }
             } }
         }
-        .mapStyle(is3D && !showsControls ? .standard(elevation: .realistic, pointsOfInterest: .excludingAll)
+        .mapStyle((is3D || (map3DFlag && interactive)) && !showsControls ? .standard(elevation: .realistic, pointsOfInterest: .excludingAll)
                                          : .standard(emphasis: .muted, pointsOfInterest: .excludingAll))
         .mapControls { MapCompass(); MapScaleView() }
         .mapControlVisibility(showsControls ? .automatic : .hidden)
-        .onMapCameraChange(frequency: .onEnd) { context in region = context.region }
+        .onMapCameraChange(frequency: .onEnd) { context in
+            region = context.region
+            // Two-finger tilt flips the 2D/3D label, like Apple Maps.
+            if interactive && map3DFlag { is3D = context.camera.pitch > 10 }
+        }
         .task(id: "\(routeStyle)-\(interval.start.timeIntervalSince1970)-\(range == .day)") { await buildStreetRoute() }
     }
 
@@ -271,18 +275,42 @@ struct TimelineScreen: View {
                         .padding(4)
                         .glassEffect(.regular, in: .capsule)
                         }
+                        if map3DFlag {
+                            // map.3d (David 2:15): like Apple Maps, a 2D/3D button sits on top of the location button in one glass capsule.
+                            // The location button always goes to your current location.
+                            VStack(spacing: 0) {
+                                Button { withAnimation(.smooth(duration: 0.8)) { set3D(!is3D) } } label: {
+                                    // Shows the current mode; each tap switches 2D <-> 3D.
+                                    Text(is3D ? "3D" : "2D").font(.system(size: 18, weight: .semibold))
+                                        .foregroundStyle(Theme.accent).frame(width: 54, height: 58).contentShape(.rect)
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityLabel(is3D ? "Show 2D map" : "Show 3D map")
+                                .accessibilityIdentifier("toggle3D")
+                                Button { withAnimation(.snappy) { camera = .userLocation(fallback: .automatic) } } label: {
+                                    // Outline arrow = not following; filled = on your current location (like Apple Maps).
+                                    Image(systemName: camera.followsUserLocation ? "location.north.line.fill" : "location.north.line")
+                                        .font(.system(size: 20, weight: .semibold))
+                                        .foregroundStyle(Theme.accent).frame(width: 54, height: 58).contentShape(.rect)
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityLabel("Show my location")
+                                .accessibilityIdentifier("locateMe")
+                            }
+                            .padding(.vertical, 6)
+                            .glassEffect(.regular, in: .capsule)
+                        } else {
                         Button {
-                            // With map.3d on, the location button works like Apple Maps: tap to tilt into 3D, tap again for flat.
-                            if map3DFlag { withAnimation(.smooth(duration: 0.8)) { set3D(!is3D) } }
-                            else { withAnimation(.snappy) { camera = .userLocation(fallback: .automatic) } }
+                            withAnimation(.snappy) { camera = .userLocation(fallback: .automatic) }
                         } label: {
-                            Image(systemName: map3DFlag ? (is3D ? "location.north.line.fill" : "location") : "location.fill").font(.scaled(size: 20, weight: .semibold))
+                            Image(systemName: "location.fill").font(.scaled(size: 20, weight: .semibold))
                                 .foregroundStyle(Theme.accent).frame(width: 64, height: 64)
                         }
                         .buttonStyle(.plain)
                         .glassEffect(.regular.interactive(), in: .circle)
                         .accessibilityLabel("Show my location")
                         .accessibilityIdentifier("locateMe")
+                        }
                     }
                 }
                 .padding(.trailing, 16).padding(.bottom, 72)
