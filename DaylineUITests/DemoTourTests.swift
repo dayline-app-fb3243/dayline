@@ -1,4 +1,5 @@
 import XCTest
+import CoreLocation
 
 /// Walks through every screen with demo data. CI records the simulator screen while these run,
 /// which produces the preview videos, and saves a screenshot of each screen.
@@ -789,6 +790,9 @@ final class DemoTourTests: XCTestCase {
         map.rotate(0.8, withVelocity: 1.0); pause(2)
         map.pinch(withScale: 0.5, velocity: -1.0); pause(2)
         tapID(app, "toggle3D"); pause(4)
+        // Give the simulator a real spot so "go to my location" has somewhere to go (arrow fills in).
+        XCUIDevice.shared.location = XCUILocation(location: CLLocation(latitude: 40.7527, longitude: -73.9772))
+        pause(1)
         tapID(app, "locateMe"); pause(4); shot("mb-locate")
         tapID(app, "mapGrabber"); pause(3); shot("mb-sheet")
         app.terminate()
