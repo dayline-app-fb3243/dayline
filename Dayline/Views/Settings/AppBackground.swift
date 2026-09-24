@@ -424,8 +424,14 @@ struct ProfileView: View {
         if noHeaders { Color.clear.frame(height: 14) } else { SectionHeader(title) }
     }
     @Environment(\.openURL) private var openURL
+    /// Preview "profile.page" 1-5: Profile layouts ("" = the current page). Sample-only until one is picked.
+    @AppStorage("profile.page") private var pPage = ""
 
     var body: some View {
+        if pPage.isEmpty { classicBody } else { ProfilePageSample(page: pPage) }
+    }
+
+    private var classicBody: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 10) {
                 TabTitle("Profile")
