@@ -18,6 +18,7 @@ struct ApplePin: View {
             ZStack {
                 Circle().fill(LinearGradient(colors: [color.mix(with: .white, by: 0.25), color], startPoint: .top, endPoint: .bottom))
                 Image(systemName: symbol).font(.system(size: d * 0.40, weight: .semibold)).foregroundStyle(.white)
+                    .contentTransition(.symbolEffect(.replace))
             }
             .frame(width: d, height: d)
             .padding(d * 0.075)

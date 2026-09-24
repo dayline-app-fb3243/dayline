@@ -886,12 +886,36 @@ struct SplashLoop: View {
     /// The first map needs a moment to load its 3D tiles; fade it in after that so there's no empty grid.
     @State private var shown = false
     @State private var ready = false
+    /// "splash.pin": "" (default) = each map draws its own pin (can pop during the crossfade); "smooth" = one fixed pin.
+    @AppStorage("splash.pin") private var pinStyle = ""
+    private var smoothPin: Bool { pinStyle == "smooth" }
+    static let symbols = ["tree.fill", "dumbbell.fill", "briefcase.fill", "cup.and.saucer.fill"]
+    @State private var pinSymbol = "tree.fill"
+    @State private var pinPulse = false
+    @State private var heroPoint: CGPoint = .zero
     var body: some View {
         ZStack {
             // Keyed by scene, so when the next scene takes over it keeps its map (no reload).
             ForEach([current] + (next.map { [$0] } ?? []), id: \.self) { i in
-                SplashLiveMap(style: Self.scenes[i], drifting: true)
+                SplashLiveMap(style: Self.scenes[i], drifting: true, hidePin: smoothPin,
+                              onHeroPoint: smoothPin && i == current ? { p in
+                                  if abs(p.x - heroPoint.x) > 0.5 || abs(p.y - heroPoint.y) > 0.5 { heroPoint = p }
+                              } : nil)
                     .opacity(i == next && !showNext ? 0.001 : 1)
+            }
+        }
+        .overlay(alignment: .top) {
+            // Preview "splash.pin" = smooth: one pin that never moves (every scene is centered on its place),
+            // and only its symbol changes, with a soft spring, while the maps crossfade underneath.
+            if smoothPin && heroPoint != .zero {
+                ZStack(alignment: .topLeading) {
+                    Color.clear
+                    ApplePin(symbol: pinSymbol, color: Theme.accent, hero: 104)
+                        .scaleEffect(pinPulse ? 0.94 : 1, anchor: .bottom)
+                        .alignmentGuide(.top) { d in d[.bottom] }
+                        .alignmentGuide(.leading) { d in d[HorizontalAlignment.center] }
+                        .offset(x: heroPoint.x, y: heroPoint.y)
+                }
             }
         }
         // 0.001, not 0: the map keeps loading its tiles while hidden.
@@ -914,6 +938,15 @@ struct SplashLoop: View {
                 next = (current + 1) % Self.scenes.count
                 try? await Task.sleep(for: .seconds(3))
                 withAnimation(.easeInOut(duration: 1.6)) { showNext = true }
+                if smoothPin, let n = next {
+                    // Halfway through the crossfade: a gentle dip, the symbol swaps, and it springs back.
+                    Task { @MainActor in
+                        try? await Task.sleep(for: .seconds(0.5))
+                        withAnimation(.spring(duration: 0.5, bounce: 0.15)) { pinPulse = true }
+                        try? await Task.sleep(for: .seconds(0.25))
+                        withAnimation(.spring(duration: 0.6, bounce: 0.2)) { pinSymbol = Self.symbols[n]; pinPulse = false }
+                    }
+                }
                 try? await Task.sleep(for: .seconds(1.7))
                 // Drop the old map right away so only one keeps rendering.
                 var t = Transaction(); t.disablesAnimations = true
@@ -927,6 +960,9 @@ struct SplashLiveMap: View {
     var style: String
     /// Slow camera move (turn, tilt, push in) for the splash loop.
     var drifting = false
+    /// Splash loop with one fixed pin on top: don't draw the big pin in the map.
+    var hidePin = false
+    var onHeroPoint: ((CGPoint) -> Void)? = nil
     @State private var drift = false
     @State private var route: [CLLocationCoordinate2D] = []
     private struct Stop: Identifiable { let id = UUID(); let name: String; let time: String; let symbol: String; let c: CLLocationCoordinate2D }
@@ -971,6 +1007,7 @@ struct SplashLiveMap: View {
         Stop(name: "Noodle Bar", time: "12:30", symbol: "fork.knife", c: .init(latitude: 40.7614, longitude: -73.9776)),
     ]
     var body: some View {
+        MapReader { proxy in
         Map(initialPosition: position, interactionModes: []) {
             if route.count > 1 {
                 if ["D", "J", "K", "L", "M", "N", "P", "Q", "R"].contains(style) {
@@ -988,7 +1025,7 @@ struct SplashLiveMap: View {
             }
             ForEach(stops) { s in
                 if let h = heroSize {
-                    if s.name == heroName {
+                    if s.name == heroName && !hidePin {
                         Annotation("", coordinate: s.c, anchor: .bottom) {
                             ApplePin(symbol: s.symbol, color: Theme.accent, hero: h)
                         }
@@ -1021,6 +1058,13 @@ struct SplashLiveMap: View {
             if drifting { try? await Task.sleep(for: .milliseconds(400)); drift = true }
             await loadRoute()
         }
+        .onMapCameraChange(frequency: .continuous) { _ in
+            // Where the big pin's spot is on screen, for the one fixed pin drawn on top (splash.pin smooth).
+            guard let onHeroPoint, let hero = stops.first(where: { $0.name == heroName }),
+                  let pt = proxy.convert(hero.c, to: .local) else { return }
+            onHeroPoint(pt)
+        }
+        }
     }
     private var position: MapCameraPosition {
         let center = CLLocationCoordinate2D(latitude: 40.7552, longitude: -73.9790)
@@ -1040,6 +1084,8 @@ struct SplashLiveMap: View {
         if style == "P" { return .camera(MapCamera(centerCoordinate: .init(latitude: 40.7466, longitude: -74.0086), distance: 650, heading: 250, pitch: 45)) }
         if style == "Q" { return .camera(MapCamera(centerCoordinate: .init(latitude: 40.7589, longitude: -73.9790), distance: 750, heading: 29, pitch: 45)) }
         if style == "R" { return .camera(MapCamera(centerCoordinate: .init(latitude: 40.7312, longitude: -73.9972), distance: 600, heading: 20, pitch: 45)) }
+        // M: centered exactly on the park pin, so the turn and zoom keep it in one place on screen.
+        if style == "M" { return .camera(MapCamera(centerCoordinate: .init(latitude: 40.7536, longitude: -73.9838), distance: 600, heading: 60, pitch: 45)) }
         if style == "L" || style == "M" || style == "N" { return .camera(MapCamera(centerCoordinate: park, distance: 600, heading: 60, pitch: 45)) }
         if style == "E" { return .camera(MapCamera(centerCoordinate: center, distance: 2400, heading: 29, pitch: 58)) }
         if style == "F" { return .camera(MapCamera(centerCoordinate: center, distance: 2800, heading: 210, pitch: 55)) }
