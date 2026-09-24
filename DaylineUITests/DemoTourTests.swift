@@ -912,6 +912,17 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Empty search: Recent places as photo cards A/B/C.
+    func testRecentCards() throws {
+        for v in ["A", "B", "C"] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-journal.search", "B", "-search.results", "rich", "-search.recent", v]
+            app.launch(); pause(1.5); tab(app, "Journal"); pause(1.5)
+            tapID(app, "journalSearch"); pause(8); shot("rc-\(v)")
+            app.terminate()
+        }
+    }
+
     /// Journal search button options (A/B/C) and the search screen with sample questions.
     func testJournalSearchDemo() throws {
         for v in ["A", "B", "C"] {

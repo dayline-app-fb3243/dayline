@@ -10,6 +10,9 @@ struct RichSearchResults: View {
     var entries: [JournalEntry]
     var visits: [Visit]
     var onPick: (String) -> Void = { _ in }
+    /// Preview flag "search.recent" (none picked yet): Recent places as Apple Maps "Guides" style photo cards.
+    /// A = tall, name at the bottom. B = wide. C = tall with a label saying where the photo came from.
+    @AppStorage("search.recent") private var recentStyle = ""
 
     var body: some View {
         let q = query.trimmingCharacters(in: .whitespaces)
@@ -34,18 +37,22 @@ struct RichSearchResults: View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Recent places").font(.title3.weight(.semibold)).padding(.leading, 4)
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
+                HStack(spacing: 12) {
                     ForEach(recent, id: \.persistentModelID) { v in
                         Button { MapJump.go(SearchHit(place: v.placeName, date: v.arrival, reason: "", symbol: v.category.symbol, coordinate: v.coordinate)) } label: {
-                            VStack(alignment: .leading, spacing: 8) {
-                                Image(systemName: v.category.symbol).font(.system(size: 17, weight: .semibold)).foregroundStyle(.white)
-                                    .frame(width: 40, height: 40).background(Theme.accent, in: .circle)
-                                Text(v.placeName).font(.subheadline.weight(.semibold)).lineLimit(2).multilineTextAlignment(.leading)
-                                Text(v.arrival.formatted(.relative(presentation: .named))).font(.caption).foregroundStyle(.secondary)
+                            if recentStyle.isEmpty {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Image(systemName: v.category.symbol).font(.system(size: 17, weight: .semibold)).foregroundStyle(.white)
+                                        .frame(width: 40, height: 40).background(Theme.accent, in: .circle)
+                                    Text(v.placeName).font(.subheadline.weight(.semibold)).lineLimit(2).multilineTextAlignment(.leading)
+                                    Text(v.arrival.formatted(.relative(presentation: .named))).font(.caption).foregroundStyle(.secondary)
+                                }
+                                .frame(width: 120, height: 128, alignment: .topLeading)
+                                .padding(12)
+                                .background(Color(.systemBackground).opacity(0.85), in: .rect(cornerRadius: 20))
+                            } else {
+                                GuidePlaceCard(visit: v, photo: photos(forVisit: v).first, style: recentStyle)
                             }
-                            .frame(width: 120, height: 128, alignment: .topLeading)
-                            .padding(12)
-                            .background(Color(.systemBackground).opacity(0.85), in: .rect(cornerRadius: 20))
                         }
                         .buttonStyle(.plain)
                     }
@@ -133,6 +140,9 @@ struct RichSearchResults: View {
 
     private func visit(for h: SearchHit) -> Visit? {
         visits.first { $0.placeName == h.place && Calendar.current.isDate($0.arrival, inSameDayAs: h.date) }
+    }
+    private func photos(forVisit v: Visit) -> [Data] {
+        photos(for: SearchHit(place: v.placeName, date: v.arrival, reason: "", symbol: v.category.symbol, coordinate: v.coordinate))
     }
     private func photos(for h: SearchHit) -> [Data] {
         guard let c = h.coordinate else { return [] }
@@ -240,4 +250,72 @@ struct ConfidentResultCard: View {
         item.name = hit.place
         item.openInMaps(launchOptions: [MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeDefault])
     }
+}
+
+
+/// Apple Maps "Guides Nearby" style card: full-bleed photo, bold name over a dark fade at the bottom.
+/// Photo: yours from that visit, else Apple Maps Look Around, else a colored card with the place icon.
+struct GuidePlaceCard: View {
+    var visit: Visit
+    var photo: Data?
+    var style: String
+    @State private var lookAround: UIImage?
+    @State private var triedLookAround = false
+
+    private var size: CGSize { style == "B" ? CGSize(width: 250, height: 170) : CGSize(width: 170, height: 230) }
+    private var source: String? {
+        if photo != nil { return "Your photo" }
+        if lookAround != nil { return "Look Around" }
+        return nil
+    }
+
+    var body: some View {
+        ZStack(alignment: .bottomLeading) {
+            Group {
+                if let d = photo, let img = UIImage(data: d) {
+                    Image(uiImage: img).resizable().scaledToFill()
+                } else if let lookAround {
+                    Image(uiImage: lookAround).resizable().scaledToFill()
+                } else {
+                    LinearGradient(colors: [Theme.accent.mix(with: .white, by: 0.25), Theme.accent.mix(with: .black, by: 0.25)], startPoint: .top, endPoint: .bottom)
+                        .overlay(Image(systemName: visit.category.symbol).font(.system(size: 54, weight: .semibold)).foregroundStyle(.white.opacity(0.85)).offset(y: -24))
+                }
+            }
+            .frame(width: size.width, height: size.height)
+            .clipped()
+            LinearGradient(stops: [.init(color: .black.opacity(0), location: 0.35), .init(color: .black.opacity(0.72), location: 1)], startPoint: .top, endPoint: .bottom)
+            VStack(alignment: .leading, spacing: 3) {
+                Label(visit.category.rawValue.capitalized, systemImage: visit.category.symbol)
+                    .font(.caption.weight(.semibold)).foregroundStyle(.white.opacity(0.85))
+                Text(visit.placeName).font(.system(size: 20, weight: .heavy)).foregroundStyle(.white)
+                    .lineLimit(2).multilineTextAlignment(.leading)
+                Text(visit.arrival.formatted(.relative(presentation: .named)).capitalizedFirst).font(.footnote.weight(.medium)).foregroundStyle(.white.opacity(0.85))
+            }
+            .padding(14)
+        }
+        .frame(width: size.width, height: size.height)
+        .overlay(alignment: .topLeading) {
+            if style == "C", let source {
+                Label(source, systemImage: photo != nil ? "photo" : "binoculars.fill")
+                    .font(.caption2.weight(.semibold)).foregroundStyle(.white)
+                    .padding(.horizontal, 8).padding(.vertical, 5)
+                    .background(.black.opacity(0.35), in: .capsule)
+                    .padding(10)
+            }
+        }
+        .clipShape(.rect(cornerRadius: 28))
+        .shadow(color: .black.opacity(0.12), radius: 8, y: 4)
+        .task {
+            guard photo == nil, !triedLookAround else { return }
+            triedLookAround = true
+            guard let scene = try? await MKLookAroundSceneRequest(coordinate: visit.coordinate).scene else { return }
+            let opts = MKLookAroundSnapshotter.Options()
+            opts.size = CGSize(width: size.width * 2, height: size.height * 2)
+            lookAround = try? await MKLookAroundSnapshotter(scene: scene, options: opts).snapshot.image
+        }
+    }
+}
+
+private extension String {
+    var capitalizedFirst: String { prefix(1).uppercased() + dropFirst() }
 }
