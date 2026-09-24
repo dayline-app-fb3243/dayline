@@ -25,7 +25,7 @@ struct TimelineScreen: View {
     @State private var streetRoute: [CLLocationCoordinate2D] = []
     /// Preview flag "map.3d" (awaiting David's pick): the full-screen map opens tilted in 3D with real buildings,
     /// and gets a 2D/3D button. The route is drawn into the map, so it tilts with it.
-    @AppStorage("map.3d") private var map3DFlag = false
+    @AppStorage("map.3d") private var map3DFlag = true
     @State private var is3D = false
     /// The map is centered on your current location (filled arrow). Cleared when you pan away.
     @State private var onMyLocation = false
@@ -33,9 +33,10 @@ struct TimelineScreen: View {
     /// Preview flag "pin.style" (awaiting David's pick): "" = current pins, A = big Apple pin with dot,
     /// B = compact Apple pin with tail, C = native Apple Maps marker.
     @AppStorage("pin.style") private var pinStyle = "D"
-    /// Preview flag "map.sheet": no floating toggles; a grabber on the range bar
-    /// pulls up a glass sheet with Journal / Photos / Route switches. A = Find My card, B = Settings-style icons, C = compact.
-    @AppStorage("map.sheet") private var mapSheet = "A"
+    /// "map.sheet": G (default, David's pick F) = Apple Maps style outline panel with the Day/Week/Month/Year pill
+    /// centered inside; pulling up grows only the outline, with the F glass card inside.
+    /// A = Find My card, B = Settings-style icons, C = compact (older options).
+    @AppStorage("map.sheet") private var mapSheet = "G"
     /// Preview flag "map.grabber": where the grabber sits so the range words stay centered.
     /// A = grabber drawn over the top edge (takes no space), B = grabber just above the bar, C = even space above and below the words.
     @AppStorage("map.grabber") private var grabber = "C"

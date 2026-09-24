@@ -778,7 +778,7 @@ final class DemoTourTests: XCTestCase {
     /// then map gestures: one-finger pan, pinch zoom, two-finger rotate.
     func testMapButtonsVideo() throws {
         let app = XCUIApplication()
-        app.launchArguments = ["-demo", "-route.style", "snap", "-pin.style", "D", "-map.3d", "YES", "-map.sheet", "A"]
+        app.launchArguments = ["-demo", "-route.style", "snap", "-pin.style", "D", "-map.3d", "YES", "-map.sheet", "G"]
         app.launchEnvironment["TZ"] = Self.morningZone
         app.launch(); pause(1.5)
         tab(app, "Timeline"); pause(3)
