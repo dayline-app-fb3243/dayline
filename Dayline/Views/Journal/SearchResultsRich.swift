@@ -59,25 +59,38 @@ struct RichSearchResults: View {
                 }
             }
             .scrollClipDisabled()
-            Text("Try asking").font(.title3.weight(.semibold)).padding(.leading, 4).padding(.top, 8)
-            VStack(spacing: 0) {
-                ForEach(Array(["Where was I 4 days ago?", "The place I ate danishes last week", "Directions to the gym", "Photos from the park"].enumerated()), id: \.offset) { i, s in
-                    Button { onPick(s) } label: {
-                        HStack(spacing: 12) {
-                            Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
-                            Text(s).foregroundStyle(.primary)
-                            Spacer()
-                            Image(systemName: "arrow.up.left").font(.footnote).foregroundStyle(.tertiary)
-                        }
-                        .padding(.horizontal, 16).frame(height: 50)
-                        .contentShape(.rect)
-                    }
-                    .buttonStyle(.plain)
-                    if i < 3 { Divider().padding(.leading, 44) }
-                }
+            let personal = SearchSuggestions.personal(visits: visits, entries: entries)
+            if !personal.isEmpty {
+                Text("Suggested for you").font(.title3.weight(.semibold)).padding(.leading, 4).padding(.top, 8)
+                suggestionList(personal)
             }
-            .background(Color(.systemBackground).opacity(0.85), in: .rect(cornerRadius: 20))
+            Text("You can ask anything, like").font(.title3.weight(.semibold)).padding(.leading, 4).padding(.top, 8)
+            suggestionList(SearchSuggestions.examples)
         }
+    }
+
+    private func suggestionList(_ items: [SearchSuggestion]) -> some View {
+        VStack(spacing: 0) {
+            ForEach(Array(items.enumerated()), id: \.offset) { i, item in
+                Button { onPick(item.query) } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: item.symbol).font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(item.why == nil ? Color.secondary : Theme.accent).frame(width: 22)
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(item.query).foregroundStyle(.primary).multilineTextAlignment(.leading)
+                            if let why = item.why { Text(why).font(.caption).foregroundStyle(.secondary) }
+                        }
+                        Spacer()
+                        Image(systemName: "arrow.up.left").font(.footnote).foregroundStyle(.tertiary)
+                    }
+                    .padding(.horizontal, 16).padding(.vertical, 10).frame(minHeight: 50)
+                    .contentShape(.rect)
+                }
+                .buttonStyle(.plain)
+                if i < items.count - 1 { Divider().padding(.leading, 50) }
+            }
+        }
+        .background(Color(.systemBackground).opacity(0.85), in: .rect(cornerRadius: 20))
     }
 
     // MARK: No match
@@ -318,4 +331,60 @@ struct GuidePlaceCard: View {
 
 private extension String {
     var capitalizedFirst: String { prefix(1).uppercased() + dropFirst() }
+}
+
+
+struct SearchSuggestion { var query: String; var why: String?; var symbol: String }
+
+/// Suggestions from what you actually do (a place you go on this weekday, a note or photos you just added),
+/// plus two general examples so people see what they can ask.
+@MainActor
+enum SearchSuggestions {
+    static let examples: [SearchSuggestion] = [
+        SearchSuggestion(query: "How many places was I at in the last 48 hours?", why: nil, symbol: "sparkle.magnifyingglass"),
+        SearchSuggestion(query: "Where did I eat 4 days ago?", why: nil, symbol: "sparkle.magnifyingglass"),
+    ]
+
+    static func personal(visits: [Visit], entries: [JournalEntry], now: Date = .now) -> [SearchSuggestion] {
+        let cal = Calendar.current
+        var out: [SearchSuggestion] = []
+        let today = cal.startOfDay(for: now)
+        let weekdayName = now.formatted(.dateTime.weekday(.wide))
+        // 1) A place you went on this weekday in at least 2 of the last 3 weeks.
+        let pastSameDays = (1...3).compactMap { cal.date(byAdding: .day, value: -7 * $0, to: today) }
+        var counts: [String: (n: Int, cat: PlaceCategory)] = [:]
+        for day in pastSameDays {
+            let names = Set(visits.filter { cal.isDate($0.arrival, inSameDayAs: day) && $0.category != .home && $0.category != .work }.map(\.placeName))
+            for n in names {
+                let cat = visits.first { $0.placeName == n }?.category ?? .other
+                counts[n, default: (0, cat)].n += 1
+            }
+        }
+        let doneToday = Set(visits.filter { cal.isDate($0.arrival, inSameDayAs: today) }.map(\.placeName))
+        for (name, v) in counts.sorted(by: { $0.value.n > $1.value.n }) where v.n >= 2 {
+            let why = v.n == 3 ? "You went the last 3 \(weekdayName)s" : "You went 2 of the last 3 \(weekdayName)s"
+            out.append(SearchSuggestion(query: doneToday.contains(name) ? "When was I at \(name) today?" : "Directions to \(name)",
+                                        why: why, symbol: v.cat.symbol))
+            if out.count == 2 { break }
+        }
+        // 2) Your latest note at a place (last 7 days).
+        let week = cal.date(byAdding: .day, value: -7, to: now)!
+        if let note = entries.filter({ $0.date >= week && !$0.text.isEmpty && $0.kind != .voice }).sorted(by: { $0.date > $1.date })
+            .first(where: { e in placeName(e, visits) != nil }), let place = placeName(note, visits) {
+            out.append(SearchSuggestion(query: "What did I write at \(place)?", why: "Your note from \(note.date.formatted(.dateTime.weekday(.wide)))", symbol: "text.quote"))
+        }
+        // 3) A place where you took photos recently.
+        if let photo = entries.filter({ $0.date >= week && $0.thumbnail != nil }).sorted(by: { $0.date > $1.date })
+            .first(where: { e in placeName(e, visits) != nil }), let place = placeName(photo, visits),
+           !out.contains(where: { $0.query.contains(place) }) {
+            let n = entries.filter { $0.thumbnail != nil && cal.isDate($0.date, inSameDayAs: photo.date) && placeName($0, visits) == place }.count
+            out.append(SearchSuggestion(query: "Photos from \(place)", why: "\(n) photo\(n == 1 ? "" : "s") \(photo.date.formatted(.relative(presentation: .named)))", symbol: "photo.on.rectangle"))
+        }
+        return Array(out.prefix(4))
+    }
+
+    private static func placeName(_ e: JournalEntry, _ visits: [Visit]) -> String? {
+        if let p = e.placeName { return p }
+        return visits.first { $0.arrival <= e.date && e.date <= ($0.departure ?? .distantFuture) && $0.category != .home }?.placeName
+    }
 }
