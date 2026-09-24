@@ -431,6 +431,42 @@ final class DemoTourTests: XCTestCase {
         tab(app, "Today"); pause(1.5); shot("63-today-sunset")
     }
 
+    /// Round-3 options for David (Sep 24): Insights Day A/B/C, icon tiles, Notifications B1/B2/B3.
+    func testOptionScreens() throws {
+        func launch(_ args: [String]) -> XCUIApplication {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo"] + args
+            app.launchEnvironment["TZ"] = Self.morningZone
+            app.launch(); pause(1.5); return app
+        }
+        for v in ["A", "B", "C"] {
+            let app = launch(["-insights.dayStyle", v])
+            tab(app, "Insights"); pause(1.5); tapSegment(app, "Day"); pause(2); shot("o1\(v)-insights-day")
+            app.terminate()
+        }
+        for v in ["A", "A2", "A3", "C", "C2"] {
+            let app = launch(["-icons.tile", v])
+            tab(app, "Today"); pause(1.5); tapID(app, "scoreCard"); pause(2)
+            app.swipeUp(); pause(1); shot("o2\(v)-icons")
+            app.terminate()
+        }
+        for v in ["B1", "B2", "B3"] {
+            let app = launch(["-notifications.style", v])
+            tab(app, "Profile"); pause(1.5)
+            let row = app.descendants(matching: .any)["notificationsRow"].firstMatch
+            if !row.waitForExistence(timeout: 2) { app.swipeUp(); pause(1) }
+            tapID(app, "notificationsRow"); pause(2); shot("o3\(v)-notifications")
+            app.terminate()
+        }
+        do {
+            let app = launch([])
+            tab(app, "Timeline"); pause(2); shot("o4-timeline")
+            tab(app, "Journal"); pause(2); shot("o4-journal")
+            tab(app, "Profile"); pause(2); shot("o4-profile")
+            app.terminate()
+        }
+    }
+
     private func shot(_ name: String) {
         let data = XCUIScreen.main.screenshot().pngRepresentation
         let mode = ProcessInfo.processInfo.environment["DAYLINE_MODE"] ?? "light"

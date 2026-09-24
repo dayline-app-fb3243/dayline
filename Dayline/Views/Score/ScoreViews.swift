@@ -304,10 +304,13 @@ struct DayActivityList: View {
 
 struct FactorRow: View {
     var factor: ScoreFactor
+    /// icons.tile A2/A3/C2 preview: each kind gets its own color, like iOS Settings.
+    @AppStorage("icons.tile") private var tile = "A"
     var body: some View {
-        let symbol = Self.style(factor.title).0
+        let st = Self.style(factor.title)
+        let symbol = st.0
         let bad = factor.effect == .pending || factor.points <= 0
-        let color = bad ? Theme.bad : Theme.accent
+        let color = ["A2", "A3", "C2"].contains(tile) ? st.1 : (bad ? Theme.bad : Theme.accent)
         HStack(spacing: 12) {
             ProfileIcon(symbol: symbol, size: 30, color: color)
             VStack(alignment: .leading, spacing: 1) {

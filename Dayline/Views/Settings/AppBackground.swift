@@ -486,9 +486,13 @@ struct ProfileIcon: View {
             Image(systemName: symbol).font(.system(size: size * 0.5, weight: .semibold)).foregroundStyle(color)
                 .frame(width: size, height: size)
                 .background(color.opacity(0.15), in: .rect(cornerRadius: size * 0.24, style: .continuous))
-        case "C":
-            Image(systemName: symbol).font(.system(size: size * 0.6, weight: .regular)).foregroundStyle(color)
+        case "C", "C2":
+            Image(systemName: symbol).font(.system(size: size * 0.62, weight: .medium)).foregroundStyle(color)
                 .frame(width: size, height: size)
+        case "A3":
+            Image(systemName: symbol).font(.system(size: size * 0.6, weight: .medium)).foregroundStyle(.white)
+                .frame(width: size, height: size)
+                .background(color, in: .rect(cornerRadius: size * 0.24, style: .continuous))
         default:
             Image(systemName: symbol).font(.system(size: size * 0.5, weight: .semibold)).foregroundStyle(.white)
                 .frame(width: size, height: size)
