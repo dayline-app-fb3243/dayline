@@ -406,10 +406,18 @@ struct DayActivityList: View {
         return m >= 60 ? "\(m / 60) h \(m % 60) min" : "\(m) min"
     }
 
+    /// Preview flag "schedule.layout" (only with today.schedule C; "" = the current list). Every row shows from when
+    /// till when, and no time shows twice. 1 = start over end in the time column, wake-up as a header line.
+    /// 2 = no time column, the range under the title. 3 = a line with pins at each start and end.
+    /// 4 = a line of blocks sized by how long each thing took. 5 = times as small dividers between rows.
+    /// 6 = the range in a pill on the right.
+    @AppStorage("schedule.layout") var layout = ""
+
     var body: some View {
         switch style {
         case "B": timelineBody
-        default: listBody
+        default:
+            if style == "C" && !layout.isEmpty { layoutBody } else { listBody }
         }
     }
 
@@ -576,3 +584,236 @@ struct WeekStrip: View {
     }
 }
 
+// MARK: - Schedule layout previews ("schedule.layout" 1-6)
+
+extension DayActivityList {
+    /// "9:00", or "12:00 – 12:50", or "3:10 – now".
+    fileprivate func range(_ r: Row) -> String {
+        let a = Self.clock.string(from: r.time)
+        guard r.kind != .wake, let e = r.end, e.timeIntervalSince(r.time) >= 60 else { return a }
+        return "\(a) – \(r.isNow ? "now" : Self.clock.string(from: e))"
+    }
+    /// The small line under the title, without any "50 min".
+    fileprivate func sub(_ r: Row) -> String {
+        switch r.kind {
+        case .gap: return "Not sure what this was"
+        case .wake: return r.detail
+        case .journal: return r.detail
+        case .plan:
+            let parts = r.detail.components(separatedBy: " · ").filter { !$0.hasSuffix(" min") && !$0.hasPrefix("Done") }
+            return parts.isEmpty ? "Done" : parts.joined(separator: " · ")
+        case .visit:
+            let photos = r.detail.components(separatedBy: " · ").first { $0.contains("photo") }
+            return r.isNow ? "You\u{2019}re here" : (photos ?? "")
+        }
+    }
+    fileprivate func toggle(_ r: Row) { withAnimation(.snappy) { open = open == r.id ? nil : r.id } }
+
+    fileprivate func icon(_ r: Row, size: CGFloat = 28) -> some View {
+        Image(systemName: r.kind == .wake ? "sun.max.fill" : r.symbol).font(.system(size: size * 0.45, weight: .semibold))
+            .foregroundStyle(r.kind == .gap ? Color.secondary : (r.isNow ? Color.white : Theme.accent))
+            .frame(width: size, height: size)
+            .background(r.kind == .gap ? AnyShapeStyle(Color(.secondarySystemFill)) : (r.isNow ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(Theme.accent.opacity(0.14))), in: .circle)
+    }
+    fileprivate func titles(_ r: Row) -> some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text(r.title).font(.body.weight(.semibold)).foregroundStyle(r.kind == .gap ? .secondary : .primary)
+            let s = sub(r)
+            if !s.isEmpty { Text(s).font(.caption).foregroundStyle(.secondary).lineLimit(1) }
+        }
+    }
+    fileprivate func chevron(_ r: Row) -> some View {
+        Image(systemName: "chevron.down").font(.footnote.weight(.semibold)).foregroundStyle(.tertiary)
+            .rotationEffect(.degrees(open == r.id ? 180 : 0))
+    }
+
+    @ViewBuilder var layoutBody: some View {
+        let all = rows
+        Card(padding: 0) {
+            if all.isEmpty {
+                Text("Nothing yet. Dayline fills this in from where you go.")
+                    .font(.subheadline).foregroundStyle(.secondary).padding(16)
+            } else {
+                switch layout {
+                case "3": pinLayout(all, line: true)
+                case "4": blockLayout(all)
+                case "5": pinLayout(all, line: false)
+                default: plainLayout(all)
+                }
+            }
+        }
+        .accessibilityIdentifier("scheduleLayout")
+    }
+
+    /// 1, 2 and 6: wake-up becomes a header line; each row carries its own range.
+    fileprivate func plainLayout(_ all: [Row]) -> some View {
+        let wake = all.first { $0.kind == .wake }
+        let list = all.filter { $0.kind != .wake }
+        return VStack(spacing: 0) {
+            if let wake {
+                HStack(spacing: 8) {
+                    Image(systemName: "sun.max.fill").foregroundStyle(Theme.accent)
+                    Text("Woke up at \(Self.clock.string(from: wake.time))").font(.subheadline.weight(.semibold))
+                    Spacer()
+                    chevron(wake)
+                }
+                .padding(.horizontal, 14).padding(.vertical, 10)
+                .contentShape(.rect).onTapGesture { toggle(wake) }
+                if open == wake.id { detail(wake) }
+                Divider()
+            }
+            ForEach(Array(list.enumerated()), id: \.element.id) { i, r in
+                plainRow(r).contentShape(.rect).onTapGesture { toggle(r) }
+                    .accessibilityIdentifier("scheduleRow-\(i)")
+                if open == r.id { detail(r) }
+                if i < list.count - 1 { Divider().padding(.leading, layout == "1" ? 76 : 56) }
+            }
+        }
+    }
+    @ViewBuilder fileprivate func plainRow(_ r: Row) -> some View {
+        HStack(spacing: 12) {
+            switch layout {
+            case "1":
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(Self.clock.string(from: r.time)).font(.subheadline.weight(.semibold)).monospacedDigit()
+                    if let e = r.end, e.timeIntervalSince(r.time) >= 60 {
+                        Text(r.isNow ? "now" : Self.clock.string(from: e)).font(.caption).foregroundStyle(.secondary).monospacedDigit()
+                    }
+                }
+                .frame(width: 50, alignment: .leading)
+                icon(r)
+                titles(r)
+                Spacer()
+            case "6":
+                icon(r)
+                titles(r)
+                Spacer()
+                Text(range(r)).font(.caption.weight(.semibold)).monospacedDigit()
+                    .foregroundStyle(r.isNow ? Color.white : (r.kind == .gap ? Color.secondary : Theme.accent))
+                    .padding(.horizontal, 9).padding(.vertical, 5)
+                    .background(r.isNow ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(Color(.secondarySystemFill)), in: .capsule)
+            default:
+                icon(r)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(r.title).font(.body.weight(.semibold)).foregroundStyle(r.kind == .gap ? .secondary : .primary)
+                    Text(sub(r).isEmpty ? range(r) : "\(range(r)) · \(sub(r))").font(.caption).foregroundStyle(.secondary).monospacedDigit().lineLimit(1)
+                }
+                Spacer()
+            }
+            chevron(r)
+        }
+        .padding(.horizontal, 14).padding(.vertical, 10)
+    }
+
+    /// 3 and 5: a time at every start and end, shown once. 3 joins them with a line (dashed through unknown time).
+    fileprivate func pinLayout(_ all: [Row], line: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(Array(all.enumerated()), id: \.element.id) { i, r in
+                let prevEnd: Date? = i > 0 ? (all[i - 1].end ?? all[i - 1].time) : nil
+                let sharesStart = prevEnd.map { abs($0.timeIntervalSince(r.time)) < 90 } ?? false
+                if !sharesStart { pin(Self.clock.string(from: r.time), filled: r.kind != .gap, first: i == 0, line: line, dashedBelow: false) }
+                pinBody(r, line: line)
+                    .contentShape(.rect).onTapGesture { toggle(r) }
+                    .accessibilityIdentifier("scheduleRow-\(i)")
+                if open == r.id { detail(r) }
+                if let e = r.end, e.timeIntervalSince(r.time) >= 60 {
+                    let nextStart = i + 1 < all.count ? all[i + 1].time : nil
+                    let shared = nextStart.map { abs($0.timeIntervalSince(e)) < 90 } ?? false
+                    pin(r.isNow ? "now" : Self.clock.string(from: e), filled: true, first: false, line: line,
+                        dashedBelow: shared && all[i + 1].kind == .gap, last: i == all.count - 1)
+                }
+            }
+        }
+        .padding(.vertical, 6)
+    }
+    fileprivate func pin(_ time: String, filled: Bool, first: Bool, line: Bool, dashedBelow: Bool, last: Bool = false) -> some View {
+        HStack(spacing: 10) {
+            Text(time).font(.caption.weight(.semibold)).foregroundStyle(.secondary).monospacedDigit()
+                .frame(width: 44, alignment: .trailing)
+            if line {
+                Circle().fill(Theme.accent).frame(width: 10, height: 10)
+                    .overlay(Circle().stroke(Color(.systemBackground), lineWidth: 2))
+                    .frame(width: 20)
+            } else {
+                Rectangle().fill(Color.secondary.opacity(0.25)).frame(height: 1)
+            }
+            if line { Spacer() }
+        }
+        .padding(.horizontal, 14).frame(height: 22)
+        .background(alignment: .leading) {
+            if line && !first {
+                Rectangle().fill(Theme.accent.opacity(0.35)).frame(width: 2).frame(maxHeight: last ? 11 : .infinity, alignment: .top)
+                    .padding(.leading, 14 + 44 + 10 + 9).frame(maxHeight: .infinity, alignment: .top)
+            }
+        }
+    }
+    fileprivate func pinBody(_ r: Row, line: Bool) -> some View {
+        HStack(spacing: 10) {
+            Color.clear.frame(width: 44)
+            if line {
+                Group {
+                    if r.kind == .gap {
+                        VLine().stroke(Color.secondary.opacity(0.5), style: StrokeStyle(lineWidth: 2, dash: [3, 3])).frame(width: 2)
+                    } else {
+                        Rectangle().fill(Theme.accent.opacity(0.35)).frame(width: 2)
+                    }
+                }
+                .frame(width: 20).frame(maxHeight: .infinity)
+            }
+            icon(r, size: 26)
+            titles(r)
+            Spacer()
+            chevron(r)
+        }
+        .padding(.horizontal, 14).frame(minHeight: 50)
+    }
+
+    /// 4: blocks on a line, taller the longer it took (capped), start and end beside each block.
+    fileprivate func blockLayout(_ all: [Row]) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            ForEach(Array(all.enumerated()), id: \.element.id) { i, r in
+                let mins = (r.end ?? r.time).timeIntervalSince(r.time) / 60
+                let h = max(44, min(120, 44 + mins / 3))
+                HStack(alignment: .top, spacing: 10) {
+                    VStack(alignment: .trailing) {
+                        Text(Self.clock.string(from: r.time)).font(.caption.weight(.semibold)).monospacedDigit()
+                        Spacer(minLength: 0)
+                        if r.kind != .wake, mins >= 1 {
+                            Text(r.isNow ? "now" : Self.clock.string(from: r.end ?? r.time)).font(.caption).foregroundStyle(.secondary).monospacedDigit()
+                        }
+                    }
+                    .frame(width: 44, height: h, alignment: .trailing)
+                    RoundedRectangle(cornerRadius: 5, style: .continuous)
+                        .fill(r.kind == .gap ? AnyShapeStyle(Color.clear) : AnyShapeStyle(Theme.accent.opacity(r.isNow ? 0.9 : 0.35)))
+                        .overlay {
+                            if r.kind == .gap {
+                                RoundedRectangle(cornerRadius: 5, style: .continuous)
+                                    .stroke(Color.secondary.opacity(0.5), style: StrokeStyle(lineWidth: 1.5, dash: [3, 3]))
+                            }
+                        }
+                        .frame(width: 8, height: r.kind == .wake || mins < 1 ? 8 : h)
+                        .frame(width: 20, height: h, alignment: .top)
+                    HStack(spacing: 10) {
+                        icon(r, size: 26)
+                        titles(r)
+                        Spacer()
+                        chevron(r)
+                    }
+                    .frame(minHeight: 44)
+                }
+                .padding(.horizontal, 14)
+                .contentShape(.rect).onTapGesture { toggle(r) }
+                .accessibilityIdentifier("scheduleRow-\(i)")
+                if open == r.id { detail(r) }
+            }
+        }
+        .padding(.vertical, 10)
+    }
+}
+
+/// A vertical line down the middle of its frame (dashed "unknown time" segments).
+private struct VLine: Shape {
+    func path(in rect: CGRect) -> Path {
+        var p = Path(); p.move(to: CGPoint(x: rect.midX, y: rect.minY)); p.addLine(to: CGPoint(x: rect.midX, y: rect.maxY)); return p
+    }
+}

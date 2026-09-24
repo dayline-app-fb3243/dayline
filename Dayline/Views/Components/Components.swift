@@ -95,11 +95,14 @@ struct ScoreRing: View {
     /// B / C = by the best score still possible today: 80 or more = lightest orange (a small miss, like the gym),
     /// 75 very light, 50 darker, 20 very dark. Catching up (make-up points) moves it back toward blue.
     /// C also starts the orange from a paler, almost peach tone.
-    @AppStorage("ring.shade") private var shade = ""
+    /// B is the default. Its orange never gets darker than at "best still 75"; that is the darkest allowed.
+    @AppStorage("ring.shade") private var shade = "B"
+    private static let maxSlipB = 5.0 / 60
     private var slip: Double {
         guard !shade.isEmpty else { return min(1, Double(lost ?? 0) / 30) }
         let best = 100 - Double(lost ?? 0)
-        return max(0, min(1, (80 - best) / 60))
+        let s = max(0, min(1, (80 - best) / 60))
+        return shade == "B" ? min(s, Self.maxSlipB) : s
     }
     /// On track: deeper blue the better it's going.
     private var blueEnd: Color {
@@ -135,13 +138,13 @@ struct ScoreRing: View {
         default: return Color.orange.mix(with: Self.deepOrange, by: 0.3 + 0.7 * slip)
         }
     }
-    /// "ring.join" (preview, "" = today's look): how blue meets orange, all with a lighter orange that never gets very dark.
-    /// A = short soft fade, B = hard split with a small gap, C = a pale middle tone between them.
+    /// "ring.join" (preview, "" = today's look): how blue meets orange.
+    /// A = short soft fade, B = hard split with a small gap, C = a pale middle tone between them. Oranges match ring shade B.
     @AppStorage("ring.join") private var join = ""
-    private static let lightOrange = Color(red: 1.0, green: 0.76, blue: 0.48)
-    private static let capOrange = Color(red: 0.97, green: 0.55, blue: 0.2)   // darkest it ever gets
-    private var softStart: Color { Self.lightOrange.mix(with: Self.capOrange, by: 0.4 * slip) }
-    private var softEnd: Color { Self.lightOrange.mix(with: Self.capOrange, by: 0.45 + 0.55 * slip) }
+    /// The same orange range as ring shade B (never darker than B at "best still 75").
+    private var bSlip: Double { min(Self.maxSlipB, max(0, min(1, (100 - Double(lost ?? 0) <= 80 ? (80 - (100 - Double(lost ?? 0))) / 60 : 0)))) }
+    private var softStart: Color { Color.orange.mix(with: .white, by: 0.35 * (1 - bSlip)).mix(with: Self.deepOrange, by: 0.35 * bSlip) }
+    private var softEnd: Color { Color.orange.mix(with: .white, by: 0.3 * (1 - bSlip)).mix(with: Self.deepOrange, by: 0.15 + 0.85 * bSlip) }
     /// Where along the fill orange takes over.
     private var splitAt: Double { 0.74 - 0.12 * slip }
     private var joining: Bool { behind && paceStyle == "B" && !join.isEmpty }

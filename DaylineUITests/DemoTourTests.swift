@@ -1408,6 +1408,20 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Schedule layouts 1-6 (today.schedule C, late start): every row from when till when, no time twice.
+    func testScheduleLayouts() throws {
+        for v in ["1", "2", "3", "4", "5", "6"] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-today.schedule", "C", "-demo.day", "late", "-schedule.layout", v]
+            app.launchEnvironment["TZ"] = Self.zone(localHour: 15)
+            app.launch(); pause(2.5)
+            let list = app.descendants(matching: .any)["scheduleLayout"].firstMatch
+            if list.exists { for _ in 0..<3 where list.frame.minY > 200 { app.swipeUp(velocity: .slow); pause(1) } }
+            shot("lay-\(v)")
+            app.terminate()
+        }
+    }
+
     /// Ring join preview: how blue meets orange, with a lighter orange capped short of dark. "" = now.
     func testRingJoin() throws {
         for v in ["", "A", "B", "C"] {
