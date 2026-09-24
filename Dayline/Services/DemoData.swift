@@ -4,6 +4,8 @@ import UIKit
 
 /// Sample data is on for `-demo` runs and always in the simulator, so the full experience shows right away.
 enum SampleMode {
+    /// Screenshot runs pass "-no.lookaround" so search screens skip Look Around imagery (heavy on CI Macs).
+    static let noLookAround = ProcessInfo.processInfo.arguments.contains("-no.lookaround")
     static let on: Bool = {
         #if targetEnvironment(simulator)
         return true

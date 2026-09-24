@@ -127,7 +127,7 @@ struct PlacePhotoStrip: View {
         }
         .task {
             guard data.photos.isEmpty, let c = data.hit.coordinate else { return }
-            scene = try? await MKLookAroundSceneRequest(coordinate: c).scene
+            if !SampleMode.noLookAround { scene = try? await MKLookAroundSceneRequest(coordinate: c).scene }
         }
     }
 }

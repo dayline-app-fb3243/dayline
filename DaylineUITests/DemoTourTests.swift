@@ -896,7 +896,7 @@ final class DemoTourTests: XCTestCase {
         for (name, q) in [("none", "sushi in paris"), ("multi", "where was I 4 days ago"),
                           ("one", "the place I ate danishes 4 days ago"), ("look", "the place I ate 4 days ago")] {
             let app = XCUIApplication()
-            app.launchArguments = ["-demo", "-journal.search", "B", "-search.results", "rich", "-journal.searchQuery", q]
+            app.launchArguments = ["-demo", "-no.lookaround", "-journal.search", "B", "-search.results", "rich", "-journal.searchQuery", q]
             app.launch(); pause(1.5); tab(app, "Journal"); pause(name == "look" ? 7 : 4); shot("rs-\(name)")
             app.terminate()
         }
@@ -916,7 +916,7 @@ final class DemoTourTests: XCTestCase {
     func testRecentCards() throws {
         for v in ["A", "B", "C"] {
             let app = XCUIApplication()
-            app.launchArguments = ["-demo", "-journal.search", "B", "-search.results", "rich", "-search.recent", v]
+            app.launchArguments = ["-demo", "-no.lookaround", "-journal.search", "B", "-search.results", "rich", "-search.recent", v]
             app.launch(); pause(1.5); tab(app, "Journal"); pause(1.5)
             tapID(app, "journalSearch"); pause(8); shot("rc-\(v)")
             if v == "A" {
@@ -933,14 +933,14 @@ final class DemoTourTests: XCTestCase {
     func testPlaceResultOptions() throws {
         for v in ["A", "B", "C"] {
             let app = XCUIApplication()
-            app.launchArguments = ["-demo", "-journal.search", "B", "-search.results", "rich", "-search.one", v,
+            app.launchArguments = ["-demo", "-no.lookaround", "-journal.search", "B", "-search.results", "rich", "-search.one", v,
                                    "-journal.searchQuery", "the place I ate danishes 4 days ago"]
             app.launch(); pause(1.5); tab(app, "Journal"); pause(5); shot("so-\(v)")
             app.terminate()
         }
         for v in ["A", "B", "C"] {
             let app = XCUIApplication()
-            app.launchArguments = ["-demo", "-journal.search", "B", "-search.results", "rich", "-search.detail", v,
+            app.launchArguments = ["-demo", "-no.lookaround", "-journal.search", "B", "-search.results", "rich", "-search.detail", v,
                                    "-journal.searchQuery", "where was I 4 days ago"]
             app.launch(); pause(1.5); tab(app, "Journal"); pause(4)
             app.descendants(matching: .any)["searchHit"].firstMatch.tap(); pause(5); shot("sd-\(v)")

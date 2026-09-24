@@ -262,7 +262,7 @@ struct ConfidentResultCard: View {
         .accessibilityIdentifier("searchHit")
         .task {
             guard photos.isEmpty, let c = hit.coordinate else { return }
-            scene = try? await MKLookAroundSceneRequest(coordinate: c).scene
+            if !SampleMode.noLookAround { scene = try? await MKLookAroundSceneRequest(coordinate: c).scene }
         }
     }
 
@@ -342,7 +342,7 @@ struct GuidePlaceCard: View {
         .task {
             guard photo == nil, !triedLookAround else { return }
             triedLookAround = true
-            guard let scene = try? await MKLookAroundSceneRequest(coordinate: visit.coordinate).scene else { return }
+            guard !SampleMode.noLookAround, let scene = try? await MKLookAroundSceneRequest(coordinate: visit.coordinate).scene else { return }
             let opts = MKLookAroundSnapshotter.Options()
             opts.size = CGSize(width: size.width * 2, height: size.height * 2)
             lookAround = try? await MKLookAroundSnapshotter(scene: scene, options: opts).snapshot.image
