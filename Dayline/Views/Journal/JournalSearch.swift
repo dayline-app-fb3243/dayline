@@ -15,7 +15,9 @@ enum MapJump {
 }
 
 /// One search result: a place (and when you were there), with the reason it matched.
-struct SearchHit: Identifiable {
+struct SearchHit: Identifiable, Hashable {
+    static func == (a: SearchHit, b: SearchHit) -> Bool { a.id == b.id }
+    func hash(into h: inout Hasher) { h.combine(id) }
     let id = UUID()
     var place: String
     var date: Date
@@ -130,6 +132,8 @@ enum JournalSearch {
 struct JournalSearchView: View {
     var barAtBottom = false
     @State var query: String
+    /// What the results show: set when you press Search on the keyboard (or tap a suggestion).
+    @State private var submitted: String?
     @Query(sort: \JournalEntry.date, order: .reverse) var entries: [JournalEntry]
     @Query var visits: [Visit]
     @Environment(\.dismiss) var dismiss
@@ -138,19 +142,20 @@ struct JournalSearchView: View {
         VStack(spacing: 0) {
             if !barAtBottom { bar.padding(.horizontal, 16).padding(.top, 8).padding(.bottom, 6) }
             ScrollView {
-                SearchResultsList(query: query, entries: entries, visits: visits, onPick: { query = $0 }).padding(.horizontal, 16).padding(.top, 8)
+                SearchResultsList(query: query.isEmpty ? "" : (submitted ?? ""), entries: entries, visits: visits, onPick: { query = $0; submitted = $0 }).padding(.horizontal, 16).padding(.top, 8)
             }
             if barAtBottom { bar.padding(.horizontal, 16).padding(.vertical, 10) }
         }
         .background(AppBackgroundView())
         .navigationTitle(barAtBottom ? "Search" : "")
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear { if submitted == nil && !query.isEmpty { submitted = query } }
         .toolbarVisibility(.hidden, for: .tabBar)
     }
 
     private var bar: some View {
         HStack(spacing: 10) {
-            JournalSearchField(query: $query)
+            JournalSearchField(query: $query, onSubmit: { submitted = query })
             if barAtBottom {
                 Button { dismiss() } label: {
                     Image(systemName: "xmark").font(.system(size: 16, weight: .semibold)).foregroundStyle(.primary)
@@ -164,16 +169,20 @@ struct JournalSearchView: View {
 
 struct JournalSearchField: View {
     @Binding var query: String
+    /// Return key ("Search") runs the search.
+    var onSubmit: () -> Void = {}
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
+            // No mic here: the keyboard has its own dictation key.
             TextField("Search places, notes, photos\u{2026}", text: $query)
                 .submitLabel(.search)
+                .onSubmit(onSubmit)
+                .autocorrectionDisabled()
                 .accessibilityIdentifier("searchField")
             if !query.isEmpty {
                 Button { query = "" } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(.tertiary) }.buttonStyle(.plain)
             }
-            Image(systemName: "mic.fill").foregroundStyle(.secondary)
         }
         .font(.body)
         .padding(.horizontal, 16).frame(height: 48)

@@ -9,9 +9,9 @@ struct IntervalRouteMap: View {
     /// Show a dot at every location check, so you can see how precise each rate is.
     var dots = false
     @State private var route: [CLLocationCoordinate2D] = []
-    /// Preview flag "check.line" (none picked yet): how the route and checks are drawn.
-    /// A = street line + small dots, B = dots only, C = thin line + big dots. "" = current.
-    @AppStorage("check.line") private var lineStyle = ""
+    /// "check.line": B (default) = dots only, a dot for every check. A = street line + small dots,
+    /// C = thin line + big dots, "" = the old line.
+    @AppStorage("check.line") private var lineStyle = "B"
     private static let stops: [CLLocationCoordinate2D] = [
         .init(latitude: 40.7489, longitude: -73.9857), .init(latitude: 40.7527, longitude: -73.9772),
         .init(latitude: 40.7580, longitude: -73.9712), .init(latitude: 40.7614, longitude: -73.9776),

@@ -919,6 +919,31 @@ final class DemoTourTests: XCTestCase {
             app.launchArguments = ["-demo", "-journal.search", "B", "-search.results", "rich", "-search.recent", v]
             app.launch(); pause(1.5); tab(app, "Journal"); pause(1.5)
             tapID(app, "journalSearch"); pause(8); shot("rc-\(v)")
+            if v == "A" {
+                // Keyboard up: no mic in the bar, return key says Search.
+                let field = app.textFields["searchField"].firstMatch
+                field.tap(); pause(1); field.typeText("danishes"); pause(1.5); shot("rc-kbd")
+                app.keyboards.buttons["search"].firstMatch.tap(); pause(3); shot("rc-submitted")
+            }
+            app.terminate()
+        }
+    }
+
+    /// Single result options (search.one A/B/C) and the screen after tapping a place (search.detail A/B/C).
+    func testPlaceResultOptions() throws {
+        for v in ["A", "B", "C"] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-journal.search", "B", "-search.results", "rich", "-search.one", v,
+                                   "-journal.searchQuery", "the place I ate danishes 4 days ago"]
+            app.launch(); pause(1.5); tab(app, "Journal"); pause(5); shot("so-\(v)")
+            app.terminate()
+        }
+        for v in ["A", "B", "C"] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-journal.search", "B", "-search.results", "rich", "-search.detail", v,
+                                   "-journal.searchQuery", "where was I 4 days ago"]
+            app.launch(); pause(1.5); tab(app, "Journal"); pause(4)
+            app.descendants(matching: .any)["searchHit"].firstMatch.tap(); pause(5); shot("sd-\(v)")
             app.terminate()
         }
     }

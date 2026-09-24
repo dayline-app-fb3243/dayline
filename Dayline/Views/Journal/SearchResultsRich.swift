@@ -13,6 +13,12 @@ struct RichSearchResults: View {
     /// Preview flag "search.recent" (none picked yet): Recent places as Apple Maps "Guides" style photo cards.
     /// A = tall, name at the bottom. B = wide. C = tall with a label saying where the photo came from.
     @AppStorage("search.recent") private var recentStyle = ""
+    @AppStorage("search.one") private var oneStyle = ""
+    @AppStorage("search.detail") private var detailStyle = ""
+    @State private var sheetHit: SearchHit?
+    @State private var pushedHit: SearchHit?
+    @State private var expanded: UUID?
+    private func data(_ h: SearchHit) -> PlaceDetailData { PlaceDetailData(hit: h, visit: visit(for: h), photos: photos(for: h)) }
 
     var body: some View {
         let q = query.trimmingCharacters(in: .whitespaces)
@@ -20,7 +26,10 @@ struct RichSearchResults: View {
         VStack(alignment: .leading, spacing: 14) {
             if q.isEmpty { emptyState }
             else if hits.isEmpty { noResults(q) }
-            else if hits.count == 1 { ConfidentResultCard(hit: hits[0], photos: photos(for: hits[0]), visit: visit(for: hits[0])) }
+            else if hits.count == 1 {
+                if oneStyle.isEmpty { ConfidentResultCard(hit: hits[0], photos: photos(for: hits[0]), visit: visit(for: hits[0])) }
+                else { SinglePlaceResult(data: data(hits[0]), style: oneStyle) }
+            }
             else { whichOne(hits) }
         }
     }
@@ -126,7 +135,14 @@ struct RichSearchResults: View {
             }
             .padding(.leading, 4)
             ForEach(hits) { h in
-                Button { MapJump.go(h) } label: {
+                Button {
+                    switch detailStyle {
+                    case "A": sheetHit = h
+                    case "B": pushedHit = h
+                    case "C": withAnimation(.snappy) { expanded = expanded == h.id ? nil : h.id }
+                    default: MapJump.go(h)
+                    }
+                } label: {
                     HStack(spacing: 12) {
                         MiniPlaceMap(coordinate: h.coordinate, symbol: h.symbol).frame(width: 72, height: 72).clipShape(.rect(cornerRadius: 14))
                         VStack(alignment: .leading, spacing: 3) {
@@ -142,8 +158,13 @@ struct RichSearchResults: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("searchHit")
+                if detailStyle == "C" && expanded == h.id {
+                    InlinePlaceDetail(data: data(h)).transition(.opacity.combined(with: .move(edge: .top)))
+                }
             }
         }
+        .sheet(item: $sheetHit) { h in PlaceDetailSheet(data: data(h)) }
+        .navigationDestination(item: $pushedHit) { h in PlaceDetailScreen(data: data(h)) }
     }
     private func timeText(_ h: SearchHit) -> String {
         let t = h.date.formatted(date: .omitted, time: .shortened)
@@ -386,5 +407,23 @@ enum SearchSuggestions {
     private static func placeName(_ e: JournalEntry, _ visits: [Visit]) -> String? {
         if let p = e.placeName { return p }
         return visits.first { $0.arrival <= e.date && e.date <= ($0.departure ?? .distantFuture) && $0.category != .home }?.placeName
+    }
+}
+
+
+/// search.detail C: the tapped row opens in place under it.
+struct InlinePlaceDetail: View {
+    var data: PlaceDetailData
+    @State private var showHours = false
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HoursStatusLine(info: data.info)
+            PhotoStrip(data: data, height: 110)
+            PlaceActionButtons(data: data, showHours: $showHours)
+            if showHours { WeekHours(info: data.info) }
+        }
+        .padding(14)
+        .background(Color(.systemBackground).opacity(0.85), in: .rect(cornerRadius: 20))
+        .padding(.top, -4)
     }
 }
