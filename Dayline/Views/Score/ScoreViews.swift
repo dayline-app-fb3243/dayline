@@ -309,8 +309,7 @@ struct FactorRow: View {
         let bad = factor.effect == .pending || factor.points <= 0
         let color = bad ? Theme.bad : Theme.accent
         HStack(spacing: 12) {
-            Image(systemName: symbol).font(.system(size: 15, weight: .semibold)).foregroundStyle(color)
-                .frame(width: 34, height: 34).background(color.opacity(0.14), in: .circle)
+            ProfileIcon(symbol: symbol, size: 30, color: color)
             VStack(alignment: .leading, spacing: 1) {
                 Text(factor.title).font(.body.weight(.semibold))
                 Text(factor.detail ?? (bad ? "No points yet" : factor.effect == .up ? "Counted" : "Small boost"))

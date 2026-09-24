@@ -346,7 +346,7 @@ struct MostVisitedList: View {
             ForEach(Array(top.enumerated()), id: \.element.key) { i, c in
                 if i > 0 { Divider().padding(.leading, 50) }
                 HStack(spacing: 12) {
-                    CategoryIcon(category: c.category, size: 34)
+                    CategoryIcon(category: c.category, size: 30)
                     VStack(alignment: .leading, spacing: 1) {
                         Text(c.name).font(.body.weight(.semibold)).lineLimit(1)
                         Text("\(c.visits) visit\(c.visits == 1 ? "" : "s")").font(.caption).foregroundStyle(.secondary)
@@ -397,7 +397,7 @@ struct DayPhotoCards: View {
                                     .padding(.horizontal, 9).padding(.vertical, 4)
                                     .background(Theme.accent, in: .capsule)
                             } else {
-                                CategoryIcon(category: visit.category, size: 34)
+                                CategoryIcon(category: visit.category, size: 30)
                             }
                         }
                         if let voice {

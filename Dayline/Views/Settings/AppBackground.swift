@@ -459,10 +459,11 @@ typealias SettingsView = ProfileView
 struct ProfileIcon: View {
     var symbol: String
     var size: CGFloat = 30
+    var color: Color = Theme.accent
     var body: some View {
         Image(systemName: symbol).font(.system(size: size * 0.5, weight: .semibold)).foregroundStyle(.white)
             .frame(width: size, height: size)
-            .background(Theme.accent, in: .rect(cornerRadius: size * 0.24, style: .continuous))
+            .background(color.gradient, in: .rect(cornerRadius: size * 0.24, style: .continuous))
     }
 }
 

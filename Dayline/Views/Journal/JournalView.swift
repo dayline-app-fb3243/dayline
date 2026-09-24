@@ -101,8 +101,8 @@ struct JournalCard: View {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(spacing: 10) {
                     Image(systemName: group.kind == .voice ? "mic" : group.kind == .photo ? "photo" : "pencil")
-                        .font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.accent)
-                        .frame(width: 28, height: 28).background(Theme.accent.opacity(0.13), in: .rect(cornerRadius: 8))
+                        .font(.system(size: 14, weight: .semibold)).foregroundStyle(.white)
+                        .frame(width: 29, height: 29).background(Theme.accent.gradient, in: .rect(cornerRadius: 7, style: .continuous))
                     Text(group.place ?? (group.kind == .voice ? "Voice note" : group.kind == .photo ? "Photo" : "Note"))
                         .font(.subheadline.weight(.semibold))
                     Spacer()

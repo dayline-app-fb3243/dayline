@@ -27,11 +27,7 @@ struct CategoryIcon: View {
     var category: PlaceCategory
     var size: CGFloat = 32
     var body: some View {
-        Image(systemName: category.symbol)
-            .font(.system(size: size * 0.45, weight: .semibold))
-            .foregroundStyle(Theme.accent)
-            .frame(width: size, height: size)
-            .background(Theme.accent.opacity(0.14), in: .circle)
+        ProfileIcon(symbol: category.symbol, size: size)
     }
 }
 

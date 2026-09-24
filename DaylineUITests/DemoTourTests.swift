@@ -164,7 +164,9 @@ final class DemoTourTests: XCTestCase {
                 app.swipeDown(); pause(1)
                 tapID(app, "accountRow"); pause(1.8); shot("c4b-account")
                 goBack(app)
-                tab(app, "Timeline"); pause(3)
+                tab(app, "Today"); pause(2); tapID(app, "scoreCard"); pause(2); app.swipeUp(); pause(1.2); shot("c10-factor-tiles")
+                goBack(app)
+                tab(app, "Timeline"); pause(3); shot("c11-timeline-tiles")
                 let card = app.descendants(matching: .any)["mapCard"].firstMatch
                 if card.waitForExistence(timeout: 3) { card.coordinate(withNormalizedOffset: CGVector(dx: 0.4, dy: 0.5)).tap() }
                 pause(2.5); shot("c8-full-map")
