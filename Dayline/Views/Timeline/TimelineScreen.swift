@@ -304,7 +304,8 @@ struct TimelineScreen: View {
     private func mapToggle(_ title: String, _ symbol: String, _ on: Binding<Bool>) -> some View {
         Button { withAnimation(.snappy) { on.wrappedValue.toggle() } } label: {
             Image(systemName: symbol).font(.scaled(size: 19, weight: .semibold))
-                .foregroundStyle(on.wrappedValue ? Theme.accent : Color.secondary)
+                // Preview flag "toggle.black" (David 2:07): off = black like the tab bar, on = blue.
+                .foregroundStyle(on.wrappedValue ? Theme.accent : (UserDefaults.standard.bool(forKey: "toggle.black") ? Color.primary : Color.secondary))
                 .frame(width: 56, height: 56)
                 .contentShape(.circle)
                 .glassEffect(on.wrappedValue ? .regular.interactive() : .identity, in: .circle)

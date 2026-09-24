@@ -644,6 +644,21 @@ final class DemoTourTests: XCTestCase {
         app.terminate()
     }
 
+    /// Big map side buttons: unselected gray (now) vs black (toggle.black), with Photos + Journal turned off.
+    func testToggleDemo() throws {
+        for v in ["NO", "YES"] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-toggle.black", v]
+            app.launchEnvironment["TZ"] = Self.morningZone
+            app.launch(); pause(1.5)
+            tab(app, "Timeline"); pause(3)
+            tapID(app, "mapCard"); pause(4)
+            tapID(app, "togglePhotos"); pause(0.6); tapID(app, "toggleJournal"); pause(2)
+            shot("tg-\(v)")
+            app.terminate()
+        }
+    }
+
     /// Privacy Policy as a row in the Your data group (no footer), light and dark.
     func testPrivacyRowDemo() throws {
         for mode in ["Light", "Dark"] {
