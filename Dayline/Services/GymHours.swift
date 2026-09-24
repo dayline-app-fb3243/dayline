@@ -41,9 +41,10 @@ enum GymHours {
     /// Looks up your usual gym (the gym you visit most) about once a week. Does nothing without a key.
     @MainActor static func refresh(context: ModelContext) async {
         guard enabled, !DemoData.isDemo, let key = apiKey else { return }
-        if let c = cached, Date.now.timeIntervalSince(c.fetched) < 7 * 86_400 { return }
         learn(context: context)
         guard let top = UserSchedule.current.gymPlace else { return }
+        // Fresh for a week, unless you picked a different gym.
+        if let c = cached, c.name == top.name, Date.now.timeIntervalSince(c.fetched) < 7 * 86_400 { return }
 
         var req = URLRequest(url: URL(string: "https://places.googleapis.com/v1/places:searchText")!)
         req.httpMethod = "POST"

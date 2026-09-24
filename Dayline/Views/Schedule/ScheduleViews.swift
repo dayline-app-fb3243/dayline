@@ -12,13 +12,19 @@ struct YourScheduleView: View {
     @State private var s = UserSchedule.current
     @State private var editing: WorkBlock?
     @State private var adding = false
-    /// Preview "gym.ask": what happens when you turn the Gym habit on. A = a sheet that asks where your gym is,
-    /// then when it closes. B = both questions right in the list. C = one sheet with both.
+    /// Preview "gym.ask": what happens when you turn the Gym habit on. Only asks where your gym is.
+    /// A = a sheet with the Apple Maps search. B = a "Gym Location" row right in the list. C = the search,
+    /// then a card with the gym and its closing time.
     /// "" = the old plain Go By picker.
     @AppStorage("gym.ask") private var ask = ""
     @State private var askingGym = false
     @State private var pickingGym = false
 
+    /// "8:00 PM · sample hours": the gym's closing time, only when real hours are known.
+    private var closesShort: String? {
+        guard s.gymPlace != nil || DemoData.isDemo, let c = GymHours.cached, let close = GymHours.closing(on: .now) else { return nil }
+        return "\(UserSchedule.date(close, on: .now).formatted(date: .omitted, time: .shortened))\(c.sample ? " · sample" : "")"
+    }
     private var closesText: String? {
         guard let c = GymHours.cached, let close = GymHours.closing(on: .now) else { return nil }
         return "\(c.name) closes \(UserSchedule.date(close, on: .now).formatted(date: .omitted, time: .shortened))\(c.sample ? " · sample hours" : "")"
@@ -66,14 +72,9 @@ struct YourScheduleView: View {
                     }
                     .tint(.primary)
                     .accessibilityIdentifier("gymLocation")
-                    DatePicker(selection: Binding(get: { UserSchedule.date(s.gymDeadline, on: .now) },
-                                                  set: { s.gymBy = UserSchedule.minutes(of: $0) }), displayedComponents: .hourAndMinute) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Gym Closes")
-                            Text(closesText ?? "The gym counts as missed after this").font(.footnote).foregroundStyle(.secondary)
-                        }
+                    if let closes = closesShort {
+                        LabeledContent("Closes") { Text(closes) }.accessibilityIdentifier("gymBy")
                     }
-                    .accessibilityIdentifier("gymBy")
                 } else if s.gym && (ask == "A" || ask == "C") {
                     Button { askingGym = true } label: {
                         LabeledContent("Gym Location") {
@@ -81,14 +82,9 @@ struct YourScheduleView: View {
                         }
                     }
                     .tint(.primary)
-                    DatePicker(selection: Binding(get: { UserSchedule.date(s.gymDeadline, on: .now) },
-                                                  set: { s.gymBy = UserSchedule.minutes(of: $0) }), displayedComponents: .hourAndMinute) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Gym Closes")
-                            Text(closesText ?? "The gym counts as missed after this").font(.footnote).foregroundStyle(.secondary)
-                        }
+                    if let closes = closesShort {
+                        LabeledContent("Closes") { Text(closes) }.accessibilityIdentifier("gymBy")
                     }
-                    .accessibilityIdentifier("gymBy")
                 } else if s.gym, GymHours.enabled, let c = GymHours.cached, let close = GymHours.closing(on: .now) {
                     // Preview "gym.hours": the real closing time replaces the picker.
                     LabeledContent("Go By") {
@@ -372,77 +368,42 @@ extension UserSchedule {
     }
 }
 
-/// Turning the Gym habit on (preview "gym.ask"). A: step 1 finds your gym on Apple Maps, step 2 asks when
-/// it closes. C: one page with both questions.
+/// Turning the Gym habit on (preview "gym.ask"): only asks where your gym is. Closing hours come from
+/// Google for that gym (when there's a key), so there's no time question.
+/// A: the Apple Maps search, done on pick. C: the search, then a card with the gym and its closing time.
 struct GymAskSheet: View {
     var style: String
     @Binding var s: UserSchedule
     @Environment(\.dismiss) private var dismiss
-    @State private var step2 = false
-    @State private var picking = false
-
-    private var latest: Binding<Date> {
-        Binding(get: { UserSchedule.date(s.gymDeadline, on: .now) }, set: { s.gymBy = UserSchedule.minutes(of: $0) })
-    }
+    @State private var picked = false
 
     var body: some View {
         NavigationStack {
-            if style == "C" { onePage } else {
-                AddPlaceView(title: "Where\u{2019}s Your Gym?", prompt: "Search for your gym", dismissOnPick: false) { item in
-                    s.setGym(item); step2 = true
-                }
-                .navigationDestination(isPresented: $step2) { latestPage }
+            AddPlaceView(title: "Where\u{2019}s Your Gym?", prompt: "Search for your gym", dismissOnPick: false) { item in
+                s.setGym(item)
+                if style == "C" { picked = true } else { dismiss() }
             }
+            .navigationDestination(isPresented: $picked) { confirm }
         }
     }
 
-    private var latestPage: some View {
-        VStack(spacing: 18) {
+    private var confirm: some View {
+        VStack(spacing: 16) {
             Image(systemName: "dumbbell.fill").font(.system(size: 34, weight: .semibold)).foregroundStyle(Theme.accent)
-                .frame(width: 76, height: 76).background(Theme.accent.opacity(0.14), in: .circle).padding(.top, 24)
-            Text("When does your gym close?").font(.title2.bold()).multilineTextAlignment(.center)
+                .frame(width: 76, height: 76).background(Theme.accent.opacity(0.14), in: .circle).padding(.top, 28)
+            Text(s.gymPlace?.name ?? "Your Gym").font(.title2.bold()).multilineTextAlignment(.center)
+            if let a = s.gymPlace?.address, !a.isEmpty { Text(a).font(.subheadline).foregroundStyle(.secondary) }
+            if let c = GymHours.cached, let close = GymHours.closing(on: .now) {
+                Label("Closes \(UserSchedule.date(close, on: .now).formatted(date: .omitted, time: .shortened)) today\(c.sample ? " · sample hours" : "")",
+                      systemImage: "clock").font(.body).foregroundStyle(.secondary)
+            }
             Text("If you haven\u{2019}t gone by closing time, Dayline counts the gym as missed for today.")
-                .font(.body).foregroundStyle(.secondary).multilineTextAlignment(.center).padding(.horizontal, 24)
-            DatePicker("Gym Closes", selection: latest, displayedComponents: .hourAndMinute)
-                .datePickerStyle(.wheel).labelsHidden()
-            if let g = s.gymPlace { Label(g.name, systemImage: "mappin.and.ellipse").font(.subheadline).foregroundStyle(.secondary) }
+                .font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center).padding(.horizontal, 28)
             Spacer()
             Button { dismiss() } label: { Text("Done").font(.headline).frame(maxWidth: .infinity) }
                 .buttonStyle(.glassProminent).tint(Theme.accent).controlSize(.large).padding(.horizontal, 20).padding(.bottom, 12)
                 .accessibilityIdentifier("gymAskDone")
         }
         .navigationBarTitleDisplayMode(.inline)
-    }
-
-    private var onePage: some View {
-        Form {
-            Section {
-                Button { picking = true } label: {
-                    HStack(spacing: 12) {
-                        Image(systemName: "dumbbell.fill").font(.footnote.weight(.bold)).foregroundStyle(.white)
-                            .frame(width: 32, height: 32).background(Color.purple, in: .circle)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(s.gymPlace?.name ?? "Choose Your Gym").foregroundStyle(s.gymPlace == nil ? Theme.accent : .primary)
-                            if let a = s.gymPlace?.address, !a.isEmpty { Text(a).font(.subheadline).foregroundStyle(.secondary).lineLimit(1) }
-                        }
-                    }
-                }
-                .accessibilityIdentifier("gymChoose")
-            } header: { Text("Where\u{2019}s your gym?") }
-            Section {
-                DatePicker("Gym Closes", selection: latest, displayedComponents: .hourAndMinute)
-                    .datePickerStyle(.wheel).labelsHidden().frame(maxWidth: .infinity)
-            } header: { Text("When does it close?") } footer: {
-                Text("If you haven\u{2019}t gone by closing time, Dayline counts the gym as missed for today.")
-            }
-        }
-        .navigationTitle("Gym")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() }.accessibilityIdentifier("gymAskDone") }
-        }
-        .sheet(isPresented: $picking) {
-            NavigationStack { AddPlaceView(title: "Your Gym", prompt: "Search for your gym") { item in s.setGym(item) } }
-        }
     }
 }

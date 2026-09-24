@@ -1394,7 +1394,6 @@ final class DemoTourTests: XCTestCase {
             if gym.exists { gym.coordinate(withNormalizedOffset: CGVector(dx: 0.93, dy: 0.5)).tap() }
             pause(2.5); shot("ga-\(v)-1")
             if v == "B" { tapID(app, "gymLocation"); pause(2) }
-            if v == "C" { tapID(app, "gymChoose"); pause(2) }
             let field = app.searchFields.firstMatch
             if field.waitForExistence(timeout: 4) {
                 field.tap(); field.typeText("Equinox"); pause(4); shot("ga-\(v)-2-search")
