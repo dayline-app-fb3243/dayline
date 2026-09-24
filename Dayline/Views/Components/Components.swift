@@ -148,3 +148,28 @@ struct FlowLayout: Layout {
 extension Date {
     var shortTime: String { formatted(date: .omitted, time: .shortened) }
 }
+
+
+/// Preview flag "icons.markerStyle" for map pins and people initials (David picks A/B/C):
+/// circle = Apple Maps/Contacts round (default), square = Settings-style rounded square, outlined = round with white ring like Apple Maps markers.
+struct MarkerBackground<S: ShapeStyle>: ViewModifier {
+    var fill: S
+    var size: CGFloat
+    @AppStorage("icons.markerStyle") private var style = "circle"
+    func body(content: Content) -> some View {
+        switch style {
+        case "square":
+            content.background(fill, in: .rect(cornerRadius: size * 0.24, style: .continuous))
+        case "outlined":
+            content.background(fill, in: .circle).overlay(Circle().stroke(.white, lineWidth: max(2, size * 0.08)))
+        default:
+            content.background(fill, in: .circle)
+        }
+    }
+}
+
+extension View {
+    func markerBackground<S: ShapeStyle>(_ fill: S, size: CGFloat) -> some View {
+        frame(width: size, height: size).modifier(MarkerBackground(fill: fill, size: size))
+    }
+}

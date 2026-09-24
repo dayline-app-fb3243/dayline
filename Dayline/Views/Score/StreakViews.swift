@@ -177,7 +177,7 @@ private struct FriendRow: View {
     var body: some View {
         HStack(spacing: 12) {
             Text(initials).font(.caption.bold()).foregroundStyle(.white)
-                .frame(width: 30, height: 30).background(color, in: .circle)
+                .markerBackground(color, size: 30)
             VStack(alignment: .leading, spacing: 1) {
                 Text(name).font(.subheadline.weight(.semibold))
                 Text("Best \(best) days").font(.caption).foregroundStyle(.secondary)
@@ -422,8 +422,7 @@ struct PersonAvatar: View {
     var body: some View {
         let initials = name.split(separator: " ").prefix(2).compactMap(\.first).map { String($0) }.joined()
         Text(initials).font(.system(size: size * 0.42, weight: .semibold)).foregroundStyle(.white)
-            .frame(width: size, height: size)
-            .background(color.map { AnyShapeStyle($0) } ?? AnyShapeStyle(LinearGradient(colors: [Color(white: 0.66), Color(white: 0.53)], startPoint: .top, endPoint: .bottom)), in: .circle)
+            .markerBackground(color.map { AnyShapeStyle($0) } ?? AnyShapeStyle(LinearGradient(colors: [Color(white: 0.66), Color(white: 0.53)], startPoint: .top, endPoint: .bottom)), size: size)
     }
 }
 

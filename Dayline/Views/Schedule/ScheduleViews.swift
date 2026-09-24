@@ -159,7 +159,7 @@ struct PlacesView: View {
                 ForEach(s.places.filter { $0.kind == "other" }) { p in
                     HStack(spacing: 12) {
                         Image(systemName: "mappin").font(.footnote.weight(.bold)).foregroundStyle(.white)
-                            .frame(width: 30, height: 30).background(.red, in: .circle)
+                            .markerBackground(Color.red, size: 30)
                         VStack(alignment: .leading, spacing: 2) {
                             Text(p.name)
                             Text(p.address).font(.subheadline).foregroundStyle(.secondary).lineLimit(1)
@@ -200,7 +200,7 @@ struct PlacesView: View {
         Button { adding = kind } label: {
             HStack(spacing: 12) {
                 Image(systemName: symbol).font(.footnote.weight(.bold)).foregroundStyle(.white)
-                    .frame(width: 30, height: 30).background(color, in: .circle)
+                    .markerBackground(color, size: 30)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title).foregroundStyle(.primary)
                     Text(place?.address ?? "Add Address").font(.subheadline).foregroundStyle(place == nil ? Theme.accent : .secondary).lineLimit(1)

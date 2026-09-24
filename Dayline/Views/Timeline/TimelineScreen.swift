@@ -90,7 +90,7 @@ struct TimelineScreen: View {
                 ForEach(rangeVisits.filter { $0.category != .home }) { v in
                     Annotation("", coordinate: v.coordinate) {
                         Image(systemName: v.category.symbol).font(.system(size: 13, weight: .bold)).foregroundStyle(Theme.accent)
-                            .frame(width: 32, height: 32).background(.white, in: .circle).shadow(color: .black.opacity(0.2), radius: 5, y: 2)
+                            .markerBackground(Color.white, size: 32).shadow(color: .black.opacity(0.2), radius: 5, y: 2)
                     }
                 }
             } else {

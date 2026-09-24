@@ -180,6 +180,17 @@ final class DemoTourTests: XCTestCase {
             tab(app, "Insights"); pause(1.5); app.buttons["Day"].firstMatch.tap(); pause(1.5); shot("c14-insights-day-proposed")
             app.terminate()
         }
+        for (style, letter) in [("circle", "A"), ("square", "B"), ("outlined", "C")] {
+            app = XCUIApplication()
+            app.launchArguments = ["-demo", "-icons.markerStyle", style]
+            app.launchEnvironment["TZ"] = Self.morningZone
+            app.launch()
+            tab(app, "Timeline"); pause(3); shot("c16\(letter)-pins-\(style)")
+            tab(app, "Insights"); pause(1.5); app.buttons["Month"].firstMatch.tap(); pause(1.2)
+            app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Streak'")).firstMatch.tap(); pause(2)
+            app.swipeUp(); pause(0.8); app.swipeUp(); pause(1.2); shot("c17\(letter)-people-\(style)")
+            app.terminate()
+        }
         for (bg, extra, name) in [("system", [String](), "c4-profile"), ("black", [], "c5-profile-black"), ("white", [], "c6-profile-white-now"), ("white", ["-background.whiteGrouped", "YES"], "c7-profile-white-proposed")] {
             app = XCUIApplication()
             app.launchArguments = ["-demo", "-background.preset", bg] + extra
