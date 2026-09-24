@@ -46,15 +46,19 @@ struct VoiceRecorderBar<Tools: View>: View {
 
     /// Quick tap on the mic (like Messages): a short hint in the bar instead of recording.
     private var tapHint: some View {
-        HStack {
-            Text("Tap and hold to record").font(.body).foregroundStyle(.secondary)
-            Spacer()
-            Image(systemName: "waveform").foregroundStyle(.tertiary).padding(.trailing, 48)
+        GlassEffectContainer(spacing: 10) {
+            HStack(spacing: 10) {
+                Text("Tap and hold to record").font(.body).foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.leading, 18).frame(height: 48)
+                    .glassEffect(.regular, in: .capsule)
+                Image(systemName: "mic.fill").font(.system(size: 20, weight: .regular)).foregroundStyle(Theme.accent)
+                    .frame(width: 48, height: 48)
+                    .glassEffect(.regular.interactive(), in: .circle)
+            }
         }
-        .padding(.leading, 18)
-        .frame(height: 48)
-        .glassEffect(.regular, in: .capsule)
         .transition(.opacity)
+        .accessibilityElement(children: .combine)
         .accessibilityIdentifier("tapHoldHint")
     }
 

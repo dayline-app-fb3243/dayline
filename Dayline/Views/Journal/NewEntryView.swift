@@ -200,28 +200,34 @@ struct NewEntryView: View {
 
     // MARK: pieces
 
+    /// Separate small glass buttons: camera and library on the left, mic on the right (like Messages).
     private var addBar: some View {
-        HStack {
-            barButton("camera", "Take photo") { camera = .photo }
-                .disabled(!UIImagePickerController.isSourceTypeAvailable(.camera))
-            barButton("video", "Record video") { camera = .video }
-                .disabled(!UIImagePickerController.isSourceTypeAvailable(.camera))
-            barButton("photo.on.rectangle", "Photo and video library") { showLibrary = true }
-            // Touch and hold (handled by VoiceRecorderBar, which sits over this spot).
-            Image(systemName: "mic").font(.system(size: 19, weight: .medium)).foregroundStyle(Theme.accent)
-                .frame(maxWidth: .infinity).frame(height: 44)
-                .accessibilityHidden(true)
+        GlassEffectContainer(spacing: 10) {
+            HStack(spacing: 10) {
+                circleButton("camera", "Take photo") { camera = .photo }
+                    .disabled(!UIImagePickerController.isSourceTypeAvailable(.camera))
+                    .contextMenu {
+                        Button("Take Photo", systemImage: "camera") { camera = .photo }
+                        Button("Record Video", systemImage: "video") { camera = .video }
+                    }
+                circleButton("photo.on.rectangle", "Photo and video library") { showLibrary = true }
+                Spacer(minLength: 0)
+                // Touch and hold (handled by VoiceRecorderBar, which sits over this spot).
+                Image(systemName: "mic.fill").font(.system(size: 20, weight: .regular)).foregroundStyle(Theme.accent)
+                    .frame(width: 48, height: 48)
+                    .glassEffect(.regular.interactive(), in: .circle)
+                    .accessibilityHidden(true)
+            }
         }
-        .padding(.vertical, 4)
-        .glassEffect(.regular.interactive(), in: .capsule)
     }
 
-    private func barButton(_ symbol: String, _ label: String, action: @escaping () -> Void) -> some View {
+    private func circleButton(_ symbol: String, _ label: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Image(systemName: symbol).font(.system(size: 19, weight: .medium)).foregroundStyle(Theme.accent)
-                .frame(maxWidth: .infinity).frame(height: 44).contentShape(.rect)
+            Image(systemName: symbol).font(.system(size: 19, weight: .regular)).foregroundStyle(Theme.accent)
+                .frame(width: 48, height: 48).contentShape(.circle)
         }
         .buttonStyle(.plain)
+        .glassEffect(.regular.interactive(), in: .circle)
         .accessibilityLabel(label)
     }
 
