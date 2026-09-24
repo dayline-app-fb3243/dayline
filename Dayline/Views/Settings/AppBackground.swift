@@ -764,7 +764,7 @@ struct CheckLocationView: View {
     @AppStorage(LocationService.intervalKey) private var minutes = 5
     /// Preview flag "check.preview" (awaiting David's pick): map thumbnails of the day route at each rate.
     /// A = thumbnail at the left of each row, B = three big previews on top (like wallpapers), C = thumbnail at the right.
-    /// David chose C (2:18, relayed): phone on the right of each row. Now the default.
+    /// C (phone on the right of each row) is the default.
     @AppStorage("check.preview") private var preview = "C"
     @AppStorage("check.big") private var bigStyle = ""
     @State private var enlarged: Int?

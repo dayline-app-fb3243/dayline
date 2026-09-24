@@ -38,10 +38,10 @@ struct IntervalRouteMap: View {
                     }
                 }
             }
-            ForEach(Array(Self.stops.enumerated()), id: \.offset) { _, c in
+            // Same blue Apple-style pins as every other map, icon = place type.
+            ForEach(Array(Self.stops.enumerated()), id: \.offset) { i, c in
                 Annotation("", coordinate: c, anchor: .bottom) {
-                    if interactive { ApplePin(symbol: "mappin", color: Theme.accent, big: false, dot: true) }
-                    else { Circle().fill(Theme.accent).frame(width: 7, height: 7).padding(1.5).background(Circle().fill(.white)) }
+                    ApplePin(symbol: ["house.fill", "cup.and.saucer.fill", "briefcase.fill", "fork.knife"][i], color: Theme.accent, big: false, dot: true)
                 }
             }
         }

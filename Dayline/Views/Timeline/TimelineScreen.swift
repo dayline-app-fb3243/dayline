@@ -19,7 +19,9 @@ struct TimelineScreen: View {
     @State private var region: MKCoordinateRegion?
     /// Preview flag "route.style" (awaiting David's pick): now = straight lines between points,
     /// snap = path snapped to streets with Apple directions, gps = precise GPS-style track.
-    @AppStorage("route.style") private var routeStyle = "now"
+    @AppStorage("route.style") private var routeStyle = "snap"
+    /// Route detail follows the Check Location setting: one point per check, snapped to streets.
+    @AppStorage(LocationService.intervalKey) private var checkMinutes = 5
     @State private var streetRoute: [CLLocationCoordinate2D] = []
     /// Preview flag "map.3d" (awaiting David's pick): the full-screen map opens tilted in 3D with real buildings,
     /// and gets a 2D/3D button. The route is drawn into the map, so it tilts with it.
@@ -27,7 +29,7 @@ struct TimelineScreen: View {
     @State private var is3D = false
     /// Preview flag "pin.style" (awaiting David's pick): "" = current pins, A = big Apple pin with dot,
     /// B = compact Apple pin with tail, C = native Apple Maps marker.
-    @AppStorage("pin.style") private var pinStyle = ""
+    @AppStorage("pin.style") private var pinStyle = "D"
     /// Preview flag "map.sheet" (David 2:08, Find My reference): no floating toggles; a grabber on the range bar
     /// pulls up a glass sheet with Journal / Photos / Route switches. A = Find My card, B = Settings-style icons, C = compact.
     @AppStorage("map.sheet") private var mapSheet = ""
@@ -99,7 +101,7 @@ struct TimelineScreen: View {
                     MapPolyline(coordinates: streetRoute)
                         .stroke(Theme.accent, style: StrokeStyle(lineWidth: routeStyle == "gps" ? 3.5 : 5, lineCap: .round, lineJoin: .round))
                 } else if range == .day {
-                    MapPolyline(coordinates: rangeSamples.map(\.coordinate))
+                    MapPolyline(coordinates: Self.thinned(rangeSamples, minutes: checkMinutes))
                         .stroke(Theme.accent, style: StrokeStyle(lineWidth: 5, lineCap: .round, lineJoin: .round))
                 } else {
                     // Full route for the whole range, thinned so a year stays fast.
@@ -109,7 +111,7 @@ struct TimelineScreen: View {
                 }
             }
             if range == .day {
-                ForEach(rangeVisits.filter { $0.category != .home }) { v in
+                ForEach(rangeVisits) { v in
                     if pinStyle == "C" {
                         Marker("", systemImage: v.category.symbol, coordinate: v.coordinate).tint(v.category.pinColor)
                     } else if !pinStyle.isEmpty {
@@ -139,7 +141,7 @@ struct TimelineScreen: View {
                         Marker("", systemImage: "book.closed.fill", coordinate: entry.coordinate!).tint(.purple)
                     } else if !pinStyle.isEmpty {
                         Annotation("", coordinate: entry.coordinate!, anchor: .bottom) {
-                            ApplePin(symbol: "book.closed.fill", color: pinStyle == "D" ? Theme.accent : .purple, big: pinStyle == "A", dot: pinStyle == "D" ? true : nil)
+                            ApplePin(symbol: pinStyle == "D" ? "doc.text.fill" : "book.closed.fill", color: pinStyle == "D" ? Theme.accent : .purple, big: pinStyle == "A", dot: pinStyle == "D" ? true : nil)
                         }
                     } else {
                     Annotation("", coordinate: entry.coordinate!) {
@@ -179,12 +181,12 @@ struct TimelineScreen: View {
             // Two-finger tilt flips the 2D/3D label, like Apple Maps.
             if interactive && map3DFlag { is3D = context.camera.pitch > 10 }
         }
-        .task(id: "\(routeStyle)-\(interval.start.timeIntervalSince1970)-\(range == .day)") { await buildStreetRoute() }
+        .task(id: "\(routeStyle)-\(checkMinutes)-\(interval.start.timeIntervalSince1970)-\(range == .day)") { await buildStreetRoute() }
     }
 
     private func buildStreetRoute() async {
         guard routeStyle != "now", range == .day else { streetRoute = []; return }
-        let pts = rangeSamples.map(\.coordinate)
+        let pts = Self.thinned(rangeSamples, minutes: checkMinutes)
         guard pts.count > 1 else { streetRoute = []; return }
         var all: [CLLocationCoordinate2D] = []
         for (a, b) in zip(pts, pts.dropFirst()) {
@@ -200,6 +202,17 @@ struct TimelineScreen: View {
         }
         if routeStyle == "gps" { all = Self.gpsTrack(all) }
         streetRoute = all
+    }
+
+    /// Keep one sample per check (at least `minutes` apart), like the phone would record at that rate.
+    private static func thinned(_ samples: [LocationSample], minutes: Int) -> [CLLocationCoordinate2D] {
+        var out: [LocationSample] = []
+        for s in samples.sorted(by: { $0.timestamp < $1.timestamp }) {
+            if let last = out.last, s.timestamp.timeIntervalSince(last.timestamp) < Double(minutes) * 60 - 5 { continue }
+            out.append(s)
+        }
+        if let last = samples.max(by: { $0.timestamp < $1.timestamp }), out.last?.timestamp != last.timestamp { out.append(last) }
+        return out.map(\.coordinate)
     }
 
     /// Densify every ~12 m and add a few meters of wobble, like a real GPS track.
@@ -465,7 +478,7 @@ struct TimelineScreen: View {
         HStack(spacing: 6) {
             layerToggle("Route", "point.topleft.down.to.point.bottomright.curvepath", Theme.route, $showRoute)
             layerToggle("Photos", "photo", Theme.photos, $showPhotos)
-            layerToggle("Journal", "pencil", Theme.journal, $showJournal)
+            layerToggle("Journal", "doc.text", Theme.journal, $showJournal)
         }
     }
 
