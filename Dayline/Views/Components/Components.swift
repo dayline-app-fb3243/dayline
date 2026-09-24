@@ -158,7 +158,7 @@ struct MarkerBackground<S: ShapeStyle>: ViewModifier {
     var size: CGFloat
     /// Map pins: David picked C (outlined round) on Sep 24. People initials still follow the preview flag.
     var isMapPin = false
-    @AppStorage("icons.markerStyle") private var flagStyle = "circle"
+    @AppStorage("icons.markerStyle") private var flagStyle = "outlined"  // David: round, C outlined like map pins (Sep 24)
     private var style: String { isMapPin ? "outlined" : flagStyle }
     func body(content: Content) -> some View {
         switch style {
