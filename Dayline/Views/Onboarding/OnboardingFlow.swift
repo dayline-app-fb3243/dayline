@@ -882,6 +882,8 @@ struct SplashLoop: View {
     @State private var slots = ["M", "P"]
     @State private var front = 0
     @State private var step = 0
+    /// The first map needs a moment to load its 3D tiles; fade it in after that so there's no empty grid.
+    @State private var shown = false
     var body: some View {
         ZStack {
             ForEach(0..<2, id: \.self) { k in
@@ -890,7 +892,10 @@ struct SplashLoop: View {
                     .opacity(front == k ? 1 : 0.001)
             }
         }
+        .opacity(shown ? 1 : 0)
         .task {
+            try? await Task.sleep(for: .seconds(1.6))
+            withAnimation(.easeIn(duration: 1.0)) { shown = true }
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(6.5))
                 withAnimation(.easeInOut(duration: 1.6)) { front = 1 - front }
