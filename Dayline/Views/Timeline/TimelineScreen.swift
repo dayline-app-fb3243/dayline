@@ -338,10 +338,63 @@ struct TimelineScreen: View {
                     .padding(4)
                     .glassEffect(.regular, in: .capsule)
                     .padding(.horizontal, 16).padding(.bottom, 6)
+                } else if mapSheet == "G" {
+                    backSheet
                 } else {
                     pullUpBar
                 }
             }
+    }
+
+    /// map.sheet "G" (Find My style): one bigger glass panel sits behind the range bar. Closed, only its thin
+    /// outline and grabber show around the bar; pulled up, the same panel grows and the switches come out
+    /// from behind the bar. The bar itself never moves.
+    private var backSheet: some View {
+        let shape = RoundedRectangle(cornerRadius: 38, style: .continuous)
+        return VStack(spacing: 0) {
+            Capsule().fill(Color.secondary.opacity(0.55)).frame(width: 38, height: 5)
+                .padding(.top, 7).padding(.bottom, sheetOpen ? 12 : 6)
+                .frame(maxWidth: .infinity).contentShape(.rect)
+                .onTapGesture { withAnimation(.spring(response: 0.5, dampingFraction: 0.86)) { sheetOpen.toggle() } }
+                .accessibilityIdentifier("mapGrabber")
+            if sheetOpen {
+                VStack(alignment: .leading, spacing: 16) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Map").font(.largeTitle.weight(.bold))
+                        Text("\(title) · \(daySummary)").font(.body.weight(.medium)).foregroundStyle(.secondary)
+                    }
+                    .padding(.horizontal, 20)
+                    VStack(spacing: 0) {
+                        findMyRow("Journal", nil, $showJournal)
+                        Divider().padding(.leading, 20)
+                        findMyRow("Photos", nil, $showPhotos)
+                        Divider().padding(.leading, 20)
+                        findMyRow("Route", nil, $showRoute)
+                    }
+                    .findMyCard()
+                    .padding(.horizontal, 12)
+                }
+                .padding(.bottom, 14)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                // Slides up from behind the bar, inside the panel's clip.
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+            CapsuleSegmented(selection: $range, options: MapRange.allCases.map { ($0, $0.rawValue) }, plain: true)
+                .padding(.horizontal, 4).padding(.vertical, 6)
+                .glassEffect(.regular, in: .capsule)
+                .padding(.horizontal, 6).padding(.bottom, 6)
+                .zIndex(1)
+        }
+        .clipShape(shape)
+        .glassEffect(.regular, in: shape)
+        .overlay(shape.strokeBorder(Color.white.opacity(0.45), lineWidth: 0.8))
+        .overlay(shape.strokeBorder(Color.black.opacity(0.08), lineWidth: 0.5).padding(-0.5))
+        .padding(.horizontal, 10).padding(.bottom, 4)
+        .gesture(DragGesture(minimumDistance: 12).onEnded { g in
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.86)) {
+                if g.translation.height < -30 { sheetOpen = true } else if g.translation.height > 30 { sheetOpen = false }
+            }
+        })
     }
 
     /// Range bar with a grabber; pull up (or tap the grabber) to show the map layer switches, like Find My.

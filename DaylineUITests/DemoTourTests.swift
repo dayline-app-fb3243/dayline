@@ -872,6 +872,22 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Find My style panel behind the range bar: closed (outline only), pull up, open, back down.
+    func testBackSheetVideo() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo", "-map.3d", "YES", "-map.sheet", "G"]
+        app.launchEnvironment["TZ"] = Self.morningZone
+        app.launch(); pause(1.5)
+        tab(app, "Timeline"); pause(3)
+        tapID(app, "mapCard"); pause(5); shot("bs-closed")
+        let grab = app.descendants(matching: .any)["mapGrabber"].firstMatch
+        let start = grab.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        start.press(forDuration: 0.1, thenDragTo: start.withOffset(CGVector(dx: 0, dy: -300))); pause(2.5); shot("bs-open")
+        tapID(app, "mapGrabber"); pause(2.5)
+        tapID(app, "mapGrabber"); pause(0.25); shot("bs-mid"); pause(2.5)
+        app.terminate()
+    }
+
     /// Splash G/H/I: C's 3D look, new pins, closer and more top-down.
     func testSplashPinDemo() throws {
         for v in ["G", "H", "I"] {
