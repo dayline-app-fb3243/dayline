@@ -104,62 +104,56 @@ struct AppBackgroundView: View {
     }
 }
 
+/// Background (design: wallpaper-gallery tiles, "+" Photo tile first).
 struct BackgroundPickerView: View {
     @AppStorage("background.preset") private var presetRaw = BackgroundPreset.system.rawValue
     @AppStorage("background.style") private var styleRaw = PhotoStyle.blur.rawValue
     @AppStorage("background.version") private var version = 0
     @State private var pick: PhotosPickerItem?
-    private let columns = Array(repeating: GridItem(.flexible(), spacing: 4), count: 5)
+    private let columns = Array(repeating: GridItem(.flexible(), spacing: 12), count: 4)
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
-                SectionHeader("Color")
-                Card(padding: 14) {
-                    LazyVGrid(columns: columns, spacing: 16) {
-                        ForEach(BackgroundPreset.allCases.filter { $0 != .photo }) { preset in
-                            let on = presetRaw == preset.rawValue
-                            Button { presetRaw = preset.rawValue } label: {
-                                VStack(spacing: 7) {
-                                    Circle()
-                                        .fill(preset == .system
-                                              ? AnyShapeStyle(LinearGradient(colors: [Color(red: 0.71, green: 0.81, blue: 0.99), Color(.systemGroupedBackground)], startPoint: .topLeading, endPoint: .bottomTrailing))
-                                              : AnyShapeStyle(LinearGradient(colors: preset.colors, startPoint: .topLeading, endPoint: .bottomTrailing)))
-                                        .overlay(Circle().strokeBorder(Color.primary.opacity(0.15), lineWidth: 0.5))
-                                        .frame(width: 50, height: 50)
-                                        .padding(4)
-                                        .overlay(Circle().strokeBorder(on ? Color.blue : .clear, lineWidth: 2.5))
-                                    Text(preset.title).font(.caption).foregroundStyle(on ? .primary : .secondary)
-                                }
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityLabel(preset.title)
-                            .accessibilityAddTraits(on ? .isSelected : [])
-                        }
-                    }
-                }
-
-                SectionHeader("Photo")
-                Card(padding: 0) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Backgrounds").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
+                    .textCase(.uppercase).padding(.leading, 16).padding(.top, 8)
+                LazyVGrid(columns: columns, spacing: 14) {
                     PhotosPicker(selection: $pick, matching: .images) {
-                        HStack(spacing: 13) {
-                            Image(systemName: "photo.fill").font(.system(size: 15, weight: .semibold)).foregroundStyle(.white)
-                                .frame(width: 32, height: 32).background(Color.blue, in: .rect(cornerRadius: 8, style: .continuous))
-                            Text("Choose Photo…").foregroundStyle(.blue)
-                            Spacer()
-                            if presetRaw == BackgroundPreset.photo.rawValue {
-                                Image(systemName: "checkmark").font(.body.weight(.semibold)).foregroundStyle(.blue)
-                            }
+                        VStack(spacing: 6) {
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .fill(Color(.tertiarySystemFill))
+                                .aspectRatio(0.5, contentMode: .fit)
+                                .overlay {
+                                    Image(systemName: "plus").font(.system(size: 17, weight: .semibold)).foregroundStyle(.blue)
+                                        .frame(width: 40, height: 40).background(Color(.systemBackground), in: .circle)
+                                }
+                            Text("Photo").font(.caption).foregroundStyle(.blue)
                         }
-                        .padding(.horizontal, 14).frame(minHeight: 52).contentShape(.rect)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel("Choose a photo")
+                    .accessibilityIdentifier("backgroundPhoto")
+
+                    if presetRaw == BackgroundPreset.photo.rawValue, let image = BackgroundStore.load() {
+                        tile(title: "Your photo", on: true) {
+                            Image(uiImage: image).resizable().scaledToFill()
+                        }
+                        .id(version)
+                    }
+                    ForEach(BackgroundPreset.allCases.filter { $0 != .photo }) { preset in
+                        Button { presetRaw = preset.rawValue } label: {
+                            tile(title: preset.title, on: presetRaw == preset.rawValue) { fill(preset) }
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(preset.title)
+                        .accessibilityAddTraits(presetRaw == preset.rawValue ? .isSelected : [])
+                    }
                 }
-                Text("Use any photo from your library. Cards stay solid so text is easy to read.")
-                    .font(.footnote).foregroundStyle(.secondary).padding(.horizontal, 4)
+                .padding(.horizontal, 2)
 
                 if presetRaw == BackgroundPreset.photo.rawValue {
-                    SectionHeader("Photo style")
+                    Text("Photo style").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
+                        .textCase(.uppercase).padding(.leading, 16).padding(.top, 14)
                     Picker("Photo style", selection: $styleRaw) {
                         ForEach(PhotoStyle.allCases) { Text($0.title).tag($0.rawValue) }
                     }
@@ -168,8 +162,9 @@ struct BackgroundPickerView: View {
             }
             .padding(.horizontal, 18).padding(.bottom, 30)
         }
-        .background(AppBackgroundView())
+        .background(Color(.systemGroupedBackground).ignoresSafeArea())
         .navigationTitle("Background")
+        .navigationBarTitleDisplayMode(.inline)
         .toolbarVisibility(.hidden, for: .tabBar)
         .onChange(of: pick) { _, item in
             Task {
@@ -179,6 +174,45 @@ struct BackgroundPickerView: View {
                     version += 1
                 }
             }
+        }
+    }
+
+    @ViewBuilder private func fill(_ preset: BackgroundPreset) -> some View {
+        if preset == .system {
+            LinearGradient(colors: [Color(red: 0.71, green: 0.81, blue: 0.99), Color(.systemGroupedBackground)],
+                           startPoint: .top, endPoint: .bottom)
+        } else {
+            LinearGradient(colors: preset.colors, startPoint: .topLeading, endPoint: .bottomTrailing)
+        }
+    }
+
+    /// A small phone-shaped preview: the background with two white cards on it, like the app.
+    private func tile<Content: View>(title: String, on: Bool, @ViewBuilder content: () -> Content) -> some View {
+        VStack(spacing: 6) {
+            Color.clear
+                .aspectRatio(0.5, contentMode: .fit)
+                .overlay { content() }
+                .overlay {
+                    GeometryReader { g in
+                        VStack(spacing: g.size.height * 0.04) {
+                            RoundedRectangle(cornerRadius: 8).fill(.white.opacity(0.92)).frame(height: g.size.height * 0.2)
+                            RoundedRectangle(cornerRadius: 8).fill(.white.opacity(0.92)).frame(height: g.size.height * 0.34)
+                            Spacer(minLength: 0)
+                        }
+                        .padding(.horizontal, g.size.width * 0.1).padding(.top, g.size.height * 0.14)
+                    }
+                }
+                .clipShape(.rect(cornerRadius: 14, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Color.primary.opacity(0.12), lineWidth: 0.5))
+                .overlay(alignment: .bottomTrailing) {
+                    if on {
+                        Image(systemName: "checkmark").font(.system(size: 11, weight: .bold)).foregroundStyle(.white)
+                            .frame(width: 22, height: 22).background(Color.blue, in: .circle).padding(6)
+                    }
+                }
+                .padding(3)
+                .overlay(RoundedRectangle(cornerRadius: 17, style: .continuous).strokeBorder(on ? Color.blue : .clear, lineWidth: 2.5))
+            Text(title).font(.caption).foregroundStyle(on ? .primary : .secondary).lineLimit(1)
         }
     }
 }

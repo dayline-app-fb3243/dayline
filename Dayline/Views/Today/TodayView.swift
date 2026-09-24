@@ -80,24 +80,6 @@ struct TodayView: View {
     }
 }
 
-/// Entry point for the headline feature (also available from Siri).
-struct TakeMeBackRow: View {
-    var body: some View {
-        Card {
-            HStack(spacing: 12) {
-                Image(systemName: "arrow.triangle.turn.up.right.diamond.fill").font(.title3).foregroundStyle(.white)
-                    .frame(width: 40, height: 40).background(Color.blue.gradient, in: .rect(cornerRadius: 11))
-                VStack(alignment: .leading, spacing: 1) {
-                    Text("Take me back").font(.headline)
-                    Text("\"Hey Siri, take me to where I ate 4 days ago\"").font(.caption).foregroundStyle(.secondary)
-                }
-                Spacer()
-                Image(systemName: "chevron.right").font(.footnote.weight(.bold)).foregroundStyle(.tertiary)
-            }
-        }
-    }
-}
-
 struct ScoreCard: View {
     var result: ScoreEngine.Result
     var showsChevron = false
