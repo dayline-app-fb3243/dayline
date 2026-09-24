@@ -462,6 +462,10 @@ final class DemoTourTests: XCTestCase {
             let app = launch([])
             tab(app, "Timeline"); pause(2); shot("o4-timeline")
             tab(app, "Journal"); pause(2); shot("o4-journal")
+            tapID(app, "newEntry"); pause(2)
+            let mic = app.descendants(matching: .any)["voiceMic"].firstMatch
+            if mic.waitForExistence(timeout: 3) { mic.tap(); pause(0.5); shot("o5-mic-quick-tap") }
+            let cancel = app.navigationBars.buttons.element(boundBy: 0); if cancel.waitForExistence(timeout: 2) { cancel.tap() }; pause(1.2)
             tab(app, "Profile"); pause(2); shot("o4-profile")
             app.terminate()
         }
