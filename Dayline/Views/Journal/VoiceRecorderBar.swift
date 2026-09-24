@@ -17,6 +17,7 @@ struct VoiceRecorderBar<Tools: View>: View {
     @State private var player: AVAudioPlayer?
     @State private var pressStart: Date?
     @State private var showTapHint = false
+    @State private var hintToken = 0
 
     private let lockDistance: CGFloat = 70
     private let cancelDistance: CGFloat = 110
@@ -154,8 +155,9 @@ struct VoiceRecorderBar<Tools: View>: View {
                             Task { try? await Task.sleep(for: .milliseconds(150)); voice.cancel() }
                             AudioServicesPlaySystemSound(1104)
                             UINotificationFeedbackGenerator().notificationOccurred(.warning)
+                            hintToken += 1; let token = hintToken
                             withAnimation(.snappy(duration: 0.2)) { showTapHint = true }
-                            Task { try? await Task.sleep(for: .seconds(2)); withAnimation(.snappy(duration: 0.25)) { showTapHint = false } }
+                            Task { try? await Task.sleep(for: .seconds(2)); if token == hintToken { withAnimation(.snappy(duration: 0.25)) { showTapHint = false } } }
                         } else if !locked && !cancelled {
                             // Give start() a moment if the hold was very short.
                             Task { try? await Task.sleep(for: .milliseconds(150)); voice.pause() }
