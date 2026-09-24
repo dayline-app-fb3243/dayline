@@ -7,6 +7,7 @@ struct JournalView: View {
     @Query(sort: \JournalEntry.date, order: .reverse) private var entries: [JournalEntry]
     @Query private var visits: [Visit]
     @State private var search = ""
+    @State private var editingGroup: JournalGroup?
 
     private var filtered: [JournalEntry] {
         search.isEmpty ? entries : entries.filter { $0.text.localizedCaseInsensitiveContains(search) }
@@ -34,7 +35,8 @@ struct JournalView: View {
                             .font(.footnote).helperText().textCase(.uppercase)
                             .padding(.leading, 4).padding(.top, 6)
                         ForEach(groups) { g in
-                            NavigationLink { JournalEntryView(group: g) } label: { JournalCard(group: g) }.buttonStyle(.plain)
+                            Button { editingGroup = g } label: { JournalCard(group: g) }.buttonStyle(.plain)
+                                .accessibilityIdentifier("journalCard")
                         }
                     }
                 }
@@ -51,6 +53,7 @@ struct JournalView: View {
                 }
             }
             .sheet(isPresented: $composing) { NavigationStack { NewEntryView(onDone: { composing = false }) } }
+            .sheet(item: $editingGroup) { g in NavigationStack { NewEntryView(onDone: { editingGroup = nil }, editing: g) } }
         }
     }
 }

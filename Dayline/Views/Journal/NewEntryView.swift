@@ -60,6 +60,8 @@ enum VideoStore {
 /// with a camera / video / library / voice bar above the keyboard.
 struct NewEntryView: View {
     var onDone: () -> Void = {}
+    /// When set, the editor opens this saved entry so it can be changed or deleted.
+    var editing: JournalGroup? = nil
     @Environment(\.modelContext) private var context
     @Query(sort: \Visit.arrival, order: .reverse) private var visits: [Visit]
     @StateObject private var voice = VoiceNoteService.shared
@@ -70,14 +72,18 @@ struct NewEntryView: View {
     @State private var camera: CameraMode?
     @FocusState private var focus: UUID?
     @FocusState private var titleFocused: Bool
-    private let startedAt = Date.now
-    private let groupID = UUID().uuidString
+    @State private var startedAt = Date.now
+    private let openedAt = Date.now
+    @State private var loaded = false
+    @State private var confirmDelete = false
+    @State private var groupID = UUID().uuidString
     @State private var confirmDiscard = false
 
     enum CameraMode: Identifiable { case photo, video; var id: Self { self } }
 
     private var here: CLLocation? { LocationService.shared.lastLocation }
     private var placeName: String {
+        if let saved = editing?.place { return saved }
         if let open = visits.first(where: { $0.departure == nil && $0.category != .home }) { return open.placeName }
         if let here, let near = visits.prefix(50).min(by: {
             CLLocation(latitude: $0.latitude, longitude: $0.longitude).distance(from: here) <
@@ -125,7 +131,8 @@ struct NewEntryView: View {
         }
         .scrollDismissesKeyboard(.interactively)
         .background(AppBackgroundView())
-        .navigationTitle("New entry")
+        .navigationTitle(editing == nil ? "New entry" : "Edit entry")
+        .onAppear(perform: loadEditing)
         .backgroundNavBar()
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -136,6 +143,16 @@ struct NewEntryView: View {
                 .confirmationDialog("Discard this entry?", isPresented: $confirmDiscard, titleVisibility: .visible) {
                     Button("Discard Entry", role: .destructive) { Task { await discard() } }
                     Button("Keep Editing", role: .cancel) {}
+                }
+            }
+            if editing != nil {
+                ToolbarItem(placement: .primaryAction) {
+                    Button("Delete", systemImage: "trash", role: .destructive) { confirmDelete = true }
+                        .accessibilityIdentifier("deleteEntry")
+                        .confirmationDialog("Delete this entry?", isPresented: $confirmDelete, titleVisibility: .visible) {
+                            Button("Delete Entry", role: .destructive) { deleteEditing() }
+                            Button("Cancel", role: .cancel) {}
+                        } message: { Text("This can't be undone.") }
                 }
             }
             ToolbarItem(placement: .confirmationAction) {
@@ -269,9 +286,34 @@ struct NewEntryView: View {
     }
 
     /// Throws away everything added in this entry, including voice notes saved while recording.
+    /// Fill the editor from a saved entry (title = first line, the rest as text, photos/videos, voice notes).
+    private func loadEditing() {
+        guard let g = editing, !loaded else { return }
+        loaded = true
+        startedAt = g.date
+        if let gid = g.entries.first(where: { $0.groupID != nil })?.groupID { groupID = gid }
+        let lines = (g.text ?? "").components(separatedBy: "\n")
+        title = lines.first ?? ""
+        var list: [EntryBlock] = [EntryBlock(kind: .text, text: lines.dropFirst().joined(separator: "\n"))]
+        let media: [EntryMedia] = g.entries.compactMap { e in
+            guard let d = e.thumbnail, let img = UIImage(data: d) else { return nil }
+            return EntryMedia(image: img, videoURL: e.videoFileName.flatMap { VideoStore.url(for: $0) }, duration: e.videoDuration)
+        }
+        if !media.isEmpty { list.append(EntryBlock(kind: .media, media: media)) }
+        for v in g.entries where v.kind == .voice { list.append(EntryBlock(kind: .voice, seconds: v.audioDuration)) }
+        blocks = list
+    }
+
+    private func deleteEditing() {
+        guard let g = editing else { return }
+        for e in g.entries { context.delete(e) }
+        try? context.save()
+        onDone()
+    }
+
     private func discard() async {
         if voice.isActive { voice.cancel() }
-        let start = startedAt
+        let start = openedAt
         if let voices = try? context.fetch(FetchDescriptor<JournalEntry>(predicate: #Predicate { $0.date >= start })) {
             for v in voices where v.kind == .voice && v.groupID == nil { context.delete(v) }
             try? context.save()
@@ -286,6 +328,8 @@ struct NewEntryView: View {
         let media = allMedia
         let place = placeName
         var saved: [JournalEntry] = []
+        // Editing: replace the saved text/photos with what's in the editor; voice notes stay.
+        if let g = editing { for e in g.entries where e.kind != .voice { context.delete(e) } }
         if media.isEmpty, !text.isEmpty {
             saved.append(JournalEntry(date: startedAt, kind: .text, text: text, latitude: lat, longitude: lon))
         }
@@ -300,7 +344,8 @@ struct NewEntryView: View {
         }
         for e in saved { e.placeName = place; e.groupID = groupID; context.insert(e) }
         // Voice notes recorded in this entry were saved when recording stopped; link them to this entry.
-        let start = startedAt
+        let start = editing == nil ? startedAt : openedAt
+        if let g = editing { for v in g.entries where v.kind == .voice { v.groupID = groupID } }
         if hasVoice, let voices = try? context.fetch(FetchDescriptor<JournalEntry>(predicate: #Predicate { $0.date >= start })) {
             for v in voices where v.kind == .voice && v.groupID == nil {
                 v.groupID = groupID; v.placeName = place

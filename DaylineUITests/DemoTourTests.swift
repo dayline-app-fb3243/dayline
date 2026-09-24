@@ -214,6 +214,10 @@ final class DemoTourTests: XCTestCase {
                 app.swipeDown(); pause(1)
                 tapID(app, "accountRow"); pause(1.8); shot("c4b-account")
                 goBack(app)
+                tab(app, "Journal"); pause(2); shot("c19-journal")
+                let jc = app.buttons["journalCard"].firstMatch
+                if jc.waitForExistence(timeout: 3) { jc.tap(); pause(2); shot("c19b-journal-edit"); app.buttons["Close"].firstMatch.tap(); pause(1.2) }
+                tab(app, "Insights"); pause(1.5); shot("c20-insights-month")
                 tab(app, "Today"); pause(2); shot("c10a-today-ring"); tapID(app, "scoreCard"); pause(2); shot("c10b-day-score"); app.swipeUp(); pause(1.2); shot("c10-factor-tiles")
                 goBack(app)
                 tab(app, "Timeline"); pause(3); shot("c11-timeline-tiles")
