@@ -118,19 +118,52 @@ struct InsightsView: View {
         }
     }
 
+    /// Lowest day of the month and the day after, as a plain list.
     private func roughDayCard(_ rough: DayScore, all: [DayScore]) -> some View {
+        let cal = Calendar.current
         let next = all.first { $0.day > rough.day }
-        return Card(padding: 13) {
-            HStack(spacing: 12) {
-                Text("\(rough.score)").font(.headline.weight(.heavy)).foregroundStyle(Theme.bad)
-                    .frame(width: 44, height: 44).background(Theme.bad.opacity(0.15), in: .circle)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("\(rough.day.formatted(.dateTime.month(.abbreviated).day())) was a rough one.").font(.subheadline.weight(.semibold))
-                    Text(next.map { "That's okay. You bounced back to \($0.score) the next day." } ?? "That's okay. Tomorrow's a fresh start.")
-                        .font(.subheadline).foregroundStyle(.secondary)
+        let why = rough.factors.filter { $0.points < 0 }.prefix(2).map(\.title)
+        let reason = why.isEmpty ? rough.label : why.joined(separator: ", ")
+        func back(_ d: Date) -> Int { cal.dateComponents([.day], from: cal.startOfDay(for: d), to: cal.startOfDay(for: .now)).day ?? 0 }
+        func longDate(_ d: Date) -> String { d.formatted(.dateTime.weekday(.wide).month(.abbreviated).day()) }
+        return VStack(alignment: .leading, spacing: 0) {
+            SectionHeader("Lowest day").padding(.bottom, 6).padding(.top, 8)
+            Card(padding: 0) {
+                VStack(spacing: 0) {
+                    NavigationLink { ScoreDetailView(result: todayResult, startBack: back(rough.day)) } label: {
+                        dayRow(title: longDate(rough.day), subtitle: reason, score: rough.score, up: false)
+                    }
+                    if let next {
+                        Divider().padding(.leading, 16)
+                        NavigationLink { ScoreDetailView(result: todayResult, startBack: back(next.day)) } label: {
+                            dayRow(title: "Next Day", subtitle: longDate(next.day), score: next.score, up: next.score > rough.score)
+                        }
+                    }
                 }
             }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("lowestDayCard")
         }
+    }
+
+    private var todayResult: ScoreEngine.Result { ScoreEngine.score(DayData.input(for: .now, context: context)) }
+
+    private func dayRow(title: String, subtitle: String, score: Int, up: Bool) -> some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 1) {
+                Text(title).font(.body.weight(.semibold)).foregroundStyle(.primary)
+                Text(subtitle).font(.subheadline).foregroundStyle(.secondary).lineLimit(1)
+            }
+            Spacer()
+            HStack(spacing: 4) {
+                if up { Image(systemName: "arrowtriangle.up.fill").font(.caption) }
+                Text("\(score)").font(.system(size: 28, weight: .bold))
+            }
+            .foregroundStyle(score < 45 ? Theme.bad : Theme.accent)
+            Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(.tertiary)
+        }
+        .padding(.horizontal, 16).padding(.vertical, 11)
+        .contentShape(.rect)
     }
 
     // MARK: Year

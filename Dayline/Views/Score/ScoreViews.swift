@@ -5,9 +5,12 @@ import SwiftData
 /// Swipe sideways (or use the arrows) to see earlier days, like Screen Time. Tap the date for a calendar.
 struct ScoreDetailView: View {
     var result: ScoreEngine.Result
+    /// Days back to open on (0 = today).
+    var startBack = 0
     @Environment(\.modelContext) private var context
     @Query(sort: \DayScore.day, order: .reverse) private var scores: [DayScore]
     @State private var back = 0
+    @State private var didSetStart = false
     @State private var showPicker = false
 
     private var cal: Calendar { .current }
@@ -27,6 +30,7 @@ struct ScoreDetailView: View {
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
         }
+        .onAppear { if !didSetStart { didSetStart = true; back = min(startBack, maxBack) } }
         .background(AppBackgroundView())
         .navigationTitle("Day score")
         .toolbarVisibility(.hidden, for: .tabBar)
