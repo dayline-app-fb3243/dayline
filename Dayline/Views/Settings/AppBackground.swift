@@ -489,7 +489,58 @@ struct PrivacyView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     @State private var confirmDelete = false
+    /// Preview flag "yourData.style" (David picks): now = card; A = gray note on top, button at the bottom, alert;
+    /// B = same layout, bottom action sheet; C = note under the button, both at the bottom, action sheet.
+    @AppStorage("yourData.style") private var style = "now"
+    private let storedText = "Your places, route, photos and notes are kept on this iPhone. Voice notes are turned into text on the device. With Back Up Timeline on, a copy is kept in your own iCloud."
+    private let deleteText = "Deletes your account, your iCloud backup and everything Dayline saved on this iPhone. This can't be undone."
+
     var body: some View {
+        if style == "now" { classic } else { simple }
+    }
+
+    private var deleteButton: some View {
+        Card(padding: 0) {
+            Button(role: .destructive) { confirmDelete = true } label: {
+                Text("Delete Account & Backup").foregroundStyle(.red).frame(maxWidth: .infinity).frame(minHeight: 52)
+            }
+            .accessibilityIdentifier("deleteAccount")
+        }
+    }
+
+    private var simple: some View {
+        GeometryReader { geo in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 8) {
+                    if style != "C" {
+                        Text(storedText).font(.footnote).helperText().padding(.horizontal, 16)
+                    }
+                    Spacer(minLength: 24)
+                    deleteButton
+                    Text(style == "C" ? storedText + " " + deleteText : deleteText)
+                        .font(.footnote).helperText().padding(.horizontal, 16)
+                }
+                .padding(18)
+                .frame(minHeight: geo.size.height, alignment: .top)
+            }
+        }
+        .background(AppBackgroundView())
+        .navigationTitle("Your data")
+        .backgroundNavBar()
+        .alert("Delete Account & Backup?", isPresented: Binding(get: { confirmDelete && style == "A" }, set: { confirmDelete = $0 })) {
+            Button("Delete", role: .destructive) { Task { await deleteEverything() } }
+            Button("Cancel", role: .cancel) {}
+        } message: { Text("Your account, iCloud backup, timeline, journal and photos will be deleted. This can't be undone.") }
+        .confirmationDialog("Your account, iCloud backup, timeline, journal and photos will be deleted. This can't be undone.",
+                            isPresented: Binding(get: { confirmDelete && style != "A" }, set: { confirmDelete = $0 }), titleVisibility: .visible) {
+            Button("Delete Account & Backup", role: .destructive) { Task { await deleteEverything() } }
+            Button("Cancel", role: .cancel) {}
+        }
+        .toolbarVisibility(.hidden, for: .tabBar)
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private var classic: some View {
         ScrollView {
           VStack(spacing: 12) {
             Card {

@@ -193,6 +193,16 @@ final class DemoTourTests: XCTestCase {
         }
         for letter in ["A", "B", "C"] {
             app = XCUIApplication()
+            app.launchArguments = ["-demo", "-yourData.style", letter]
+            app.launchEnvironment["TZ"] = Self.morningZone
+            app.launch()
+            tab(app, "Profile"); pause(1.5)
+            tapID(app, "yourDataRow"); pause(1.8); shot("c23\(letter)-your-data")
+            tapID(app, "deleteAccount"); pause(1.2); shot("c23\(letter)x-your-data-confirm")
+            app.terminate()
+        }
+        for letter in ["A", "B", "C"] {
+            app = XCUIApplication()
             app.launchArguments = ["-demo", "-journal.cardStyle", letter]
             app.launchEnvironment["TZ"] = Self.morningZone
             app.launch()
