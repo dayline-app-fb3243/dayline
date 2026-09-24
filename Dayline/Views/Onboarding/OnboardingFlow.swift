@@ -525,11 +525,11 @@ struct PhoneCodeView: View {
     var body: some View {
         SetupStep(symbol: "ellipsis.message", title: "Enter Code",
                   subtitle: "Enter the 6-digit code sent to \(savedPhone).",
-                  primary: "Continue", primaryEnabled: code.count == 6, secondary: "Change Number", secondaryIsLink: true,
+                  primary: "Continue", primaryEnabled: code.count == 6,
                   back: back, onPrimary: {
                       // No text-message service is connected yet, so any 6 digits are accepted in this build.
                       verified = true; next()
-                  }, onSecondary: back) {
+                  }) {
             VStack(alignment: .leading, spacing: 16) {
                 ZStack {
                     TextField("", text: Binding(get: { code }, set: { code = String($0.filter(\.isNumber).prefix(6)) }))
