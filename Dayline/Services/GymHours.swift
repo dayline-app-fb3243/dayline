@@ -4,7 +4,7 @@ import SwiftData
 /// Real closing time of your gym, for the "Go By" deadline in the day score.
 /// Apple's MapKit doesn't give apps opening hours, so this asks Google Places (Text Search, New) when an
 /// API key is set in Info.plist ("PlacesAPIKey"). No key, or hours unknown: the Go By setting is used.
-/// Flag "gym.hours": on by default (David, 6:17: "Use real closing time"). Off = always the Go By setting.
+/// Flag "gym.hours": on by default. Off = always the Go By setting.
 enum GymHours {
     static let flagKey = "gym.hours"
     private static let cacheKey = "gymHours.v1"
