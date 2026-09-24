@@ -178,10 +178,11 @@ extension View {
 
 enum ChromeStyle {
     static var tint: Color {
-        switch UserDefaults.standard.string(forKey: "chrome.style") ?? "now" {
-        case "B": return Color.primary
+        // David picked B (black, like iOS) on Sep 24. "A" keeps the old blue for comparison.
+        switch UserDefaults.standard.string(forKey: "chrome.style") ?? "B" {
+        case "A", "now": return Theme.accent
         case "C": return Color.secondary
-        default: return Theme.accent
+        default: return Color.primary
         }
     }
 }
