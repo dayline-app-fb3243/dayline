@@ -16,7 +16,7 @@ struct PlaceInfo {
         case "Ferrara Bakery": return PlaceInfo(phone: phone ?? "(212) 555-0172", hours: every(7, 19))
         case "Lucia Trattoria": return PlaceInfo(phone: phone ?? "(212) 555-0148", hours: every(12, 22, closed: [2]))
         case "Blue Door Coffee": return PlaceInfo(phone: phone ?? "(212) 555-0190", hours: every(6, 17))
-        case "Iron Works Gym": return PlaceInfo(phone: phone ?? "(212) 555-0115", hours: every(5, 23))
+        case "Iron Works Gym": return PlaceInfo(phone: phone ?? "(212) 555-0115", hours: every(5, 20))
         case "Riverside Park": return PlaceInfo(phone: nil, hours: every(6, 24))
         default: return PlaceInfo(phone: phone, hours: nil)
         }

@@ -4,7 +4,7 @@ import SwiftData
 /// Real closing time of your gym, for the "Go By" deadline in the day score.
 /// Apple's MapKit doesn't give apps opening hours, so this asks Google Places (Text Search, New) when an
 /// API key is set in Info.plist ("PlacesAPIKey"). No key, or hours unknown: the Go By setting is used.
-/// Preview flag "gym.hours" (off by default).
+/// Flag "gym.hours": on by default (David, 6:17: "Use real closing time"). Off = always the Go By setting.
 enum GymHours {
     static let flagKey = "gym.hours"
     private static let cacheKey = "gymHours.v1"
@@ -17,7 +17,7 @@ enum GymHours {
         var sample = false
     }
 
-    static var enabled: Bool { UserDefaults.standard.bool(forKey: flagKey) }
+    static var enabled: Bool { UserDefaults.standard.object(forKey: flagKey) as? Bool ?? true }
     static var apiKey: String? {
         let k = (Bundle.main.object(forInfoDictionaryKey: "PlacesAPIKey") as? String ?? "").trimmingCharacters(in: .whitespaces)
         return k.isEmpty || k.hasPrefix("$(") ? nil : k
@@ -25,8 +25,8 @@ enum GymHours {
 
     static var cached: Cached? {
         if DemoData.isDemo {
-            // Demo gym: sample hours (5 AM - 11 PM every day), marked as a sample.
-            return Cached(name: "Iron Works Gym", closes: Dictionary(uniqueKeysWithValues: (1...7).map { ($0, 23 * 60) }), fetched: .now, sample: true)
+            // Demo gym: sample hours, closing at 8 PM every day (matches the demo day stories), marked as a sample.
+            return Cached(name: "Iron Works Gym", closes: Dictionary(uniqueKeysWithValues: (1...7).map { ($0, 20 * 60) }), fetched: .now, sample: true)
         }
         guard let d = UserDefaults.standard.data(forKey: cacheKey) else { return nil }
         return try? JSONDecoder().decode(Cached.self, from: d)

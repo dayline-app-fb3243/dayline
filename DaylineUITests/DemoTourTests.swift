@@ -1352,7 +1352,7 @@ final class DemoTourTests: XCTestCase {
     /// Preview "gym.hours": Go By shows the gym's real closing time (demo: sample hours) instead of the picker.
     func testGymHours() throws {
         let app = XCUIApplication()
-        app.launchArguments = ["-demo", "-gym.hours", "YES"]
+        app.launchArguments = ["-demo"]
         app.launch(); pause(1.5)
         tab(app, "Profile"); pause(2)
         tapID(app, "yourScheduleRow"); pause(2)
