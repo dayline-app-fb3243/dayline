@@ -471,6 +471,27 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Journal editor demo: keyboard down and up, with the separate glass buttons.
+    func testEditorDemo() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo"]
+        app.launchEnvironment["TZ"] = Self.morningZone
+        app.launch()
+        tab(app, "Journal"); pause(2)
+        tapID(app, "newEntry"); pause(2)
+        let scroll = app.scrollViews.firstMatch
+        scroll.swipeDown(); pause(1.5); shot("e1-editor-empty")
+        let title = app.descendants(matching: .any)["entryTitle"].firstMatch
+        if title.waitForExistence(timeout: 3) { title.tap(); pause(1); title.typeText("Morning walk") }
+        let body = app.descendants(matching: .any)["entryBody"].firstMatch
+        if body.waitForExistence(timeout: 3) { body.tap(); pause(1); body.typeText("Coffee at the park, then a slow loop around the lake") }
+        pause(1.5); shot("e2-editor-typing-keyboard")
+        scroll.swipeDown(); pause(1.5); shot("e3-editor-written")
+        let mic = app.descendants(matching: .any)["voiceMic"].firstMatch
+        if mic.waitForExistence(timeout: 3) { mic.tap(); pause(0.5); shot("e4-mic-quick-tap") }
+        app.terminate()
+    }
+
     private func shot(_ name: String) {
         let data = XCUIScreen.main.screenshot().pngRepresentation
         let mode = ProcessInfo.processInfo.environment["DAYLINE_MODE"] ?? "light"
