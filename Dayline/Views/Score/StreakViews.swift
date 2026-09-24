@@ -158,7 +158,7 @@ struct StreakView: View {
         .toolbarVisibility(.hidden, for: .tabBar)
         .navigationBarTitleDisplayMode(.inline)
         .navigationDestination(item: $pickedDay) { d in
-            - a streak day opens the real Day score page. Old look: -streak.dayOpens circle.
+            // A streak day opens the real Day score page. Old look: -streak.dayOpens circle.
             if (UserDefaults.standard.string(forKey: "streak.dayOpens") ?? "score") == "score" {
                 ScoreDetailView(result: ScoreEngine.score(DayData.input(for: .now, context: context)),
                                 startBack: Calendar.current.dateComponents([.day], from: Calendar.current.startOfDay(for: d), to: Calendar.current.startOfDay(for: .now)).day ?? 0)

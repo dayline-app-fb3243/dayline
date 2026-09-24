@@ -414,7 +414,7 @@ struct ProfileView: View {
     @AppStorage("notifications.style") private var notifStyle = "B1"
     @AppStorage("appearance") private var appearanceRaw = Appearance.system.rawValue
     @AppStorage(CheckInService.enabledKey) private var checkIns = false
-    / the "Show Symbols" switch (on = C, off = A).
+    /// The "Show Symbols" switch (on = C, off = A).
     @AppStorage("symbols.preview") private var symbolsPreview = true
     @AppStorage("symbols.show") private var showSymbols = true
     /// Preview flag "settings.noHeaders" (awaiting David's OK): no section titles, just space, like iOS Settings.
