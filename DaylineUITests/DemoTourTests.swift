@@ -97,6 +97,7 @@ final class DemoTourTests: XCTestCase {
         tapID(app, "permissionsContinue"); pause(1.2); shot("06c-permissions-mic")
         tapID(app, "permissionsContinue"); pause(1.2); shot("06c2-permissions-motion")
         tapID(app, "permissionsContinue"); pause(1.2); shot("06c3-permissions-health")
+        tapID(app, "permissionsContinue"); pause(1.2); shot("06c4-permissions-reminders")
         tapID(app, "permissionsContinue"); pause(1.2); shot("06d-permissions-notifications")
         tapID(app, "permissionsContinue"); pause(3); shot("07-today-after-sign-in")
     }
@@ -208,6 +209,18 @@ final class DemoTourTests: XCTestCase {
         }
         // Profile > Background: pick a preset and show it behind Today.
         tab(app, "Profile"); pause(2); shot("60-profile")
+        tapID(app, "accountRow"); pause(2); shot("60a-account"); goBack(app); pause(1)
+        tapID(app, "yourScheduleRow"); pause(2); shot("61-your-schedule")
+        app.swipeUp(); pause(1); shot("61b-your-schedule-habits"); app.swipeDown(); pause(1)
+        let friday = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH 'workBlock-'")).element(boundBy: 1)
+        if friday.waitForExistence(timeout: 3) { friday.tap(); pause(2); shot("62-work-hours-friday")
+            let c = app.navigationBars.buttons.element(boundBy: 0); if c.waitForExistence(timeout: 2) { c.tap() }; pause(1.2) }
+        goBack(app); pause(1)
+        tapID(app, "placesRow"); pause(2); shot("65-places")
+        tapID(app, "place-home"); pause(1.5)
+        app.typeText("Apple Park"); pause(3); shot("65b-add-place-search")
+        let cx = app.navigationBars.buttons.element(boundBy: 0); if cx.waitForExistence(timeout: 2) { cx.tap() }; pause(1.2)
+        goBack(app); pause(1)
         app.swipeUp(); pause(1.2); shot("60b-profile-bottom")
         let siriRow = app.descendants(matching: .any)["useWithSiriRow"].firstMatch
         if siriRow.waitForExistence(timeout: 3) {

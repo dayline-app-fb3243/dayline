@@ -276,16 +276,33 @@ struct ProfileView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 10) {
-                Card(padding: 14) {
-                    HStack(spacing: 13) {
-                        ProfileIcon(symbol: "person.fill", size: 38)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(auth.isSignedIn ? "Signed in with \(auth.provider.capitalized)" : "Not signed in").font(.headline)
-                            Text(auth.isSignedIn ? "Timeline backed up" : "Your timeline stays on this iPhone")
-                                .font(.footnote).foregroundStyle(.secondary)
+                NavigationLink { if auth.isSignedIn { AccountView() } else { PrivacyView() } } label: {
+                    Card(padding: 14) {
+                        HStack(spacing: 13) {
+                            if auth.isSignedIn { AccountAvatar(name: auth.name, size: 52) } else { ProfileIcon(symbol: "person.fill", size: 52) }
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(auth.isSignedIn ? (auth.name.isEmpty ? "Your Account" : auth.name) : "Not signed in").font(.title3.weight(.semibold))
+                                Text(auth.isSignedIn ? "Signed in with \(auth.provider.capitalized) \u{00B7} Backed up" : "Your timeline stays on this iPhone")
+                                    .font(.footnote).foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(.tertiary)
                         }
-                        Spacer()
-                        Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(.tertiary)
+                    }
+                }
+                .accessibilityIdentifier("accountRow")
+                SectionHeader("Your Day")
+                Card(padding: 0) {
+                    VStack(spacing: 0) {
+                        NavigationLink { YourScheduleView() } label: {
+                            ProfileRow(symbol: "clock.fill", title: "Your Schedule", value: UserSchedule.current.rangeText)
+                        }
+                        .accessibilityIdentifier("yourScheduleRow")
+                        Divider().padding(.leading, 57)
+                        NavigationLink { PlacesView() } label: {
+                            ProfileRow(symbol: "mappin.and.ellipse", title: "Places", value: UserSchedule.current.home == nil ? "Add Home" : "Home \u{00B7} Work")
+                        }
+                        .accessibilityIdentifier("placesRow")
                     }
                 }
                 SectionHeader("Look")
@@ -309,7 +326,7 @@ struct ProfileView: View {
                 Card(padding: 0) {
                     VStack(spacing: 0) {
                         NavigationLink { CheckLocationView() } label: {
-                            ProfileRow(symbol: "clock.fill", title: "Check Location", value: checkText)
+                            ProfileRow(symbol: "location.circle.fill", title: "Check Location", value: checkText)
                         }
                         .accessibilityIdentifier("checkLocationRow")
                         Divider().padding(.leading, 57)

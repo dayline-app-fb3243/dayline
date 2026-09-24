@@ -482,7 +482,7 @@ struct PeopleView: View {
                     }
                     ForEach(Array(FriendStore.friends.enumerated()), id: \.element.id) { i, f in
                         PersonRow(name: f.name, subtitle: "Show on my streak", color: f.color, last: i == FriendStore.friends.count - 1) {
-                            Toggle("", isOn: FriendVisibility.binding(f.name, raw: $hiddenRaw)).labelsHidden().tint(f.color)
+                            Toggle("", isOn: FriendVisibility.binding(f.name, raw: $hiddenRaw)).labelsHidden()
                         }
                         .accessibilityIdentifier("friendSwitch\(f.name)")
                     }
@@ -578,7 +578,7 @@ struct PersonView: View {
                 PeopleGroup {
                     HStack {
                         Text("Show on my streak").font(.body.weight(.medium)); Spacer()
-                        Toggle("", isOn: FriendVisibility.binding(friend.name, raw: $hiddenRaw)).labelsHidden().tint(friend.color)
+                        Toggle("", isOn: FriendVisibility.binding(friend.name, raw: $hiddenRaw)).labelsHidden()
                     }
                     .padding(.horizontal, 16).frame(minHeight: 52)
                     .overlay(alignment: .bottom) { Divider().padding(.leading, 16) }

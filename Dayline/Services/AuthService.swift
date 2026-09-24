@@ -63,7 +63,7 @@ final class AuthService: ObservableObject {
 
     /// Test/demo builds: sign in as a sample user so the flow can be shown without an account.
     func signInDemo(provider: Provider = .apple) async {
-        await finish(userID: "demo", name: "Alex", email: "alex@example.com", provider: provider, idToken: nil)
+        await finish(userID: "demo", name: "Alex Kim", email: "alex@example.com", provider: provider, idToken: nil)
     }
 
     private func finish(userID: String, name: String, email: String, provider: Provider, idToken: String?) async {

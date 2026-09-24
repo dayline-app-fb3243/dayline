@@ -181,13 +181,22 @@ struct SignInSheet: View {
         .padding(.horizontal, 16).frame(minHeight: 62).contentShape(.rect)
     }
 
+    /// The simulator has no Apple Account, so sign-in runs as a demo there.
+    static var isSimulator: Bool {
+        #if targetEnvironment(simulator)
+        true
+        #else
+        false
+        #endif
+    }
+
     private func go() {
         switch choice {
         case .apple:
-            if isDemo { showAppleDemo = true; return }
+            if isDemo || Self.isSimulator { showAppleDemo = true; return }
             apple.start { result in Task { await auth.handleApple(result); if auth.isSignedIn { next() } } }
         case .google:
-            Task { if isDemo { await auth.signInDemo(provider: .google); next() } else { await auth.signInWithGoogle(); if auth.isSignedIn { next() } } }
+            Task { if isDemo || Self.isSimulator { await auth.signInDemo(provider: .google); next() } else { await auth.signInWithGoogle(); if auth.isSignedIn { next() } } }
         case .email: email()
         }
     }
@@ -324,6 +333,9 @@ struct PermissionsView: View {
         Page(kind: "health", title: "Turning on Apple Health lets Dayline:",
              rows: [("figure.run", "Add your runs and walks to your timeline"), ("dumbbell", "Mark gym workouts done on your schedule"), ("heart", "Only read workouts. Dayline never writes to Health")],
              note: "Health data stays on your iPhone. You can change this later in Settings."),
+        Page(kind: "reminders", title: "Turning on Reminders lets Dayline:",
+             rows: [("checklist", "Count reminders due today in your day score"), ("checkmark.circle", "Give you points when you finish them"), ("eye", "Only read them. Dayline never changes your reminders")],
+             note: "Reminders stay on your iPhone. You can change this later in Settings."),
         Page(kind: "notifications", title: "Turning on Notifications lets Dayline:",
              rows: [("person.badge.plus", "Tell you when someone asks to follow you"), ("star", "Tell you when you hit 80")],
              note: "That\u{2019}s it, only those 2. You can change this later in Settings."),
@@ -371,6 +383,7 @@ struct PermissionsView: View {
         case "photos": _ = await PHPhotoLibrary.requestAuthorization(for: .readWrite)
         case "mic": _ = await AVAudioApplication.requestRecordPermission()
         case "health": await HealthService.shared.requestAccess()
+        case "reminders": _ = await RemindersService.shared.requestAccess()
         case "motion":
             DayBoundary.shared.requestMotion()
             for _ in 0..<120 where DayBoundary.motionAvailable && CMMotionActivityManager.authorizationStatus() == .notDetermined {
@@ -391,7 +404,7 @@ struct SetupStep<Content: View>: View {
     var subtitle: String
     var primary: String
     var primaryEnabled: Bool
-    var secondary: String
+    var secondary: String?
     var back: (() -> Void)?
     var onPrimary: () -> Void
     var onSecondary: () -> Void
@@ -413,13 +426,16 @@ struct SetupStep<Content: View>: View {
             Text(subtitle).font(.title3).foregroundStyle(.secondary).padding(.top, 4)
             content.padding(.top, 24)
             Spacer()
+            // Same size as every other Continue button in the app.
             VStack(spacing: 10) {
-                Button(action: onPrimary) { Text(primary).font(.headline).frame(maxWidth: .infinity).frame(height: 40) }
+                Button(action: onPrimary) { Text(primary).font(.headline).frame(maxWidth: .infinity) }
                     .buttonStyle(.glassProminent).disabled(!primaryEnabled).accessibilityIdentifier("setupPrimary")
-                Button(action: onSecondary) { Text(secondary).font(.headline).frame(maxWidth: .infinity).frame(height: 40) }
-                    .buttonStyle(.glass).foregroundStyle(.primary).accessibilityIdentifier("setupSecondary")
+                if let secondary {
+                    Button(action: onSecondary) { Text(secondary).font(.headline).frame(maxWidth: .infinity) }
+                        .buttonStyle(.glass).foregroundStyle(.primary).accessibilityIdentifier("setupSecondary")
+                }
             }
-            .controlSize(.large)
+            .controlSize(.extraLarge)
         }
         .padding(.horizontal, 32).padding(.bottom, 20)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -543,7 +559,7 @@ struct EmailView: View {
     var body: some View {
         SetupStep(symbol: "envelope", title: "Email Address",
                   subtitle: "Enter your email to back up your timeline and sign in on other devices.",
-                  primary: "Continue", primaryEnabled: valid, secondary: "Use Sign in with Apple",
+                  primary: "Continue", primaryEnabled: valid, secondary: nil,
                   back: back, onPrimary: { savedEmail = email; next() }, onSecondary: back) {
             TextField("name@example.com", text: $email)
                 .keyboardType(.emailAddress).textContentType(.emailAddress)
