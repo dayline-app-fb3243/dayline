@@ -654,6 +654,19 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Apple-style map pins: current vs A big with dot vs B compact vs C native marker, on the full-screen map.
+    func testPinDemo() throws {
+        for v in ["now", "A", "B", "C"] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-route.style", "gps", "-pin.style", v == "now" ? "" : v]
+            app.launchEnvironment["TZ"] = Self.morningZone
+            app.launch(); pause(1.5)
+            tab(app, "Timeline"); pause(3)
+            tapID(app, "mapCard"); pause(7); shot("pin-\(v)")
+            app.terminate()
+        }
+    }
+
     /// Timeline Day map route: now vs snapped to streets vs precise GPS track.
     func testRouteDemo() throws {
         for v in ["now", "snap", "gps"] {

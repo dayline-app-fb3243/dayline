@@ -25,6 +25,9 @@ struct TimelineScreen: View {
     /// and gets a 2D/3D button. The route is drawn into the map, so it tilts with it.
     @AppStorage("map.3d") private var map3DFlag = false
     @State private var is3D = false
+    /// Preview flag "pin.style" (awaiting David's pick): "" = current pins, A = big Apple pin with dot,
+    /// B = compact Apple pin with tail, C = native Apple Maps marker.
+    @AppStorage("pin.style") private var pinStyle = ""
 
     private var interval: DateInterval {
         let cal = Calendar.current
@@ -102,9 +105,17 @@ struct TimelineScreen: View {
             }
             if range == .day {
                 ForEach(rangeVisits.filter { $0.category != .home }) { v in
+                    if pinStyle == "C" {
+                        Marker("", systemImage: v.category.symbol, coordinate: v.coordinate).tint(v.category.pinColor)
+                    } else if !pinStyle.isEmpty {
+                        Annotation("", coordinate: v.coordinate, anchor: .bottom) {
+                            ApplePin(symbol: v.category.symbol, color: v.category.pinColor, big: pinStyle == "A")
+                        }
+                    } else {
                     Annotation("", coordinate: v.coordinate) {
                         Image(systemName: v.category.symbol).font(.scaled(size: 13, weight: .bold)).foregroundStyle(Theme.accent)
                             .markerBackground(Color.white, size: 32, isMapPin: true).shadow(color: .black.opacity(0.2), radius: 5, y: 2)
+                    }
                     }
                 }
             } else {
@@ -119,20 +130,38 @@ struct TimelineScreen: View {
             }
             if showJournal {
                 ForEach(rangeNotes.suffix(40)) { entry in
+                    if pinStyle == "C" {
+                        Marker("", systemImage: "book.closed.fill", coordinate: entry.coordinate!).tint(.purple)
+                    } else if !pinStyle.isEmpty {
+                        Annotation("", coordinate: entry.coordinate!, anchor: .bottom) {
+                            ApplePin(symbol: "book.closed.fill", color: .purple, big: pinStyle == "A")
+                        }
+                    } else {
                     Annotation("", coordinate: entry.coordinate!) {
                         Image(systemName: "pencil")
                             .font(.caption.weight(.bold)).foregroundStyle(.white)
                             .frame(width: 34, height: 34).background(Theme.accent, in: .circle)
                             .overlay(Circle().stroke(.white, lineWidth: 3)).shadow(radius: 4)
                     }
+                    }
                 }
             }
             if showPhotos { ForEach(rangePhotos.suffix(40)) { entry in
+                if pinStyle == "C" {
+                    Marker("", systemImage: "photo.fill", coordinate: entry.coordinate!).tint(.teal)
+                } else if !pinStyle.isEmpty {
+                    Annotation("", coordinate: entry.coordinate!, anchor: .bottom) {
+                        if let data = entry.thumbnail, let image = UIImage(data: data) {
+                            ApplePhotoPin(image: image, big: pinStyle == "A")
+                        }
+                    }
+                } else {
                 Annotation("", coordinate: entry.coordinate!) {
                     if let data = entry.thumbnail, let image = UIImage(data: data) {
                         Image(uiImage: image).resizable().scaledToFill().frame(width: 48, height: 48)
                             .clipShape(.rect(cornerRadius: 14)).overlay(RoundedRectangle(cornerRadius: 14).stroke(.white, lineWidth: 3)).shadow(color: .black.opacity(0.25), radius: 6, y: 3)
                     }
+                }
                 }
             } }
         }
