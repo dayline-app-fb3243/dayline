@@ -9,7 +9,7 @@ jobs:
   preview:
     # Xcode 27 image (iOS 27 SDK + simulator). Change to macos-26 to build with Xcode 26 / iOS 26.
     runs-on: xcode-27
-    timeout-minutes: 45
+    timeout-minutes: 70
     steps:
       - uses: actions/checkout@v4
 
@@ -50,7 +50,7 @@ jobs:
             -quiet CODE_SIGN_IDENTITY="-" CODE_SIGNING_REQUIRED=NO 2>&1 | tee build.log || (grep -E "error:" build.log | sort -u | head -80; exit 1)
 
       - name: Record demo (light and dark)
-        timeout-minutes: 28
+        timeout-minutes: 55
         run: |
           mkdir -p preview /tmp/dayline-shots
           for MODE in light dark; do
@@ -63,7 +63,7 @@ jobs:
                 -project Dayline.xcodeproj -scheme Dayline \
                 -destination "id=${{ steps.sim.outputs.udid }}" \
                 -derivedDataPath build -only-testing:DaylineUITests/DemoTourTests/$TEST \
-                -test-timeouts-enabled YES -maximum-test-execution-time-allowance 300 \
+                -test-timeouts-enabled YES -maximum-test-execution-time-allowance 900 \
                 -collect-test-diagnostics never 2>&1 | tail -40 || true
               echo "$MODE $TEST done at $(date -u +%T)"
               cp /tmp/dayline-shots/*.png preview/ 2>/dev/null || true

@@ -49,10 +49,10 @@ final class DemoTourTests: XCTestCase {
         app.launchArguments = ["-demo", "-onboarding"]
         app.launchEnvironment["TZ"] = Self.morningZone
         app.launch()
-        pause(2.5)
-        for _ in 0..<3 { tapID(app, "introContinue"); pause(1) }
-        pause(0.5)
-        tapID(app, "emailSignIn"); pause(1.5)
+        pause(1.5)
+        tapID(app, "splashContinue"); pause(1.5)
+        tapID(app, "signInOption-Email"); pause(0.5)
+        tapID(app, "signInContinue"); pause(1.8)
         let email = app.textFields["emailField"]; _ = email.waitForExistence(timeout: 5); email.tap(); email.typeText("alex@example.com"); pause(1); shot("05a-email")
         tapID(app, "setupPrimary"); pause(1.5)
         let eCode = app.textFields["emailCodeField"]; _ = eCode.waitForExistence(timeout: 5); eCode.tap(); eCode.typeText("5710"); pause(1); shot("05b-email-code")

@@ -87,6 +87,7 @@ struct SignInSheet: View {
     enum Option: String, CaseIterable { case apple = "Apple", google = "Google", email = "Email" }
     @State private var choice: Option = .apple
     @State private var showAppleDemo = false
+    @State private var appleDone = false
     @ObservedObject private var auth = AuthService.shared
     @Environment(\.dismiss) private var dismiss
     private let isDemo = ProcessInfo.processInfo.arguments.contains("-demo")
@@ -125,10 +126,12 @@ struct SignInSheet: View {
         }
         .padding(.horizontal, 20).padding(.top, 20)
         .background(Color(.systemGroupedBackground))
-        .sheet(isPresented: $showAppleDemo) {
+        .sheet(isPresented: $showAppleDemo, onDismiss: {
+            // Only move on once the Apple sheet is fully gone, so the sign-in sheet can close too.
+            if appleDone { next() }
+        }) {
             AppleSignInDemoSheet {
-                showAppleDemo = false
-                Task { await auth.signInDemo(provider: .apple); next() }
+                Task { await auth.signInDemo(provider: .apple); appleDone = true; showAppleDemo = false }
             }
             .presentationDetents([.height(520)])
         }
