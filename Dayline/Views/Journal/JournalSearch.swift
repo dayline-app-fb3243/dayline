@@ -194,7 +194,7 @@ struct SearchResultsList: View {
             plainList
         }
     }
-    private var plainList: some View {
+    @ViewBuilder private var plainList: some View {
         let hits = query.trimmingCharacters(in: .whitespaces).isEmpty ? [] : JournalSearch.run(query, entries: entries, visits: visits)
         VStack(alignment: .leading, spacing: 10) {
             if query.isEmpty {
