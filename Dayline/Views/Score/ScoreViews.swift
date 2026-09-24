@@ -121,7 +121,7 @@ struct ScoreDetailView: View {
                 if let r = result(b) {
                     Card {
                         VStack(spacing: 8) {
-                            ScoreRing(score: r.score, lineWidth: 14, size: 132)
+                            ScoreRing(score: r.score, size: 132)
                             Text(r.label).font(.title.bold()).foregroundStyle(Theme.scoreColor(r.score))
                             Text(r.summary.isEmpty ? (r.tip ?? "") : r.summary).font(.subheadline).foregroundStyle(.secondary)
                                 .multilineTextAlignment(.center)

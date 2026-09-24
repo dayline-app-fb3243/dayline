@@ -16,6 +16,14 @@ struct StreakFriend: Identifiable, Hashable {
     /// Days ago (0 = today) that scored 80+.
     var goodDaysAgo: Set<Int>
 
+    /// Streak length as of a past day (consecutive 80+ days ending that day).
+    func streak(asOf date: Date, calendar: Calendar = .current) -> Int {
+        var back = calendar.dateComponents([.day], from: calendar.startOfDay(for: date), to: calendar.startOfDay(for: .now)).day ?? 0
+        var n = 0
+        while goodDaysAgo.contains(back) { n += 1; back += 1 }
+        return n
+    }
+
     func isGood(_ date: Date, calendar: Calendar = .current) -> Bool {
         let back = calendar.dateComponents([.day], from: calendar.startOfDay(for: date), to: calendar.startOfDay(for: .now)).day ?? -1
         return goodDaysAgo.contains(back)
@@ -89,6 +97,7 @@ struct StreakView: View {
     @Environment(\.modelContext) private var context
     @Query(sort: \DayScore.day) private var scores: [DayScore]
     @AppStorage("hiddenFriends") private var hiddenRaw = ""
+    @State private var pickedDay: Date?
 
     var body: some View {
         let streak = DayData.streak(context: context)
@@ -113,9 +122,9 @@ struct StreakView: View {
                 }
                 SectionHeader("History")
                 Card(padding: 12) {
-                    MonthHistory(color: Theme.accent) { day in
+                    MonthHistory(color: Theme.accent, isGood: { day in
                         scores.first { Calendar.current.isDate($0.day, inSameDayAs: day) }.map { $0.score >= 80 } ?? false
-                    }
+                    }, onPick: { pickedDay = $0 })
                 }
                 .accessibilityIdentifier("streakHistory")
                 if !friends.isEmpty {
@@ -146,6 +155,7 @@ struct StreakView: View {
         .backgroundNavBar()
         .toolbarVisibility(.hidden, for: .tabBar)
         .navigationBarTitleDisplayMode(.inline)
+        .navigationDestination(item: $pickedDay) { StreakDayView(day: $0) }
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 NavigationLink { PeopleView() } label: { Image(systemName: "person.2").foregroundStyle(.primary) }
@@ -279,6 +289,7 @@ struct FriendWeekStrip: View {
 struct MonthHistory: View {
     var color: Color
     var isGood: (Date) -> Bool
+    var onPick: ((Date) -> Void)? = nil
     @State private var back = 0
 
     var body: some View {
@@ -317,6 +328,10 @@ struct MonthHistory: View {
                             .foregroundStyle(good ? Color.white : Color.secondary)
                             .frame(width: 34, height: 34)
                             .background(future ? AnyShapeStyle(.clear) : good ? AnyShapeStyle(color) : AnyShapeStyle(Color.primary.opacity(0.07)), in: .circle)
+                            .contentShape(.circle)
+                            .onTapGesture { if !future { onPick?(day) } }
+                            .accessibilityAddTraits(future ? [] : .isButton)
+                            .accessibilityIdentifier("historyDay-\(cal.component(.day, from: day))")
                     } else {
                         Color.clear.frame(height: 34)
                     }
@@ -326,6 +341,71 @@ struct MonthHistory: View {
         .gesture(DragGesture(minimumDistance: 30).onEnded { v in
             if v.translation.width > 0 { back = min(back + 1, 11) } else { back = max(back - 1, 0) }
         })
+    }
+}
+
+/// Streak as of one past day, opened from the History calendar.
+/// Friends show too when the day is within the last 7 days (that's how far shared streaks go back).
+struct StreakDayView: View {
+    let day: Date
+    @Query(sort: \DayScore.day) private var scores: [DayScore]
+    @AppStorage("hiddenFriends") private var hiddenRaw = ""
+
+    private func myStreak(asOf d: Date) -> Int {
+        let cal = Calendar.current
+        var cur = cal.startOfDay(for: d); var n = 0
+        while let s = scores.first(where: { cal.isDate($0.day, inSameDayAs: cur) }), s.score >= 80 {
+            n += 1; cur = cal.date(byAdding: .day, value: -1, to: cur)!
+        }
+        return n
+    }
+
+    var body: some View {
+        let cal = Calendar.current
+        let mine = myStreak(asOf: day)
+        let score = scores.first { cal.isDate($0.day, inSameDayAs: day) }?.score
+        let daysAgo = cal.dateComponents([.day], from: cal.startOfDay(for: day), to: cal.startOfDay(for: .now)).day ?? 99
+        let hidden = Set(hiddenRaw.split(separator: ",").map(String.init))
+        let friends = daysAgo <= 6 ? FriendStore.friends.filter { !hidden.contains($0.name) } : []
+        let arcs = [StreakRing.Arc(id: "you", value: mine, color: Theme.accent, showsBadge: false)]
+            + friends.map { StreakRing.Arc(id: $0.id, value: $0.streak(asOf: day), color: $0.color, showsBadge: true) }
+        ScrollView {
+            VStack(alignment: .leading, spacing: 10) {
+                Card(padding: 14) {
+                    VStack(spacing: 4) {
+                        StreakRing(arcs: arcs, center: mine)
+                        Text(score.map { "Day score \($0)" } ?? "No score this day").font(.footnote).foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+                .padding(.top, 4)
+                if !friends.isEmpty {
+                    SectionHeader("Friends on this day")
+                    Card(padding: 0) {
+                        let people: [StreakFriend?] = (friends.map { Optional($0) } + [nil]).sorted { ($0?.streak(asOf: day) ?? mine) > ($1?.streak(asOf: day) ?? mine) }
+                        VStack(spacing: 0) {
+                            ForEach(Array(people.enumerated()), id: \.offset) { i, f in
+                                if let f {
+                                    FriendRow(initials: String(f.name.prefix(1)), color: f.color, name: f.name, best: f.best, current: f.streak(asOf: day))
+                                } else {
+                                    FriendRow(initials: "Me", color: Theme.accent, name: "You", best: max(StreakMath.best(scores), mine), current: mine)
+                                }
+                                if i < people.count - 1 { Divider().padding(.leading, 58) }
+                            }
+                        }
+                    }
+                } else if !FriendStore.friends.isEmpty {
+                    Text("Friends' streaks show for the last 7 days.").font(.footnote).foregroundStyle(.secondary).padding(.horizontal, 4)
+                }
+            }
+            .padding(.horizontal, 18).padding(.bottom, 30)
+        }
+        .background(AppBackgroundView())
+        .navigationTitle(day.formatted(.dateTime.weekday(.wide).month(.abbreviated).day()))
+        .navigationBarTitleDisplayMode(.inline)
+        .backgroundNavBar()
+        .toolbarVisibility(.hidden, for: .tabBar)
+        .accessibilityIdentifier("streakDay")
     }
 }
 

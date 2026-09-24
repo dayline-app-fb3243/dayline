@@ -45,7 +45,7 @@ struct TodaySmallWidgetContent: View {
     var body: some View {
         ZStack(alignment: .topLeading) {
             Text("Today").font(.footnote.weight(.bold))
-            WidgetRing(score: s.score, lineWidth: 11).frame(width: 76, height: 76)
+            WidgetRing(score: s.score, lineWidth: 13).frame(width: 76, height: 76)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
             VStack(alignment: .leading, spacing: 0) {
                 Text("\(s.score)").font(.system(size: 36, weight: .heavy))
@@ -62,7 +62,7 @@ struct TodayWideWidgetContent: View {
     let s: WidgetSnapshot
     var body: some View {
         HStack(spacing: 16) {
-            WidgetRing(score: s.score, lineWidth: 14, showsNumber: true).frame(width: 108, height: 108)
+            WidgetRing(score: s.score, lineWidth: 18, showsNumber: true).frame(width: 108, height: 108)
             VStack(alignment: .leading, spacing: 0) {
                 Text("UP NEXT").font(.footnote.weight(.bold)).opacity(0.9)
                 Spacer(minLength: 0)

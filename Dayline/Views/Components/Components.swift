@@ -56,8 +56,10 @@ enum Theme {
 
 struct ScoreRing: View {
     var score: Int
-    var lineWidth: CGFloat = 10
+    /// Same thick proportions as the Streak ring (about 17% of the diameter).
+    var lineWidthOverride: CGFloat? = nil
     var size: CGFloat = 88
+    private var lineWidth: CGFloat { lineWidthOverride ?? (size * 0.17).rounded() }
     var body: some View {
         ZStack {
             Circle().stroke(.quaternary, lineWidth: lineWidth)

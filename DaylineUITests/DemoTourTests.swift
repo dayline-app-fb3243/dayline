@@ -161,6 +161,19 @@ final class DemoTourTests: XCTestCase {
             tab(app, "Insights"); pause(1.5); app.buttons["Day"].firstMatch.tap(); pause(1.5); shot("c13-insights-day-now")
             app.terminate()
             app = XCUIApplication()
+            app.launchArguments = ["-demo"]
+            app.launchEnvironment["TZ"] = Self.morningZone
+            app.launch()
+            tab(app, "Insights"); pause(1.5)
+            app.buttons["Month"].firstMatch.tap(); pause(1.2)
+            app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Streak'")).firstMatch.tap(); pause(2)
+            let hist = app.descendants(matching: .any)["streakHistory"].firstMatch
+            if hist.waitForExistence(timeout: 3) { hist.swipeUp(); pause(1) }
+            let d = Calendar.current.component(.day, from: Calendar.current.date(byAdding: .day, value: -3, to: .now)!)
+            let cell = app.descendants(matching: .any)["historyDay-\(d)"].firstMatch
+            if cell.waitForExistence(timeout: 3) { cell.tap(); pause(2); shot("c15-streak-day") }
+            app.terminate()
+            app = XCUIApplication()
             app.launchArguments = ["-demo", "-insights.simpleDay", "YES"]
             app.launchEnvironment["TZ"] = Self.morningZone
             app.launch()
@@ -178,7 +191,7 @@ final class DemoTourTests: XCTestCase {
                 app.swipeDown(); pause(1)
                 tapID(app, "accountRow"); pause(1.8); shot("c4b-account")
                 goBack(app)
-                tab(app, "Today"); pause(2); tapID(app, "scoreCard"); pause(2); app.swipeUp(); pause(1.2); shot("c10-factor-tiles")
+                tab(app, "Today"); pause(2); shot("c10a-today-ring"); tapID(app, "scoreCard"); pause(2); shot("c10b-day-score"); app.swipeUp(); pause(1.2); shot("c10-factor-tiles")
                 goBack(app)
                 tab(app, "Timeline"); pause(3); shot("c11-timeline-tiles")
                 app.swipeUp(); pause(1.2); shot("c11b-timeline-voice")
