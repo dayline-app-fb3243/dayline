@@ -409,7 +409,7 @@ struct SetupStep<Content: View>: View {
     var secondaryIsLink: Bool = false
     var back: (() -> Void)?
     var onPrimary: () -> Void
-    var onSecondary: () -> Void
+    var onSecondary: () -> Void = {}
     @ViewBuilder var content: Content
 
     var body: some View {
