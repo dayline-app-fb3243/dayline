@@ -648,40 +648,44 @@ struct AskToShareView: View {
     }
 }
 
-/// Pick someone to share your streak with.
+/// Share your streak: contacts on Dayline get Share, anyone else found by search gets Invite.
 struct ShareWithView: View {
     @State private var search = ""
-    @State private var picked: Set<String> = ["Priya"]
-    @Environment(\.dismiss) private var dismiss
-    private var people: [(String, String, Color?)] {
-        [("Priya", "Follows you", FriendStore.demo.first { $0.name == "Priya" }?.color), ("Alex Kim", "In your contacts", nil)]
-    }
+    private var q: String { search.trimmingCharacters(in: .whitespaces).lowercased() }
+    private func match(_ c: (String, String)) -> Bool { q.isEmpty || c.0.lowercased().contains(q) || c.1.lowercased().contains(q) }
+    private var onDayline: [(String, String)] { PeopleStore.contacts.filter(match) }
+    private var notOn: [(String, String)] { q.isEmpty ? [] : PeopleStore.notOnDayline.filter(match) }
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                PeopleHeader("Choose Someone")
-                PeopleGroup {
-                    ForEach(Array(people.enumerated()), id: \.offset) { i, p in
-                        Button {
-                            if picked.contains(p.0) { picked.remove(p.0) } else { picked.insert(p.0) }
-                        } label: {
-                            PersonRow(name: p.0, subtitle: p.1, color: p.2, last: i == people.count - 1) {
-                                Image(systemName: picked.contains(p.0) ? "checkmark.circle.fill" : "circle")
-                                    .font(.title2).foregroundStyle(picked.contains(p.0) ? Color.blue : Color(.tertiaryLabel))
+                if !onDayline.isEmpty {
+                    PeopleHeader("Contacts on Dayline")
+                    PeopleGroup {
+                        ForEach(Array(onDayline.enumerated()), id: \.offset) { i, c in
+                            PersonRow(name: c.0, subtitle: c.1, last: i == onDayline.count - 1) {
+                                PillButton(title: "Share", done: "Sharing")
                             }
+                            .accessibilityIdentifier("share-\(c.0)")
                         }
                     }
                 }
-                Text(picked.isEmpty ? "Pick who can see your streak." : "\(picked.sorted().joined(separator: " and ")) will see your streak only.")
-                    .font(.footnote).foregroundStyle(.secondary).padding(.horizontal, 16).padding(.top, 10)
-                Button { dismiss() } label: {
-                    Text("Start Sharing").font(.headline).frame(maxWidth: .infinity).frame(height: 40)
+                if !notOn.isEmpty {
+                    PeopleHeader("Not on Dayline Yet")
+                    PeopleGroup {
+                        ForEach(Array(notOn.enumerated()), id: \.offset) { i, c in
+                            PersonRow(name: c.0, subtitle: c.1, last: i == notOn.count - 1) {
+                                InviteButton(recipient: c.1)
+                            }
+                            .accessibilityIdentifier("shareInvite-\(c.0)")
+                        }
+                    }
                 }
-                .buttonStyle(.glassProminent).controlSize(.large).disabled(picked.isEmpty)
-                .padding(.top, 26)
+                Text(q.isEmpty ? "Share lets them see your streak only. Search to invite someone who isn\u{2019}t on Dayline." : "Share lets them see your streak only. Invite sends a link in Messages.")
+                    .font(.footnote).foregroundStyle(.secondary).padding(.horizontal, 16).padding(.top, 7)
             }
             .padding(.horizontal, 18).padding(.bottom, 30)
         }
+        .buttonStyle(.plain)
         .background(AppBackgroundView())
         .navigationTitle("Share With")
         .navigationBarTitleDisplayMode(.inline)

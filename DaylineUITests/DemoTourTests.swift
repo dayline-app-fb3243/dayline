@@ -102,7 +102,17 @@ final class DemoTourTests: XCTestCase {
         tapID(app, "person-Sam"); pause(2); shot("36-person-sam"); goBack(app); pause(1)
         tapID(app, "askToShare"); pause(2); shot("37-ask-to-share"); goBack(app); pause(1)
         app.swipeUp(); pause(1)
-        tapID(app, "addPerson"); pause(2); shot("38-share-with"); goBack(app); pause(1)
+        tapID(app, "addPerson"); pause(2); shot("38-share-with")
+        let shareBtn = app.buttons["Share"].firstMatch
+        if shareBtn.waitForExistence(timeout: 2) { shareBtn.tap(); pause(1); shot("38b-share-with-sharing") }
+        let sf = app.searchFields.firstMatch
+        if sf.waitForExistence(timeout: 2) {
+            sf.tap(); sf.typeText("Ma"); pause(1.5); shot("38c-share-with-search")
+            let cancel = app.buttons["Cancel"].firstMatch
+            if cancel.waitForExistence(timeout: 2) { cancel.tap() }
+            pause(1)
+        }
+        goBack(app); pause(1)
         tapID(app, "invite-Maya Cohen"); pause(2.5); shot("39-invite-sheet")
         let close = app.buttons["Close"].firstMatch
         if close.waitForExistence(timeout: 2) { close.tap() } else { app.swipeDown(velocity: .fast) }
