@@ -245,6 +245,17 @@ struct CapsuleSegmented<Value: Hashable>: View {
     @State private var width: CGFloat = 0
     private var flat: Bool { (UserDefaults.standard.string(forKey: "pill.style") ?? "flat") == "flat" } // Sep 24: David approved
     private var showGlass: Bool { moving || UserDefaults.standard.bool(forKey: "pill.forceMoving") }
+    /// Preview flag "pill.jelly" (awaiting David's pick): while sliding, the glass lens grows past the bar
+    /// and stretches wide then squishes narrow, like the Find My tab bar. A = subtle, B = like Find My, C = strong.
+    @State private var stretch: CGFloat = 0
+    private var jelly: String { UserDefaults.standard.string(forKey: "pill.jelly") ?? "" }
+    private var jellyParams: (scale: CGFloat, maxStretch: CGFloat, damping: Double) {
+        switch jelly { case "A": (1.08, 0.22, 0.7); case "B": (1.22, 0.45, 0.55); case "C": (1.32, 0.7, 0.42); default: (1.1, 0, 1) }
+    }
+    private var shownStretch: CGFloat {
+        let forced = UserDefaults.standard.double(forKey: "pill.forceStretch")
+        return forced != 0 ? forced * jellyParams.maxStretch : stretch
+    }
 
     var body: some View {
         if plain && flat {
@@ -290,6 +301,18 @@ struct CapsuleSegmented<Value: Hashable>: View {
 
     private func pick(_ value: Value) {
         moving = true
+        if !jelly.isEmpty {
+            let from = options.firstIndex { $0.0 == selection } ?? 0
+            let to = options.firstIndex { $0.0 == value } ?? 0
+            let p = jellyParams
+            withAnimation(.easeOut(duration: 0.12)) { stretch = min(p.maxStretch, CGFloat(abs(to - from)) * p.maxStretch * 0.5) }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.14) {
+                withAnimation(.spring(response: 0.45, dampingFraction: p.damping)) { stretch = 0 }
+            }
+            withAnimation(.spring(response: 0.4, dampingFraction: p.damping)) { selection = value }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { withAnimation(.easeOut(duration: 0.25)) { moving = false } }
+            return
+        }
         withAnimation(.snappy) { selection = value }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { withAnimation(.easeOut(duration: 0.2)) { moving = false } }
     }
@@ -307,7 +330,8 @@ struct CapsuleSegmented<Value: Hashable>: View {
                                     Capsule().fill(Color.primary.opacity(showGlass ? 0 : 0.09))
                                     if showGlass { Color.clear.glassEffect(.regular.interactive(), in: .capsule) }
                                 }
-                                .scaleEffect(showGlass ? 1.1 : 1)
+                                .scaleEffect(x: showGlass ? jellyParams.scale * (1 + shownStretch) : 1,
+                                             y: showGlass ? jellyParams.scale * (1 - shownStretch * 0.28) : 1)
                                 .matchedGeometryEffect(id: "flatPill", in: ns)
                             }
                         }
@@ -325,9 +349,18 @@ struct CapsuleSegmented<Value: Hashable>: View {
                     guard width > 0, !options.isEmpty else { return }
                     if !moving { withAnimation(.snappy) { moving = true } }
                     let i = min(max(Int(g.location.x / (width / CGFloat(options.count))), 0), options.count - 1)
-                    if options[i].0 != selection { withAnimation(.snappy) { selection = options[i].0 } }
+                    if !jelly.isEmpty {
+                        let p = jellyParams
+                        withAnimation(.interactiveSpring(response: 0.25, dampingFraction: p.damping)) {
+                            stretch = min(p.maxStretch, abs(g.velocity.width) / 2500 * p.maxStretch)
+                        }
+                    }
+                    if options[i].0 != selection { withAnimation(jelly.isEmpty ? .snappy : .spring(response: 0.4, dampingFraction: jellyParams.damping)) { selection = options[i].0 } }
                 }
-                .onEnded { _ in withAnimation(.easeOut(duration: 0.2)) { moving = false } }
+                .onEnded { _ in
+                    withAnimation(.spring(response: 0.45, dampingFraction: jellyParams.damping)) { stretch = 0 }
+                    withAnimation(.easeOut(duration: 0.25).delay(jelly.isEmpty ? 0 : 0.3)) { moving = false }
+                }
         )
     }
 

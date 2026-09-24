@@ -594,6 +594,33 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Week pill jelly stretch (pill.jelly A/B/C), frozen mid-slide: stretched wide, then squished narrow.
+    func testJellyDemo() throws {
+        for v in ["A", "B", "C"] {
+            for (tag, st) in [("wide", "1"), ("narrow", "-0.6")] {
+                let app = XCUIApplication()
+                app.launchArguments = ["-demo", "-pill.style", "flat", "-pill.jelly", v, "-pill.forceMoving", "YES", "-pill.forceStretch", st]
+                app.launchEnvironment["TZ"] = Self.morningZone
+                app.launch(); pause(1.5)
+                tab(app, "Timeline"); pause(2); tapSegment(app, "Month"); pause(2); shot("jl-\(v)-\(tag)")
+                app.terminate()
+            }
+        }
+    }
+
+    /// Video: fast taps and drags across the Week pill with pill.jelly B (the workflow records the screen for *Video tests).
+    func testJellyVideo() throws {
+        for v in ["A", "B", "C"] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-pill.style", "flat", "-pill.jelly", v]
+            app.launchEnvironment["TZ"] = Self.morningZone
+            app.launch(); pause(1.5)
+            tab(app, "Timeline"); pause(1.5)
+            for seg in ["Year", "Day", "Month", "Week", "Year", "Day"] { tapSegment(app, seg); pause(0.9) }
+            app.terminate()
+        }
+    }
+
     /// Privacy Policy as a row in the Your data group (no footer), light and dark.
     func testPrivacyRowDemo() throws {
         for mode in ["Light", "Dark"] {

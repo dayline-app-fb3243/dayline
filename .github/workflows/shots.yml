@@ -85,11 +85,14 @@ jobs:
           mkdir -p shots /tmp/dayline-shots
           xcrun simctl ui "${{ steps.sim.outputs.udid }}" appearance light
           for TEST in ${{ inputs.tests || 'testChangedScreens' }}; do
+            REC=""
+            case "$TEST" in *Video) xcrun simctl io "${{ steps.sim.outputs.udid }}" recordVideo --codec h264 --force "shots/$TEST.mp4" & REC=$!; sleep 2;; esac
             xcodebuild test-without-building \
               -project Dayline.xcodeproj -scheme Dayline \
               -destination "id=${{ steps.sim.outputs.udid }}" \
               -derivedDataPath build -only-testing:DaylineUITests/DemoTourTests/$TEST \
               -collect-test-diagnostics never 2>&1 | tail -30 || true
+            if [ -n "$REC" ]; then kill -INT $REC; wait $REC || true; fi
             cp /tmp/dayline-shots/*.png shots/ 2>/dev/null || true
           done
           cp /tmp/dayline-shots/*.png shots/ || true
