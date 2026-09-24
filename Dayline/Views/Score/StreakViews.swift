@@ -234,7 +234,7 @@ struct FriendStreakView: View {
                     StreakStat(title: "You", value: "\(yourStreak) days")
                 }
                 SectionHeader("Past week")
-                Card(padding: 12) { WeekStrip(color: friend.color) { friend.isGood($0) } }
+                Card(padding: 12) { FriendWeekStrip(color: friend.color) { friend.isGood($0) } }
                 Text("Friends see streaks only. Places, photos and notes stay private.")
                     .font(.footnote).foregroundStyle(.secondary).padding(.horizontal, 4)
             }
@@ -249,7 +249,7 @@ struct FriendStreakView: View {
 }
 
 /// The past 7 days, oldest first, ending today.
-struct WeekStrip: View {
+struct FriendWeekStrip: View {
     var color: Color
     var isGood: (Date) -> Bool
     var body: some View {
