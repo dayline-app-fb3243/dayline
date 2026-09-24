@@ -571,6 +571,17 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Splash options only (map-based D/E/F/G).
+    func testSplashDemo() throws {
+        for v in ["map", "D", "E", "F", "G"] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-onboarding", "-splash.style", v]
+            app.launchEnvironment["TZ"] = Self.morningZone
+            app.launch(); pause(1.8); shot("pv-splash-\(v)")
+            app.terminate()
+        }
+    }
+
     /// Previews for David: sign-in sheets sized to content, splash A/B/C, streak day opening the Day score page.
     func testPreviewsDemo() throws {
         var app = XCUIApplication()
@@ -581,7 +592,7 @@ final class DemoTourTests: XCTestCase {
         tapID(app, "signInOption-Apple"); pause(0.5)
         tapID(app, "signInContinue"); pause(1.8); shot("pv-apple-fit")
         app.terminate()
-        for v in ["A", "B", "C"] {
+        for v in ["D", "E", "F", "G"] {
             app = XCUIApplication()
             app.launchArguments = ["-demo", "-onboarding", "-splash.style", v]
             app.launchEnvironment["TZ"] = Self.morningZone

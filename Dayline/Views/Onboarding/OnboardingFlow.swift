@@ -80,6 +80,10 @@ struct SplashView: View {
             case "A": splashA
             case "B": splashB
             case "C": splashC
+            case "D": splashD
+            case "E": splashE
+            case "F": splashF
+            case "G": splashG
             default: splashMap
             }
         }
@@ -158,6 +162,87 @@ struct SplashView: View {
         .padding(.horizontal, 28)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(LinearGradient(colors: [Color(red: 0.86, green: 0.92, blue: 1.0), Color(.systemBackground)], startPoint: .top, endPoint: .bottom).ignoresSafeArea())
+    }
+
+    // --- Map-based options (Sep 24, David wants ideas close to the faded map) ---
+    private func fadedMap(height: CGFloat, fade: CGFloat) -> some View {
+        Color.clear.frame(maxWidth: .infinity).frame(height: height)
+            .overlay(alignment: .top) { Image("SplashMap").resizable().scaledToFill() }
+            .clipped()
+            .overlay(alignment: .bottom) {
+                LinearGradient(stops: [.init(color: Color(.systemBackground).opacity(0), location: 0), .init(color: Color(.systemBackground), location: 0.85)],
+                               startPoint: .top, endPoint: .bottom).frame(height: fade)
+            }
+    }
+    private func bottomBlock(top: CGFloat) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            title.padding(.horizontal, 28).padding(.top, top)
+            Spacer()
+            continueButton.padding(.horizontal, 24).padding(.bottom, 16)
+        }
+    }
+    // D: taller map, longer soft fade, text sits lower.
+    private var splashD: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            fadedMap(height: 650, fade: 320).ignoresSafeArea(edges: .top)
+            bottomBlock(top: -90)
+        }
+        .background(Color(.systemBackground))
+    }
+    // E: faded map with the day's stops as small glass time chips.
+    private var splashE: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            fadedMap(height: 560, fade: 220)
+                .overlay(alignment: .topLeading) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        chip("8:10", "Home", "house.fill")
+                        chip("9:02", "Office", "briefcase.fill").padding(.leading, 40)
+                        chip("12:30", "Noodle Bar", "fork.knife").padding(.leading, 90)
+                    }
+                    .padding(.top, 150).padding(.leading, 24)
+                }
+                .ignoresSafeArea(edges: .top)
+            bottomBlock(top: -40)
+        }
+        .background(Color(.systemBackground))
+    }
+    private func chip(_ time: String, _ place: String, _ symbol: String) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: symbol).font(.footnote.weight(.semibold)).foregroundStyle(Theme.accent)
+            Text(time).font(.subheadline.weight(.semibold)).monospacedDigit()
+            Text(place).font(.subheadline).foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 14).padding(.vertical, 9)
+        .glassEffect(.regular, in: .capsule)
+    }
+    // F: the map as a rounded card at the top, title under it.
+    private var splashF: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Image("SplashMap").resizable().scaledToFill()
+                .frame(maxWidth: .infinity).frame(height: 440)
+                .clipShape(.rect(cornerRadius: 36, style: .continuous))
+                .shadow(color: .black.opacity(0.12), radius: 20, y: 10)
+                .padding(.horizontal, 16).padding(.top, 8)
+            bottomBlock(top: 32)
+        }
+        .background(Color(.systemBackground))
+    }
+    // G: the faded map (now) with the app icon above the title.
+    private var splashG: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            fadedMap(height: 520, fade: 220).ignoresSafeArea(edges: .top)
+            VStack(alignment: .leading, spacing: 0) {
+                Image("AppIconImage").resizable().interpolation(.high).frame(width: 64, height: 64)
+                    .clipShape(.rect(cornerRadius: 15, style: .continuous))
+                    .shadow(color: .black.opacity(0.15), radius: 10, y: 5)
+                    .padding(.bottom, 18)
+                title
+            }
+            .padding(.horizontal, 28).padding(.top, -70)
+            Spacer()
+            continueButton.padding(.horizontal, 24).padding(.bottom, 16)
+        }
+        .background(Color(.systemBackground))
     }
 
     private var splashMap: some View {
