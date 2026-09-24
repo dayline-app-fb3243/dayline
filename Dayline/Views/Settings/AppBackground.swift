@@ -410,7 +410,7 @@ struct ProfileView: View {
                 if auth.isSignedIn {
                     Button { confirmSignOut = true } label: {
                         Text("Sign Out").foregroundStyle(.red).frame(maxWidth: .infinity).frame(minHeight: 52)
-                            .background(Color(.secondarySystemGroupedBackground).opacity(0.9), in: .rect(cornerRadius: 26, style: .continuous))
+                            .background(Color(.secondarySystemGroupedBackground).opacity(0.9), in: .rect(cornerRadius: Theme.cardRadius, style: .continuous))
                             .contentShape(.rect)
                     }
                     .padding(.top, 12)

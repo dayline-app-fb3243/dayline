@@ -13,7 +13,7 @@ struct Card<Content: View>: View {
         content
             .padding(padding)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 28, style: .continuous))
+            .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: Theme.cardRadius, style: .continuous))
             .shadow(color: .black.opacity(0.05), radius: 12, y: 4)
     }
 }
@@ -38,6 +38,9 @@ struct CategoryIcon: View {
 /// One set of colours for every screen and the widgets.
 /// Two colours for the whole app: blue for everything, orange only for bad or negative things.
 enum Theme {
+    /// Corner radius of grouped cards, measured from iOS Settings (inset grouped sections).
+    static let cardRadius: CGFloat = 24
+
     static let accent = Color.blue
     static let bad = Color.orange
     static let good = accent

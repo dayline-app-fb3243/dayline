@@ -415,8 +415,8 @@ struct DayPhotoCards: View {
                     }
                     .padding(.horizontal, 14).padding(.vertical, 12)
                 }
-                .background(Color(.secondarySystemGroupedBackground).opacity(0.92), in: .rect(cornerRadius: 26, style: .continuous))
-                .clipShape(.rect(cornerRadius: 26, style: .continuous))
+                .background(Color(.secondarySystemGroupedBackground).opacity(0.92), in: .rect(cornerRadius: Theme.cardRadius, style: .continuous))
+                .clipShape(.rect(cornerRadius: Theme.cardRadius, style: .continuous))
                 .shadow(color: .black.opacity(0.06), radius: 10, y: 4)
             }
         }
