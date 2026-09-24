@@ -14,7 +14,7 @@ struct JournalView: View {
     /// Newest day first; inside a day, entries run in time order, and entries made at the same place
     /// within 30 minutes share one card (so a photo and its caption sit together).
     private var days: [(Date, [JournalGroup])] {
-        Dictionary(grouping: filtered) { Calendar.current.startOfDay(for: $0.date) }
+        Dictionary(grouping: filtered) { DayBoundary.shared.day(of: $0.date) }
             .sorted { $0.key > $1.key }
             .map { day, items in (day, JournalGroup.make(items.sorted { $0.date > $1.date }, visits: visits)) }
     }

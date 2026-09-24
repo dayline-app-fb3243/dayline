@@ -11,14 +11,16 @@ import BackgroundTasks
 @MainActor
 enum DayRefresher {
     static func refresh(context: ModelContext) async {
-        await PhotoService.shared.importPhotos(on: .now, context: context)
+        await DayBoundary.shared.refresh(context: context)
+        let today = DayBoundary.shared.today
+        await PhotoService.shared.importPhotos(on: today, context: context)
         RoutineLearner.fillToday(context: context)
         RoutineLearner.autoComplete(context: context)
         DayData.finalizePastDays(context: context)
 
-        let result = ScoreEngine.score(DayData.input(for: .now, context: context))
+        let result = ScoreEngine.score(DayData.input(for: today, context: context))
         let streak = DayData.streak(context: context)
-        let plan = DayData.input(for: .now, context: context).plan
+        let plan = DayData.input(for: today, context: context).plan
         let next = plan.filter { !$0.isDone && $0.end > .now }.sorted { $0.start < $1.start }.first
         let recent = ((try? context.fetch(FetchDescriptor<DayScore>(sortBy: [SortDescriptor(\.day, order: .reverse)]))) ?? [])
             .prefix(6).reversed().map(\.score) + [result.score]
@@ -47,7 +49,7 @@ enum Notifications {
         let center = UNUserNotificationCenter.current()
         center.removePendingNotificationRequests(withIdentifiers: ["morning-recap", "evening-checkin"])
         guard score >= 80, !DemoData.isDemo else { return }
-        let day = calendar.startOfDay(for: .now).formatted(.iso8601.year().month().day())
+        let day = DayBoundary.shared.today.formatted(.iso8601.year().month().day())
         let key = "notified80-\(day)"
         guard !UserDefaults.standard.bool(forKey: key) else { return }
         UserDefaults.standard.set(true, forKey: key)

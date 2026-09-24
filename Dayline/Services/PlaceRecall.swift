@@ -83,8 +83,8 @@ enum PlaceRecall {
         let wanted = Set(categories.map(\.rawValue))
         var descriptor = FetchDescriptor<Visit>(sortBy: [SortDescriptor(\.arrival, order: .reverse)])
         if let day {
-            let start = calendar.startOfDay(for: day)
-            let end = calendar.date(byAdding: .day, value: 1, to: start)!
+            let window = DayBoundary.shared.window(for: day, calendar: calendar)
+            let start = window.start, end = window.end
             descriptor.predicate = #Predicate { $0.arrival >= start && $0.arrival < end }
         } else {
             descriptor.fetchLimit = 500

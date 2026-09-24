@@ -60,7 +60,9 @@ struct DaylineApp: App {
         } else {
             LocationService.shared.requestPermission()
             LocationService.shared.start()
+            DayBoundary.shared.start()
             await Notifications.requestPermission()
+            DayBoundary.shared.requestMotion()
         }
         await DayRefresher.refresh(context: context)
     }

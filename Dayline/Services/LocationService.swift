@@ -88,6 +88,7 @@ final class LocationService: NSObject, ObservableObject {
                                       source: source))
         try? context.save()
         lastSample = location.timestamp
+        DayBoundary.shared.noteBattery()   // charging at night helps tell when you fell asleep
     }
 
     private func record(visit: CLVisit) {

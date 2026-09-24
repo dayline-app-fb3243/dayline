@@ -111,24 +111,27 @@ enum ScoreEngine {
 @MainActor
 enum DayData {
     static func input(for day: Date, context: ModelContext, calendar: Calendar = .current) -> ScoreEngine.DayInput {
-        let start = calendar.startOfDay(for: day)
-        let end = calendar.date(byAdding: .day, value: 1, to: start)!
+        // The day runs from waking up to falling asleep (see DayBoundary); 4 AM when sleep can't be read.
+        let window = DayBoundary.shared.window(for: day, calendar: calendar)
+        let start = window.start, end = window.end
         let plan = (try? context.fetch(FetchDescriptor<PlanItem>(predicate: #Predicate { $0.start >= start && $0.start < end }))) ?? []
         let visits = (try? context.fetch(FetchDescriptor<Visit>(predicate: #Predicate { $0.arrival >= start && $0.arrival < end }))) ?? []
         let journal = (try? context.fetch(FetchDescriptor<JournalEntry>(predicate: #Predicate { $0.date >= start && $0.date < end }))) ?? []
         // First activity: leaving home, or the first journal entry / check-in after 4 AM.
-        let fourAM = calendar.date(bySettingHour: 4, minute: 0, second: 0, of: start)!
+        let fourAM = start
         let leftHome = visits.filter { $0.category == .home }.compactMap(\.departure).filter { $0 > fourAM }.min()
         let firstOut = visits.filter { $0.category != .home }.map(\.arrival).filter { $0 > fourAM }.min()
         let firstJournal = journal.map(\.date).filter { $0 > fourAM }.min()
-        let first = [leftHome, firstOut.map { $0.addingTimeInterval(-15 * 60) }, firstJournal].compactMap { $0 }.min()
+        // Wake-up = first motion after the overnight still stretch; otherwise the first sign of activity.
+        let first = DayBoundary.shared.wakeUp(on: day, calendar: calendar)
+            ?? [leftHome, firstOut.map { $0.addingTimeInterval(-15 * 60) }, firstJournal].compactMap { $0 }.min()
         return .init(firstActivity: first, plan: plan, visits: visits, journal: journal, isFinished: end <= .now)
     }
 
     /// Stores final scores for finished days that don't have one yet (last 60 days).
     static func finalizePastDays(context: ModelContext, calendar: Calendar = .current) {
         let existing = Set(((try? context.fetch(FetchDescriptor<DayScore>())) ?? []).map(\.day))
-        let today = calendar.startOfDay(for: .now)
+        let today = DayBoundary.shared.today
         for offset in 1...60 {
             let day = calendar.date(byAdding: .day, value: -offset, to: today)!
             guard !existing.contains(day) else { continue }
@@ -143,7 +146,7 @@ enum DayData {
     static func streak(context: ModelContext, calendar: Calendar = .current) -> Int {
         let scores = ((try? context.fetch(FetchDescriptor<DayScore>(sortBy: [SortDescriptor(\.day, order: .reverse)]))) ?? [])
         var count = 0
-        let today = calendar.startOfDay(for: .now)
+        let today = DayBoundary.shared.today
         // Today counts once it reaches 80; otherwise the streak runs through yesterday.
         var expected = scores.first.map { $0.day == today && $0.score >= 80 } == true ? today : calendar.date(byAdding: .day, value: -1, to: today)!
         for s in scores where s.day <= expected {

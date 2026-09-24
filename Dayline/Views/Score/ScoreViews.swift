@@ -247,12 +247,15 @@ struct DayActivityList: View {
     private var rows: [Row] {
         let cal = Calendar.current, now = Date.now
         var out: [Row] = []
-        let isToday = cal.isDateInToday(day)
+        let isToday = cal.isDate(day, inSameDayAs: DayBoundary.shared.today)
+        let window = DayBoundary.shared.window(for: day)
+        let sensedWake = DayBoundary.shared.wakeUp(on: day)
         let wake: Date? = (DemoData.isDemo && isToday)
             ? cal.date(bySettingHour: 6, minute: 50, second: 0, of: day)
             : DayData.input(for: day, context: context).firstActivity
-        if let wake { out.append(Row(id: "wake", time: wake, title: "Woke up", detail: DemoData.isDemo ? "Phone first used" : "First activity", isNow: false)) }
-        for v in visits where cal.isDate(v.arrival, inSameDayAs: day) && v.category != .home && v.arrival <= now {
+        let wakeDetail = DemoData.isDemo ? "Phone first used" : (sensedWake != nil ? "First move after sleep" : "First activity")
+        if let wake { out.append(Row(id: "wake", time: wake, title: "Woke up", detail: wakeDetail, isNow: false)) }
+        for v in visits where window.contains(v.arrival) && v.category != .home && v.arrival <= now {
             let here = v.departure.map { $0 > now } ?? true
             let end = here ? now : v.departure!
             var detail = here && isToday ? "Here since \(Self.clock.string(from: v.arrival))" : Self.duration(end.timeIntervalSince(v.arrival))

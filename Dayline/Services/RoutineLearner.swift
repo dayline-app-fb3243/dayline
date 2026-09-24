@@ -66,8 +66,8 @@ enum RoutineLearner {
 
     /// Adds learned items to today's plan once (never duplicates, never touches the user's own items).
     static func fillToday(context: ModelContext, calendar: Calendar = .current) {
-        let today = calendar.startOfDay(for: .now)
-        let tomorrow = calendar.date(byAdding: .day, value: 1, to: today)!
+        let today = DayBoundary.shared.today
+        let tomorrow = DayBoundary.shared.window(for: today, calendar: calendar).end
         let existing = (try? context.fetch(FetchDescriptor<PlanItem>(predicate: #Predicate { $0.start >= today && $0.start < tomorrow }))) ?? []
         let visits = (try? context.fetch(FetchDescriptor<Visit>())) ?? []
         for s in suggestions(for: today, visits: visits, calendar: calendar) where !existing.contains(where: { $0.title == s.title }) {
@@ -79,10 +79,10 @@ enum RoutineLearner {
     }
 
     /// Marks plan items done when the user was at a matching place during the item.
-    static func autoComplete(context: ModelContext, day: Date = .now, calendar: Calendar = .current) {
+    static func autoComplete(context: ModelContext, day: Date? = nil, calendar: Calendar = .current) {
         if DemoData.isDemo { return } // demo keeps the schedule exactly as designed
-        let start = calendar.startOfDay(for: day)
-        let end = calendar.date(byAdding: .day, value: 1, to: start)!
+        let window = DayBoundary.shared.window(for: day ?? DayBoundary.shared.today, calendar: calendar)
+        let start = window.start, end = window.end
         let items = (try? context.fetch(FetchDescriptor<PlanItem>(predicate: #Predicate { $0.start >= start && $0.start < end }))) ?? []
         let visits = (try? context.fetch(FetchDescriptor<Visit>(predicate: #Predicate { $0.arrival >= start && $0.arrival < end }))) ?? []
         for item in items where !item.isDone && item.category != .other {

@@ -35,6 +35,7 @@ targets:
         NSLocationAlwaysAndWhenInUseUsageDescription: Dayline checks your location in the background, as often as you pick in Profile (every 1, 5 or 10 minutes), to build your timeline. It stays on your iPhone.
         NSCameraUsageDescription: Dayline opens your camera so you can add a photo to your journal at the place you took it.
         NSPhotoLibraryUsageDescription: Dayline adds your photos to your timeline at the place they were taken.
+        NSMotionUsageDescription: Dayline uses motion to tell when you fell asleep and woke up, so late nights count toward the right day. It stays on your iPhone.
         NSMicrophoneUsageDescription: Dayline records voice notes for your journal.
         NSSpeechRecognitionUsageDescription: Dayline turns your voice notes into text on your device.
         UIBackgroundModes: [fetch, processing, location]

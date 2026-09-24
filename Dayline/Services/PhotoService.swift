@@ -45,8 +45,8 @@ final class PhotoService {
     func importPhotos(on day: Date, context: ModelContext) async {
         guard PHPhotoLibrary.authorizationStatus(for: .readWrite) == .authorized ||
               PHPhotoLibrary.authorizationStatus(for: .readWrite) == .limited else { return }
-        let start = Calendar.current.startOfDay(for: day)
-        let end = Calendar.current.date(byAdding: .day, value: 1, to: start)!
+        let window = DayBoundary.shared.window(for: day)
+        let start = window.start, end = window.end
         let options = PHFetchOptions()
         options.predicate = NSPredicate(format: "creationDate >= %@ AND creationDate < %@", start as NSDate, end as NSDate)
         let assets = PHAsset.fetchAssets(with: .image, options: options)
