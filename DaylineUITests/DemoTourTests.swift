@@ -177,8 +177,8 @@ final class DemoTourTests: XCTestCase {
         goBack(app)
         tapID(app, "yourDataRow"); pause(2); shot("65-your-data")
         tapID(app, "deleteAccount"); pause(1.2); shot("65b-delete-confirm")
-        let cancel = app.alerts.buttons["Cancel"].firstMatch
-        if cancel.waitForExistence(timeout: 2) { cancel.tap() }
+        let cancelDelete = app.alerts.buttons["Cancel"].firstMatch
+        if cancelDelete.waitForExistence(timeout: 2) { cancelDelete.tap() }
         pause(0.8); goBack(app)
         tab(app, "Today"); pause(1.5); shot("63-today-sunset")
     }

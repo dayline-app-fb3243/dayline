@@ -95,8 +95,6 @@ struct JournalGroup: Identifiable {
 /// One card in the Journal, laid out like the design: icon, place, time; photos; then the words.
 struct JournalCard: View {
     let group: JournalGroup
-    @State private var player: AVAudioPlayer?
-
     var body: some View {
         Card(padding: 14) {
             VStack(alignment: .leading, spacing: 10) {
@@ -129,26 +127,14 @@ struct JournalCard: View {
                     Text(text).font(.subheadline)
                 }
                 if let voice = group.voice {
-                    if !voice.text.isEmpty {
-                        Text("\"\(voice.text)\"").font(.subheadline)
-                    }
-                    Button { play(voice) } label: {
-                        Text(Duration.seconds(voice.audioDuration).formatted(.time(pattern: .minuteSecond))
-                             + (voice.isTranscribed ? " · Transcribed" : " · Transcribing…"))
-                            .font(.caption.weight(.semibold)).foregroundStyle(Theme.accent)
-                    }
-                    .buttonStyle(.plain)
+                    VoiceBubble(seconds: voice.audioDuration, words: voice.text, transcribed: voice.isTranscribed,
+                                seed: voice.audioFileName ?? "\(voice.date)",
+                                audioURL: voice.audioFileName.map { VoiceNoteService.folder.appending(path: $0) })
                 } else if let text = group.text {
                     Text(text).font(.subheadline)
                 }
             }
         }
-    }
-
-    private func play(_ entry: JournalEntry) {
-        guard let name = entry.audioFileName else { return }
-        player = try? AVAudioPlayer(contentsOf: VoiceNoteService.folder.appending(path: name))
-        player?.play()
     }
 }
 

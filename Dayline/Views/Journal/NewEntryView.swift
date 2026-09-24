@@ -115,7 +115,8 @@ struct NewEntryView: View {
                     case .media:
                         mediaGrid(block)
                     case .voice:
-                        voiceRow(block.seconds, recording: false) { remove(block.id) }
+                        VoiceBubble(seconds: block.seconds, seed: block.id.uuidString)
+                            .contextMenu { Button("Remove", systemImage: "trash", role: .destructive) { remove(block.id) } }
                     }
                 }
                 if voice.isRecording {
