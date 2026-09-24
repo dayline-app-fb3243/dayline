@@ -350,14 +350,10 @@ struct TimelineScreen: View {
     /// outline and grabber show around the bar; pulled up, the same panel grows and the switches come out
     /// from behind the bar. The bar itself never moves.
     private var backSheet: some View {
-        let shape = RoundedRectangle(cornerRadius: 38, style: .continuous)
+        let shape = RoundedRectangle(cornerRadius: sheetOpen ? 38 : 44, style: .continuous)
         return VStack(spacing: 0) {
-            Capsule().fill(Color.secondary.opacity(0.55)).frame(width: 38, height: 5)
-                .padding(.top, 7).padding(.bottom, sheetOpen ? 12 : 6)
-                .frame(maxWidth: .infinity).contentShape(.rect)
-                .onTapGesture { withAnimation(.spring(response: 0.5, dampingFraction: 0.86)) { sheetOpen.toggle() } }
-                .accessibilityIdentifier("mapGrabber")
             if sheetOpen {
+                Color.clear.frame(height: 24)
                 VStack(alignment: .leading, spacing: 16) {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Map").font(.largeTitle.weight(.bold))
@@ -382,14 +378,23 @@ struct TimelineScreen: View {
             CapsuleSegmented(selection: $range, options: MapRange.allCases.map { ($0, $0.rawValue) }, plain: true)
                 .padding(.horizontal, 4).padding(.vertical, 6)
                 .glassEffect(.regular, in: .capsule)
-                .padding(.horizontal, 6).padding(.bottom, 6)
+                // Same gap on all sides, like Apple Maps: the bar sits centered in the closed panel.
+                .padding(.horizontal, 12).padding(.top, sheetOpen ? 0 : 14).padding(.bottom, 14)
                 .zIndex(1)
+        }
+        .overlay(alignment: .top) {
+            // Grabber lives in the panel's top gap, so it takes no extra height.
+            Capsule().fill(Color.secondary.opacity(0.55)).frame(width: 38, height: 5)
+                .padding(.top, 5)
+                .frame(width: 140, height: 22, alignment: .top).contentShape(.rect)
+                .onTapGesture { withAnimation(.spring(response: 0.5, dampingFraction: 0.86)) { sheetOpen.toggle() } }
+                .accessibilityIdentifier("mapGrabber")
         }
         .clipShape(shape)
         .glassEffect(.regular, in: shape)
         .overlay(shape.strokeBorder(Color.white.opacity(0.45), lineWidth: 0.8))
         .overlay(shape.strokeBorder(Color.black.opacity(0.08), lineWidth: 0.5).padding(-0.5))
-        .padding(.horizontal, 10).padding(.bottom, 4)
+        .padding(.horizontal, 8).padding(.bottom, 2)
         .gesture(DragGesture(minimumDistance: 12).onEnded { g in
             withAnimation(.spring(response: 0.5, dampingFraction: 0.86)) {
                 if g.translation.height < -30 { sheetOpen = true } else if g.translation.height > 30 { sheetOpen = false }
