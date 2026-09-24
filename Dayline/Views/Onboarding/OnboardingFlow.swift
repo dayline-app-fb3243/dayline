@@ -877,7 +877,9 @@ struct SplashLiveMap: View {
     var style: String
     @State private var route: [CLLocationCoordinate2D] = []
     private struct Stop: Identifiable { let id = UUID(); let name: String; let time: String; let symbol: String; let c: CLLocationCoordinate2D }
-    private var stops: [Stop] { ["J", "K", "L"].contains(style) ? parkStops : cityStops }
+    private var stops: [Stop] { ["J", "K", "L", "M", "N"].contains(style) ? parkStops : cityStops }
+    /// M/N: L's camera with one big pin on Bryant Park as the focal point (like the big pin on Apple's Maps splash).
+    private var heroSize: CGFloat? { style == "M" ? 104 : style == "N" ? 132 : nil }
     /// J/K/L: a morning through Bryant Park, so trees show up close in 3D.
     private let parkStops: [Stop] = [
         Stop(name: "Home", time: "8:10", symbol: "house.fill", c: .init(latitude: 40.7511, longitude: -73.9873)),
@@ -894,7 +896,7 @@ struct SplashLiveMap: View {
     var body: some View {
         Map(initialPosition: position, interactionModes: []) {
             if route.count > 1 {
-                if ["D", "J", "K", "L"].contains(style) {
+                if ["D", "J", "K", "L", "M", "N"].contains(style) {
                     // D: thick route with a white edge, close and steep, like Apple Maps directions.
                     MapPolyline(coordinates: route).stroke(.white, style: StrokeStyle(lineWidth: 11, lineCap: .round, lineJoin: .round))
                     MapPolyline(coordinates: route).stroke(Theme.accent, style: StrokeStyle(lineWidth: 7, lineCap: .round, lineJoin: .round))
@@ -908,7 +910,13 @@ struct SplashLiveMap: View {
                 }
             }
             ForEach(stops) { s in
-                if ["G", "H", "I", "J", "K", "L"].contains(style) {
+                if let h = heroSize {
+                    if s.name == "Bryant Park" {
+                        Annotation("", coordinate: s.c, anchor: .bottom) {
+                            ApplePin(symbol: s.symbol, color: Theme.accent, hero: h)
+                        }
+                    }
+                } else if ["G", "H", "I", "J", "K", "L"].contains(style) {
                     // G-L: C's 3D look with the new Apple-style pin (small, theme blue, dot on the spot).
                     Annotation("", coordinate: s.c, anchor: .bottom) {
                         ApplePin(symbol: s.symbol, color: Theme.accent, big: false, dot: true)
@@ -923,7 +931,7 @@ struct SplashLiveMap: View {
             }
         }
         .mapStyle(style == "B" ? .standard(emphasis: .muted, pointsOfInterest: .excludingAll) :
-                  ["C", "D", "G", "H", "I", "J", "K", "L"].contains(style) ? .standard(elevation: .realistic, pointsOfInterest: .excludingAll) :
+                  ["C", "D", "G", "H", "I", "J", "K", "L", "M", "N"].contains(style) ? .standard(elevation: .realistic, pointsOfInterest: .excludingAll) :
                   style == "E" ? .hybrid(elevation: .realistic, pointsOfInterest: .excludingAll) :
                   style == "F" ? .standard(elevation: .realistic, emphasis: .muted, pointsOfInterest: .excludingAll) :
                   .standard(pointsOfInterest: .excludingAll))
@@ -945,7 +953,7 @@ struct SplashLiveMap: View {
         let park = CLLocationCoordinate2D(latitude: 40.7534, longitude: -73.9836)
         if style == "J" { return .camera(MapCamera(centerCoordinate: park, distance: 1200, heading: 29, pitch: 35)) }
         if style == "K" { return .camera(MapCamera(centerCoordinate: park, distance: 850, heading: 29, pitch: 40)) }
-        if style == "L" { return .camera(MapCamera(centerCoordinate: park, distance: 600, heading: 60, pitch: 45)) }
+        if style == "L" || style == "M" || style == "N" { return .camera(MapCamera(centerCoordinate: park, distance: 600, heading: 60, pitch: 45)) }
         if style == "E" { return .camera(MapCamera(centerCoordinate: center, distance: 2400, heading: 29, pitch: 58)) }
         if style == "F" { return .camera(MapCamera(centerCoordinate: center, distance: 2800, heading: 210, pitch: 55)) }
         return .region(MKCoordinateRegion(center: center, span: .init(latitudeDelta: 0.021, longitudeDelta: 0.021)))

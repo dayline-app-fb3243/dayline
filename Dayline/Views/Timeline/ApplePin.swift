@@ -8,10 +8,33 @@ struct ApplePin: View {
     var big = true
     /// Small size with Apple's dot under the pin (pin.style D: A's shape at C's size, theme blue).
     var dot: Bool? = nil
+    /// Hero size (splash): the badge diameter in points, like the big pin on Apple's Maps splash.
+    var hero: CGFloat? = nil
     var body: some View {
+        if let h = hero { heroPin(h) } else { standard }
+    }
+    private func heroPin(_ d: CGFloat) -> some View {
+        VStack(spacing: 0) {
+            ZStack {
+                Circle().fill(LinearGradient(colors: [color.mix(with: .white, by: 0.25), color], startPoint: .top, endPoint: .bottom))
+                Image(systemName: symbol).font(.system(size: d * 0.40, weight: .semibold)).foregroundStyle(.white)
+            }
+            .frame(width: d, height: d)
+            .padding(d * 0.075)
+            .background(Circle().fill(.white))
+            PinTail().fill(.white).frame(width: d * 0.22, height: d * 0.16).offset(y: -1)
+            Circle().fill(color).frame(width: d * 0.16, height: d * 0.16)
+                .padding(d * 0.045).background(Circle().fill(.white))
+                .shadow(color: .black.opacity(0.25), radius: 3, y: 1)
+                .padding(.top, d * 0.12)
+        }
+        .compositingGroup()
+        .shadow(color: .black.opacity(0.25), radius: 14, y: 6)
+    }
+    private var standard: some View {
         let d: CGFloat = big ? 46 : (dot == true ? 24 : 34)
         let showDot = dot ?? big
-        VStack(spacing: 0) {
+        return VStack(spacing: 0) {
             ZStack {
                 Circle().fill(LinearGradient(colors: [color.mix(with: .white, by: 0.22), color], startPoint: .top, endPoint: .bottom))
                 Image(systemName: symbol).font(.system(size: d * 0.42, weight: .semibold)).foregroundStyle(.white)
