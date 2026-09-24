@@ -17,7 +17,7 @@ struct SiriCommandsView: View {
             VStack(alignment: .leading, spacing: 10) {
                 Card(padding: 16) {
                     VStack(alignment: .leading, spacing: 8) {
-                        Label("Just ask Siri", systemImage: "waveform").font(.headline)
+                        Label { Text("Just ask Siri") } icon: { SiriRowIcon() }.font(.headline)
                         Text("Say \u{201C}Hey Siri\u{201D} and ask in your own words. Add \u{201C}with Dayline\u{201D} so Siri looks in your Dayline.")
                             .font(.subheadline).foregroundStyle(.secondary)
                     }
@@ -43,5 +43,26 @@ struct SiriCommandsView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbarVisibility(.hidden, for: .tabBar)
         .accessibilityIdentifier("siriCommandsScreen")
+    }
+}
+
+
+/// Icon next to "Just ask Siri". Preview options until David picks one (-siri.iconStyle orb|circle).
+struct SiriRowIcon: View {
+    @AppStorage("siri.iconStyle") private var style = "waveform"
+    var body: some View {
+        switch style {
+        case "orb":
+            // Apple's official Siri artwork; only bundled in preview builds, never committed.
+            if let img = UIImage(named: "SiriOrb") {
+                Image(uiImage: img).resizable().scaledToFit().frame(width: 24, height: 24)
+            } else {
+                Image(systemName: "waveform")
+            }
+        case "circle":
+            Image(systemName: "waveform.circle").foregroundStyle(Theme.accent)
+        default:
+            Image(systemName: "waveform")
+        }
     }
 }

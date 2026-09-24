@@ -117,6 +117,21 @@ final class DemoTourTests: XCTestCase {
         let eCode = app.textFields["emailCodeField"]; _ = eCode.waitForExistence(timeout: 5); eCode.tap(); eCode.typeText("5710"); pause(1); shot("05b-email-code")
     }
 
+    /// Siri row icon options (preview only).
+    func testSiriIcons() {
+        for (style, name) in [("waveform", "c9-siri-now"), ("orb", "c9b-siri-orb"), ("circle", "c9c-siri-circle")] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-siri.iconStyle", style]
+            app.launchEnvironment["TZ"] = Self.morningZone
+            app.launch()
+            tab(app, "Profile"); pause(1.5)
+            let row = app.descendants(matching: .any)["useWithSiriRow"].firstMatch
+            if !row.waitForExistence(timeout: 3) { app.swipeUp(); pause(1) }
+            tapID(app, "useWithSiriRow"); pause(1.8); shot(name)
+            app.terminate()
+        }
+    }
+
     /// Just the screens changed in the latest round, for a quick picture set.
     func testChangedScreens() throws {
         var app = XCUIApplication()
