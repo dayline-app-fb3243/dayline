@@ -273,7 +273,7 @@ struct SplashView: View {
 
 /// Sign-in sheet in the style of Apple's own "Sign in with Apple" sheet: pick one, then the blue button.
 struct SignInSheet: View {
-    @AppStorage("signin.pinned") private var pinned = false
+    @AppStorage("signin.pinned") private var pinned = true // Sep 24: David approved (fitted sheet, full-width button)
     @State private var fitHeight: CGFloat = 0
     var next: () -> Void
     var email: () -> Void
@@ -407,7 +407,7 @@ final class AppleSignInRunner: NSObject, ASAuthorizationControllerDelegate, ASAu
 /// Demo stand-in for Apple's own Sign in with Apple sheet (the real one needs a paid developer account).
 /// Laid out like the real iOS 26 sheet.
 struct AppleSignInDemoSheet: View {
-    @AppStorage("signin.pinned") private var pinned = false
+    @AppStorage("signin.pinned") private var pinned = true // Sep 24: David approved (fitted sheet, full-width button)
     @State private var fitHeight: CGFloat = 0
     var onContinue: () -> Void
     @State private var hideEmail = true
@@ -510,7 +510,7 @@ struct PermissionsView: View {
     private struct Page { var kind: String; var title: String; var rows: [(String, String)]; var note: String }
     private let pages: [Page] = [
         Page(kind: "location", title: "Turning on Location lets Dayline:",
-             rows: [("list.bullet", "Build your timeline for you"), ("map", "Show where you were on a map"), ("clock.arrow.circlepath", "Find a place again with Siri")],
+             rows: [("list.bullet", "Build your timeline for you"), ("map", "Show where you were on a map"), ("siri", "Find a place again with Siri")],
              note: "It\u{2019}s low-power, so it\u{2019}s easy on your battery. You can change this later in Settings."),
         Page(kind: "photos", title: "Turning on Photos lets Dayline:",
              rows: [("photo.on.rectangle", "Put your photos on the places you took them"), ("calendar", "Show them on your day")],
@@ -538,7 +538,12 @@ struct PermissionsView: View {
             Text(page.title).font(.title.bold()).padding(.top, 60).padding(.bottom, 30)
             ForEach(page.rows, id: \.1) { r in
                 HStack(spacing: 16) {
-                    Image(systemName: r.0).font(.title2).foregroundStyle(Theme.accent).frame(width: 36)
+                    Group {
+                        // Every Siri mention uses the new Siri mark (David, Sep 24).
+                        if r.0 == "siri" { SiriMark().frame(width: 28, height: 28) }
+                        else { Image(systemName: r.0).font(.title2).foregroundStyle(Theme.accent) }
+                    }
+                    .frame(width: 36)
                     Text(r.1).font(.body)
                 }
                 .padding(.bottom, 24)

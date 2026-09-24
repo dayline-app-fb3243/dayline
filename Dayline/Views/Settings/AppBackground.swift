@@ -243,7 +243,7 @@ struct CapsuleSegmented<Value: Hashable>: View {
     /// Liquid Glass only while the pill is moving or being dragged, like the tab bar.
     @State private var moving = false
     @State private var width: CGFloat = 0
-    private var flat: Bool { UserDefaults.standard.string(forKey: "pill.style") == "flat" }
+    private var flat: Bool { (UserDefaults.standard.string(forKey: "pill.style") ?? "flat") == "flat" } // Sep 24: David approved
     private var showGlass: Bool { moving || UserDefaults.standard.bool(forKey: "pill.forceMoving") }
 
     var body: some View {
@@ -370,11 +370,11 @@ struct ProfileView: View {
     @AppStorage("notifications.style") private var notifStyle = "B1"  // David picked A (sections, plain on/off), Sep 24
     @AppStorage("appearance") private var appearanceRaw = Appearance.system.rawValue
     @AppStorage(CheckInService.enabledKey) private var checkIns = false
-    /// Preview (awaiting David's OK): "Show Symbols" row appears only with -symbols.preview YES.
-    @AppStorage("symbols.preview") private var symbolsPreview = false
+    /// Sep 24: David approved the "Show Symbols" switch (on = C, off = A).
+    @AppStorage("symbols.preview") private var symbolsPreview = true
     @AppStorage("symbols.show") private var showSymbols = true
     /// Preview flag "settings.noHeaders" (awaiting David's OK): no section titles, just space, like iOS Settings.
-    @AppStorage("settings.noHeaders") private var noHeaders = false
+    @AppStorage("settings.noHeaders") private var noHeaders = true // Sep 24: David approved
     @ViewBuilder private func profileHeader(_ title: String) -> some View {
         if noHeaders { Color.clear.frame(height: 14) } else { SectionHeader(title) }
     }
@@ -835,7 +835,7 @@ private struct BackgroundText: ViewModifier {
     @Environment(\.colorScheme) private var scheme
     /// Preview flag "text.gray" (awaiting David's OK): on dark backgrounds use Apple's dark-mode gray
     /// (secondaryLabel, 60% light gray) instead of blue.
-    @AppStorage("text.gray") private var grayText = false
+    @AppStorage("text.gray") private var grayText = true // Sep 24: David approved
     private var darkHelper: AnyShapeStyle {
         grayText ? AnyShapeStyle(Color(red: 235/255, green: 235/255, blue: 245/255).opacity(0.6)) : AnyShapeStyle(Theme.accent)
     }
