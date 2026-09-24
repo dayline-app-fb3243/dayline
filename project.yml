@@ -16,7 +16,13 @@ targets:
     type: application
     platform: iOS
     sources:
-      - Dayline
+      - path: Dayline
+        excludes:
+          - Resources/AppIcon.icon
+          - Resources/AppIcon.icon/**
+      - path: Dayline/Resources/AppIcon.icon
+        type: file
+        buildPhase: resources
       - Shared
     entitlements:
       path: Dayline/Dayline.entitlements

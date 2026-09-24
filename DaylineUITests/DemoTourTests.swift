@@ -484,6 +484,20 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Home Screen shot to check the real app icon (Icon Composer .icon) as iOS draws it.
+    func testHomeIcon() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo"]
+        app.launch(); pause(2)
+        XCUIDevice.shared.press(.home); pause(2)
+        let sb = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        for i in 0..<4 {
+            if sb.icons["Dayline"].exists && sb.icons["Dayline"].isHittable { break }
+            sb.swipeLeft(); pause(1.2); _ = i
+        }
+        pause(1); shot("h1-home-icon")
+    }
+
     /// Journal editor demo: camera/photo button options with the keyboard up.
     func testEditorDemo() throws {
         for v in ["B", "C"] {
