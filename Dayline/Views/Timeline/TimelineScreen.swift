@@ -27,6 +27,9 @@ struct TimelineScreen: View {
     /// and gets a 2D/3D button. The route is drawn into the map, so it tilts with it.
     @AppStorage("map.3d") private var map3DFlag = false
     @State private var is3D = false
+    /// The map is centered on your current location (filled arrow). Cleared when you pan away.
+    @State private var onMyLocation = false
+    @State private var myCoordinate: CLLocationCoordinate2D?
     /// Preview flag "pin.style" (awaiting David's pick): "" = current pins, A = big Apple pin with dot,
     /// B = compact Apple pin with tail, C = native Apple Maps marker.
     @AppStorage("pin.style") private var pinStyle = "D"
@@ -88,10 +91,10 @@ struct TimelineScreen: View {
             .tabRoot()
             .fullScreenCover(isPresented: $expanded) {
                 fullMap
-                    .onDisappear { is3D = false; camera = .automatic }
+                    .onDisappear { is3D = false; onMyLocation = false; camera = .automatic }
             }
-            .onChange(of: range) { camera = .automatic }
-            .onChange(of: anchor) { camera = .automatic }
+            .onChange(of: range) { onMyLocation = false; camera = .automatic }
+            .onChange(of: anchor) { onMyLocation = false; camera = .automatic }
             .onReceive(NotificationCenter.default.publisher(for: .showOnMap)) { _ in openJump() }
             .onAppear { openJump() }
         }
@@ -196,10 +199,34 @@ struct TimelineScreen: View {
         .mapControlVisibility(showsControls ? .automatic : .hidden)
         .onMapCameraChange(frequency: .onEnd) { context in
             region = context.region
+            // Panned away from where you are: the arrow goes back to outline.
+            if onMyLocation && myCoordinate == nil { myCoordinate = context.region.center }
+            else if onMyLocation, let me = myCoordinate {
+                let c = context.region.center
+                if CLLocation(latitude: c.latitude, longitude: c.longitude).distance(from: CLLocation(latitude: me.latitude, longitude: me.longitude)) > 120 {
+                    onMyLocation = false
+                }
+            }
             // Two-finger tilt flips the 2D/3D label, like Apple Maps.
             if interactive && map3DFlag { is3D = context.camera.pitch > 10 }
         }
         .task(id: "\(routeStyle)-\(checkMinutes)-\(interval.start.timeIntervalSince1970)-\(range == .day)") { await buildStreetRoute() }
+    }
+
+    /// Location keeps being recorded in the background either way; this only moves the map.
+    /// One tap = center on where you are now (no following, no heading).
+    private func recenterOnMe() {
+        guard let me = LocationService.shared.lastLocation?.coordinate else {
+            // No fix cached yet: let MapKit find you, and remember where it centered (first camera stop).
+            myCoordinate = nil
+            withAnimation(.snappy) { camera = .userLocation(fallback: .automatic) }
+            onMyLocation = true
+            return
+        }
+        myCoordinate = me
+        let distance = max(800, min(4000, (region?.span.latitudeDelta ?? 0.02) * 111_000))
+        withAnimation(.snappy) { camera = .camera(MapCamera(centerCoordinate: me, distance: distance, heading: 0, pitch: is3D ? 60 : 0)) }
+        onMyLocation = true
     }
 
     private func buildStreetRoute() async {
@@ -319,9 +346,9 @@ struct TimelineScreen: View {
                                 .buttonStyle(.plain)
                                 .accessibilityLabel(is3D ? "Show 2D map" : "Show 3D map")
                                 .accessibilityIdentifier("toggle3D")
-                                Button { withAnimation(.snappy) { camera = .userLocation(fallback: .automatic) } } label: {
-                                    // Outline arrow = not following; filled = on your current location (like Apple Maps).
-                                    Image(systemName: camera.followsUserLocation ? "location.fill" : "location")
+                                Button { recenterOnMe() } label: {
+                                    // Filled = the map is centered on you; outline as soon as you pan away. Not a follow mode.
+                                    Image(systemName: onMyLocation ? "location.fill" : "location")
                                         .font(.system(size: 20, weight: .semibold))
                                         .foregroundStyle(Theme.accent).frame(width: 54, height: 58).contentShape(.rect)
                                 }
@@ -332,9 +359,7 @@ struct TimelineScreen: View {
                             .padding(.vertical, 6)
                             .glassEffect(.regular, in: .capsule)
                         } else {
-                        Button {
-                            withAnimation(.snappy) { camera = .userLocation(fallback: .automatic) }
-                        } label: {
+                        Button { recenterOnMe() } label: {
                             Image(systemName: "location.fill").font(.scaled(size: 20, weight: .semibold))
                                 .foregroundStyle(Theme.accent).frame(width: 64, height: 64)
                         }

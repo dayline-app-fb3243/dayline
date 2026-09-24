@@ -794,6 +794,9 @@ final class DemoTourTests: XCTestCase {
         XCUIDevice.shared.location = XCUILocation(location: CLLocation(latitude: 40.7527, longitude: -73.9772))
         pause(1)
         tapID(app, "locateMe"); pause(4); shot("mb-locate")
+        // Pan away: the arrow goes back to outline.
+        map.swipeUp(); pause(3); shot("mb-panned")
+        tapID(app, "locateMe"); pause(4); shot("mb-back")
         tapID(app, "mapGrabber"); pause(3); shot("mb-sheet")
         app.terminate()
     }
