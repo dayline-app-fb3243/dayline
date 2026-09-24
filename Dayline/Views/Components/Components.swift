@@ -60,7 +60,7 @@ struct ScoreRing: View {
     var lineWidthOverride: CGFloat? = nil
     var size: CGFloat = 88
     @AppStorage("rings.thick") private var thick = false
-    private var lineWidth: CGFloat { lineWidthOverride ?? (thick ? (size * 0.17).rounded() : (size >= 120 ? 14 : 10)) }
+    private var lineWidth: CGFloat { lineWidthOverride ?? (thick ? (size * 0.17).rounded() : (size >= 120 ? 20 : 14))  // David picked C (Sep 24): 14 pt small, 20 pt large }
     var body: some View {
         ZStack {
             Circle().stroke(.quaternary, lineWidth: lineWidth)
