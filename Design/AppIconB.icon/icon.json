@@ -1,0 +1,131 @@
+{
+  "fill-specializations": [
+    {
+      "value": {
+        "linear-gradient": [
+          "extended-srgb:0.30196,0.65098,1.00000,1.00000",
+          "extended-srgb:0.07059,0.38431,0.91765,1.00000"
+        ]
+      }
+    },
+    {
+      "appearance": "dark",
+      "value": {
+        "linear-gradient": [
+          "extended-srgb:0.11000,0.11000,0.12000,1.00000",
+          "extended-srgb:0.03000,0.03000,0.04000,1.00000"
+        ]
+      }
+    }
+  ],
+  "groups": [
+    {
+      "name": "Tracks",
+      "layers": [
+        {
+          "name": "Outer track",
+          "image-name": "outer-track.png",
+          "glass": true,
+          "fill-specializations": [
+            {
+              "value": {
+                "solid": "extended-srgb:1,1,1,1"
+              }
+            },
+            {
+              "appearance": "dark",
+              "value": {
+                "solid": "extended-srgb:0.25098,0.61176,1.00000,1.00000"
+              }
+            }
+          ],
+          "opacity": 0.35
+        },
+        {
+          "name": "Inner track",
+          "image-name": "inner-track.png",
+          "glass": true,
+          "fill-specializations": [
+            {
+              "value": {
+                "solid": "extended-srgb:1,1,1,1"
+              }
+            },
+            {
+              "appearance": "dark",
+              "value": {
+                "solid": "extended-srgb:0.25098,0.61176,1.00000,1.00000"
+              }
+            }
+          ],
+          "opacity": 0.3
+        }
+      ],
+      "shadow": {
+        "kind": "none",
+        "opacity": 0.0
+      },
+      "specular": true,
+      "translucency": {
+        "enabled": true,
+        "value": 0.4
+      }
+    },
+    {
+      "name": "Rings",
+      "layers": [
+        {
+          "name": "Inner ring",
+          "image-name": "inner.png",
+          "glass": true,
+          "fill-specializations": [
+            {
+              "value": {
+                "solid": "extended-srgb:0.83922,0.90980,1.00000,1.00000"
+              }
+            },
+            {
+              "appearance": "dark",
+              "value": {
+                "solid": "extended-srgb:0.47059,0.70588,1.00000,1.00000"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Outer ring",
+          "image-name": "outer.png",
+          "glass": true,
+          "fill-specializations": [
+            {
+              "value": {
+                "solid": "extended-srgb:1,1,1,1"
+              }
+            },
+            {
+              "appearance": "dark",
+              "value": {
+                "solid": "extended-srgb:0.25098,0.61176,1.00000,1.00000"
+              }
+            }
+          ]
+        }
+      ],
+      "lighting": "individual",
+      "shadow": {
+        "kind": "neutral",
+        "opacity": 0.45
+      },
+      "specular": true,
+      "translucency": {
+        "enabled": true,
+        "value": 0.2
+      }
+    }
+  ],
+  "supported-platforms": {
+    "squares": [
+      "iOS"
+    ]
+  }
+}

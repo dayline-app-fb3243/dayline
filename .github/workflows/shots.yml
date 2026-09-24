@@ -22,9 +22,10 @@ jobs:
           ls -la "$ICTOOL" || find /Applications -name ictool -maxdepth 8 2>/dev/null | head
           "$ICTOOL" --version || true
           mkdir -p shots
+          for I in Design/AppIcon*.icon; do N=$(basename "$I" .icon)
           for R in Default Dark ClearLight ClearDark TintedLight TintedDark; do
-            "$ICTOOL" Design/AppIcon.icon --export-image --output-file "shots/icon-$R.png" --platform iOS --rendition "$R" --width 512 --height 512 --scale 2 || echo "fail $R"
-          done
+            "$ICTOOL" "$I" --export-image --output-file "shots/$N-$R.png" --platform iOS --rendition "$R" --width 512 --height 512 --scale 2 || echo "fail $N $R"
+          done; done
           ls -la shots
 
       - name: Tools
