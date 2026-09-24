@@ -1,4 +1,5 @@
 import SwiftUI
+import MessageUI
 import SwiftData
 
 // MARK: - Friends (local for now; sharing needs the sync backend)
@@ -412,6 +413,48 @@ private struct PillButton: View {
     }
 }
 
+/// Invite pill: opens Messages with the link filled in, or the share sheet when Messages isn't available.
+private struct InviteButton: View {
+    var recipient: String
+    @State private var showMessages = false
+    @State private var showShare = false
+    var body: some View {
+        Button {
+            if MFMessageComposeViewController.canSendText() { showMessages = true } else { showShare = true }
+        } label: {
+            Text("Invite").font(.subheadline.weight(.semibold)).foregroundStyle(.blue)
+                .padding(.horizontal, 14).padding(.vertical, 6)
+                .background(Color.blue.opacity(0.12), in: .capsule)
+        }
+        .buttonStyle(.plain)
+        .sheet(isPresented: $showMessages) { MessageCompose(recipient: recipient, text: PeopleStore.inviteText).ignoresSafeArea() }
+        .sheet(isPresented: $showShare) { ActivitySheet(items: [PeopleStore.inviteText]).presentationDetents([.medium, .large]) }
+    }
+}
+
+private struct MessageCompose: UIViewControllerRepresentable {
+    var recipient: String
+    var text: String
+    func makeCoordinator() -> Coordinator { Coordinator() }
+    func makeUIViewController(context: Context) -> MFMessageComposeViewController {
+        let vc = MFMessageComposeViewController()
+        vc.recipients = [recipient]; vc.body = text; vc.messageComposeDelegate = context.coordinator
+        return vc
+    }
+    func updateUIViewController(_ vc: MFMessageComposeViewController, context: Context) {}
+    final class Coordinator: NSObject, MFMessageComposeViewControllerDelegate {
+        func messageComposeViewController(_ controller: MFMessageComposeViewController, didFinishWith result: MessageComposeResult) {
+            controller.dismiss(animated: true)
+        }
+    }
+}
+
+private struct ActivitySheet: UIViewControllerRepresentable {
+    var items: [Any]
+    func makeUIViewController(context: Context) -> UIActivityViewController { UIActivityViewController(activityItems: items, applicationActivities: nil) }
+    func updateUIViewController(_ vc: UIActivityViewController, context: Context) {}
+}
+
 /// Demo people for the sharing pages.
 @MainActor
 enum PeopleStore {
@@ -467,31 +510,21 @@ struct PeopleView: View {
                 if DemoData.isDemo {
                     PeopleHeader("People to Follow")
                     PeopleGroup {
-                        ForEach(Array(PeopleStore.contacts.enumerated()), id: \.offset) { i, c in
-                            PersonRow(name: c.0, subtitle: "In your contacts", last: i == PeopleStore.contacts.count - 1) {
+                        ForEach(PeopleStore.contacts, id: \.0) { c in
+                            PersonRow(name: c.0, subtitle: "On Dayline") {
                                 PillButton(title: "Follow", done: "Requested")
                             }
+                            .accessibilityIdentifier("follow-\(c.0)")
                         }
-                    }
-                }
-
-                PeopleGroup {
-                    ShareLink(item: PeopleStore.inviteText) {
-                        HStack(spacing: 14) {
-                            Image(systemName: "square.and.arrow.up").font(.system(size: 18, weight: .semibold)).foregroundStyle(.white)
-                                .frame(width: 40, height: 40).background(Color.blue, in: .rect(cornerRadius: 11, style: .continuous))
-                            VStack(alignment: .leading, spacing: 1) {
-                                Text("Invite a Friend").font(.body.weight(.semibold)).foregroundStyle(.primary)
-                                Text("Send a link in Messages or anywhere").font(.subheadline.weight(.medium)).foregroundStyle(.secondary)
+                        ForEach(Array(PeopleStore.notOnDayline.enumerated()), id: \.offset) { i, c in
+                            PersonRow(name: c.0, subtitle: "Not on Dayline yet", last: i == PeopleStore.notOnDayline.count - 1) {
+                                InviteButton(recipient: c.1).accessibilityIdentifier("invite-\(c.0)")
                             }
-                            Spacer()
-                            Chevron()
                         }
-                        .padding(.horizontal, 16).frame(minHeight: 60).contentShape(.rect)
                     }
-                    .accessibilityIdentifier("inviteFriend")
+                    Text("From your contacts. Follow sends a request. Invite sends a link in Messages.")
+                        .font(.footnote).foregroundStyle(.secondary).padding(.horizontal, 16).padding(.top, 7)
                 }
-                .padding(.top, 12)
             }
             .padding(.horizontal, 18).padding(.bottom, 30)
         }

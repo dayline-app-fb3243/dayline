@@ -101,7 +101,7 @@ final class DemoTourTests: XCTestCase {
         tapID(app, "askToShare"); pause(2); shot("37-ask-to-share"); goBack(app); pause(1)
         app.swipeUp(); pause(1)
         tapID(app, "addPerson"); pause(2); shot("38-share-with"); goBack(app); pause(1)
-        tapID(app, "inviteFriend"); pause(2.5); shot("39-invite-sheet")
+        tapID(app, "invite-Maya Cohen"); pause(2.5); shot("39-invite-sheet")
         let close = app.buttons["Close"].firstMatch
         if close.waitForExistence(timeout: 2) { close.tap() } else { app.swipeDown(velocity: .fast) }
         pause(1.5)
