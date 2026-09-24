@@ -28,7 +28,7 @@ struct IntervalRouteMap: View {
             interactionModes: interactive ? .all : []) {
             if sampled.count > 1 {
                 MapPolyline(coordinates: sampled)
-                    .stroke(Theme.accent, style: StrokeStyle(lineWidth: interactive ? 5 : 3, lineCap: .round, lineJoin: .round))
+                    .stroke(Theme.accent, style: StrokeStyle(lineWidth: interactive ? 5 : (dots ? 4 : 3), lineCap: .round, lineJoin: .round))
             }
             if dots {
                 ForEach(Array(sampled.enumerated()), id: \.offset) { _, c in
@@ -142,7 +142,8 @@ struct MiniPhoneRoute: View {
     var minutes: Int
     var width: CGFloat
     var dots = false
-    private let base: CGFloat = 200
+    /// Drawn at real size when shown big (a scaled-up Map dropped its route line and pins), scaled down when small.
+    private var base: CGFloat { max(200, width) }
     var body: some View {
         let h = base * 2.17
         ZStack(alignment: .top) {

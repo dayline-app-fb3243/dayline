@@ -888,6 +888,22 @@ final class DemoTourTests: XCTestCase {
         app.terminate()
     }
 
+    /// Check Location big view C (default): 1, 5 and 10 min, route line and a dot per check.
+    func testCheckBigCDemo() throws {
+        for m in [1, 5, 10] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo"]
+            app.launchEnvironment["TZ"] = Self.morningZone
+            app.launch(); pause(1.5)
+            tab(app, "Profile"); pause(1.5)
+            let row = app.staticTexts["Check Location"].firstMatch
+            if !row.isHittable { app.swipeUp(); pause(0.8) }
+            row.tap(); pause(4)
+            tapID(app, "thumb-\(m)"); pause(6); shot("cc-\(m)")
+            app.terminate()
+        }
+    }
+
     /// Splash G/H/I: C's 3D look, new pins, closer and more top-down.
     func testSplashPinDemo() throws {
         for v in ["G", "H", "I"] {

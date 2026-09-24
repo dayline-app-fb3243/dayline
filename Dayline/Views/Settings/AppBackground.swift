@@ -762,7 +762,7 @@ struct CheckLocationView: View {
     /// A = thumbnail at the left of each row, B = three big previews on top (like wallpapers), C = thumbnail at the right.
     /// C (phone on the right of each row) is the default.
     @AppStorage("check.preview") private var preview = "C"
-    @AppStorage("check.big") private var bigStyle = ""
+    @AppStorage("check.big") private var bigStyle = "C"
     @State private var enlarged: Int?
     /// Each preview is a mini iPhone screen (David: like Apple's Tips app examples), tap to enlarge.
     private func thumb(_ m: Int, w: CGFloat, h: CGFloat) -> some View {
