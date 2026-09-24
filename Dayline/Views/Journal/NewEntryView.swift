@@ -318,11 +318,18 @@ struct CameraPicker: UIViewControllerRepresentable {
     var done: (UIImage?, URL?) -> Void
     func makeUIViewController(context: Context) -> UIImagePickerController {
         let picker = UIImagePickerController()
-        picker.sourceType = .camera
+        let movie = UTType.movie.identifier
+        let cameraTypes = UIImagePickerController.availableMediaTypes(for: .camera) ?? []
+        // Simulator (or no camera / restricted): fall back to the photo library instead of crashing.
+        let useCamera = UIImagePickerController.isSourceTypeAvailable(.camera) && (!video || cameraTypes.contains(movie))
+        picker.sourceType = useCamera ? .camera : .photoLibrary
         if video {
-            picker.mediaTypes = [UTType.movie.identifier]
-            picker.cameraCaptureMode = .video
-            picker.videoQuality = .typeHigh
+            let available = UIImagePickerController.availableMediaTypes(for: picker.sourceType) ?? []
+            if available.contains(movie) { picker.mediaTypes = [movie] }
+            if useCamera {
+                picker.cameraCaptureMode = .video
+                picker.videoQuality = .typeHigh
+            }
         }
         picker.delegate = context.coordinator
         return picker
