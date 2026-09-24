@@ -1,0 +1,335 @@
+import SwiftUI
+import SwiftData
+import PhotosUI
+import CoreLocation
+import UIKit
+import AVFoundation
+import UniformTypeIdentifiers
+
+/// One piece of media in an entry: a photo, or a video with its poster frame.
+struct EntryMedia: Identifiable {
+    let id = UUID()
+    var image: UIImage
+    var videoURL: URL? = nil
+    var duration: Double = 0
+}
+
+/// The entry is a list of blocks, like a note: text, a row of media, a voice note, more text.
+struct EntryBlock: Identifiable {
+    enum Kind { case text, media, voice }
+    let id = UUID()
+    var kind: Kind
+    var text = ""
+    var media: [EntryMedia] = []
+    var seconds: Double = 0
+}
+
+/// Movie picked from the library, copied into Documents/Video.
+struct PickedMovie: Transferable {
+    let url: URL
+    static var transferRepresentation: some TransferRepresentation {
+        FileRepresentation(contentType: .movie) { SentTransferredFile($0.url) } importing: { received in
+            let dest = try VideoStore.newURL(ext: received.file.pathExtension.isEmpty ? "mov" : received.file.pathExtension)
+            try FileManager.default.copyItem(at: received.file, to: dest)
+            return PickedMovie(url: dest)
+        }
+    }
+}
+
+enum VideoStore {
+    static func folder() throws -> URL {
+        let dir = URL.documentsDirectory.appending(path: "Video", directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir
+    }
+    static func newURL(ext: String = "mov") throws -> URL { try folder().appending(path: "\(UUID().uuidString).\(ext)") }
+    static func url(for name: String) -> URL? { try? folder().appending(path: name) }
+    /// Poster frame and length of a video file.
+    static func poster(_ url: URL) async -> (UIImage, Double)? {
+        let asset = AVURLAsset(url: url)
+        let gen = AVAssetImageGenerator(asset: asset)
+        gen.appliesPreferredTrackTransform = true
+        gen.maximumSize = CGSize(width: 800, height: 800)
+        guard let cg = try? await gen.image(at: .zero).image else { return nil }
+        let d = (try? await asset.load(.duration)).map(CMTimeGetSeconds) ?? 0
+        return (UIImage(cgImage: cg), d)
+    }
+}
+
+/// New entry, Notes-style: title, text, photos and videos inline, voice notes,
+/// with a camera / video / library / voice bar above the keyboard.
+struct NewEntryView: View {
+    var onDone: () -> Void = {}
+    @Environment(\.modelContext) private var context
+    @Query(sort: \Visit.arrival, order: .reverse) private var visits: [Visit]
+    @StateObject private var voice = VoiceNoteService.shared
+    @State private var title = ""
+    @State private var blocks: [EntryBlock] = [EntryBlock(kind: .text)]
+    @State private var picks: [PhotosPickerItem] = []
+    @State private var showLibrary = false
+    @State private var camera: CameraMode?
+    @FocusState private var focus: UUID?
+    @FocusState private var titleFocused: Bool
+    private let startedAt = Date.now
+
+    enum CameraMode: Identifiable { case photo, video; var id: Self { self } }
+
+    private var here: CLLocation? { LocationService.shared.lastLocation }
+    private var placeName: String {
+        if let open = visits.first(where: { $0.departure == nil && $0.category != .home }) { return open.placeName }
+        if let here, let near = visits.prefix(50).min(by: {
+            CLLocation(latitude: $0.latitude, longitude: $0.longitude).distance(from: here) <
+            CLLocation(latitude: $1.latitude, longitude: $1.longitude).distance(from: here)
+        }), CLLocation(latitude: near.latitude, longitude: near.longitude).distance(from: here) < 150 {
+            return near.placeName
+        }
+        return here == nil ? "Current location" : "Here"
+    }
+    private var allMedia: [EntryMedia] { blocks.flatMap(\.media) }
+    private var bodyText: String {
+        blocks.filter { $0.kind == .text }.map { $0.text.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }.joined(separator: "\n")
+    }
+    private var hasVoice: Bool { blocks.contains { $0.kind == .voice } }
+    private var canSave: Bool {
+        !title.trimmingCharacters(in: .whitespaces).isEmpty || !bodyText.isEmpty || !allMedia.isEmpty || hasVoice
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("\(startedAt.formatted(.dateTime.weekday(.wide).month(.abbreviated).day())) · \(startedAt.shortTime) · \(placeName)")
+                    .font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
+                TextField("Title", text: $title, axis: .vertical)
+                    .font(.title2.bold()).focused($titleFocused)
+                    .submitLabel(.next).onSubmit { focus = blocks.first?.id }
+                    .accessibilityIdentifier("entryTitle")
+                ForEach($blocks) { $block in
+                    switch block.kind {
+                    case .text:
+                        TextField(block.id == blocks.first?.id ? "Write anything…" : "", text: $block.text, axis: .vertical)
+                            .font(.body).focused($focus, equals: block.id)
+                            .accessibilityIdentifier("entryBody")
+                    case .media:
+                        mediaGrid(block)
+                    case .voice:
+                        voiceRow(block.seconds, recording: false) { remove(block.id) }
+                    }
+                }
+                if voice.isRecording {
+                    voiceRow(voice.elapsed, recording: true) { Task { await stopVoice() } }
+                }
+            }
+            .padding(.horizontal, 20).padding(.top, 4).padding(.bottom, 30)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .scrollDismissesKeyboard(.interactively)
+        .background(AppBackgroundView())
+        .navigationTitle("New entry")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("Close", systemImage: "xmark") { if voice.isRecording { Task { await stopVoice() } }; onDone() }
+            }
+            ToolbarItem(placement: .confirmationAction) {
+                Button("Save", systemImage: "checkmark") { save() }
+                    .buttonStyle(.glassProminent).disabled(!canSave)
+                    .accessibilityIdentifier("saveEntry")
+            }
+        }
+        .safeAreaInset(edge: .bottom) { addBar }
+        .photosPicker(isPresented: $showLibrary, selection: $picks, maxSelectionCount: 10,
+                      matching: .any(of: [.images, .videos]))
+        .onChange(of: picks) { _, items in
+            guard !items.isEmpty else { return }
+            Task {
+                var found: [EntryMedia] = []
+                for item in items {
+                    if item.supportedContentTypes.contains(where: { $0.conforms(to: .movie) }),
+                       let movie = try? await item.loadTransferable(type: PickedMovie.self),
+                       let p = await VideoStore.poster(movie.url) {
+                        found.append(EntryMedia(image: p.0, videoURL: movie.url, duration: p.1))
+                    } else if let data = try? await item.loadTransferable(type: Data.self), let img = UIImage(data: data) {
+                        found.append(EntryMedia(image: img))
+                    }
+                }
+                picks = []
+                insertMedia(found)
+            }
+        }
+        .fullScreenCover(item: $camera) { mode in
+            CameraPicker(video: mode == .video) { image, url in
+                Task {
+                    if let url, let p = await VideoStore.poster(url) {
+                        insertMedia([EntryMedia(image: p.0, videoURL: url, duration: p.1)])
+                    } else if let image {
+                        insertMedia([EntryMedia(image: image)])
+                    }
+                }
+            }
+            .ignoresSafeArea()
+        }
+        .onAppear { titleFocused = true }
+    }
+
+    // MARK: pieces
+
+    private var addBar: some View {
+        HStack {
+            barButton("camera", "Take photo") { camera = .photo }
+                .disabled(!UIImagePickerController.isSourceTypeAvailable(.camera))
+            barButton("video", "Record video") { camera = .video }
+                .disabled(!UIImagePickerController.isSourceTypeAvailable(.camera))
+            barButton("photo.on.rectangle", "Photo and video library") { showLibrary = true }
+            barButton(voice.isRecording ? "stop.circle.fill" : "mic", voice.isRecording ? "Stop voice note" : "Voice note") {
+                Task { if voice.isRecording { await stopVoice() } else { try? await voice.start() } }
+            }
+        }
+        .padding(.vertical, 4)
+        .glassEffect(.regular.interactive(), in: .capsule)
+        .padding(.horizontal, 16).padding(.bottom, 6)
+    }
+
+    private func barButton(_ symbol: String, _ label: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: symbol).font(.system(size: 19, weight: .medium)).foregroundStyle(Theme.accent)
+                .frame(maxWidth: .infinity).frame(height: 44).contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(label)
+    }
+
+    private func mediaGrid(_ block: EntryBlock) -> some View {
+        LazyVGrid(columns: [GridItem(.flexible(), spacing: 6), GridItem(.flexible(), spacing: 6)], spacing: 6) {
+            ForEach(block.media) { m in
+                Color.clear.frame(height: 130)
+                    .overlay { Image(uiImage: m.image).resizable().scaledToFill() }
+                    .clipShape(.rect(cornerRadius: 16, style: .continuous))
+                    .overlay {
+                        if m.videoURL != nil {
+                            Image(systemName: "play.fill").font(.title3).foregroundStyle(.white)
+                                .frame(width: 40, height: 40).background(.black.opacity(0.35), in: .circle)
+                        }
+                    }
+                    .overlay(alignment: .bottomTrailing) {
+                        if m.videoURL != nil {
+                            Text(Duration.seconds(m.duration).formatted(.time(pattern: .minuteSecond)))
+                                .font(.caption2.weight(.semibold)).foregroundStyle(.white)
+                                .padding(.horizontal, 6).padding(.vertical, 2)
+                                .background(.black.opacity(0.45), in: .capsule).padding(6)
+                        }
+                    }
+                    .contextMenu { Button("Remove", systemImage: "trash", role: .destructive) { removeMedia(m.id) } }
+            }
+        }
+        .padding(.vertical, 2)
+    }
+
+    private func voiceRow(_ seconds: Double, recording: Bool, tap: @escaping () -> Void) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: recording ? "stop.fill" : "play.fill").font(.system(size: 11, weight: .bold))
+                .foregroundStyle(.white).frame(width: 28, height: 28)
+                .background(Theme.accent, in: .circle)
+                .onTapGesture { if recording { tap() } }
+            Text(recording ? "Recording…" : "Voice note").font(.subheadline).foregroundStyle(.primary).lineLimit(1)
+            Spacer()
+            Text(Duration.seconds(seconds).formatted(.time(pattern: .minuteSecond)))
+                .font(.footnote.weight(.semibold)).monospacedDigit().foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 10).padding(.vertical, 8)
+        .background(Color(.tertiarySystemFill), in: .rect(cornerRadius: 14, style: .continuous))
+        .contextMenu { if !recording { Button("Remove", systemImage: "trash", role: .destructive, action: tap) } }
+    }
+
+    // MARK: editing
+
+    /// Media goes where you are writing; a fresh text line follows so you can keep typing.
+    private func insertMedia(_ items: [EntryMedia]) {
+        guard !items.isEmpty else { return }
+        let at = focusedIndex()
+        if at < blocks.count, blocks[at].kind == .text, blocks[at].text.isEmpty, at > 0, blocks[at - 1].kind == .media {
+            blocks[at - 1].media += items; return
+        }
+        let next = EntryBlock(kind: .text)
+        blocks.insert(contentsOf: [EntryBlock(kind: .media, media: items), next], at: min(at + 1, blocks.count))
+        focus = next.id
+    }
+    private func focusedIndex() -> Int {
+        if let f = focus, let i = blocks.firstIndex(where: { $0.id == f }) { return i }
+        return blocks.count - 1
+    }
+    private func removeMedia(_ id: UUID) {
+        for i in blocks.indices { blocks[i].media.removeAll { $0.id == id } }
+        blocks.removeAll { $0.kind == .media && $0.media.isEmpty }
+    }
+    private func remove(_ id: UUID) { blocks.removeAll { $0.id == id } }
+
+    private var coordinate: (Double, Double)? { here.map { ($0.coordinate.latitude, $0.coordinate.longitude) } }
+
+    private func stopVoice() async {
+        let secs = voice.elapsed
+        let at = focusedIndex()
+        await voice.stop(context: context, coordinate: coordinate)   // saves the voice entry, pinned here
+        let next = EntryBlock(kind: .text)
+        blocks.insert(contentsOf: [EntryBlock(kind: .voice, seconds: secs), next], at: min(at + 1, blocks.count))
+        focus = next.id
+    }
+
+    private func save() {
+        let lat = coordinate?.0, lon = coordinate?.1
+        let head = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let text = [head, bodyText].filter { !$0.isEmpty }.joined(separator: "\n")
+        let media = allMedia
+        if media.isEmpty, !text.isEmpty {
+            context.insert(JournalEntry(date: startedAt, kind: .text, text: text, latitude: lat, longitude: lon))
+        }
+        for (i, m) in media.enumerated() {
+            let img = m.image
+            let thumb = img.preparingThumbnail(of: CGSize(width: 600, height: 600 * img.size.height / max(img.size.width, 1)))
+            let entry = JournalEntry(date: startedAt.addingTimeInterval(Double(i)), kind: .photo,
+                                     text: i == 0 ? text : "",
+                                     thumbnail: thumb?.jpegData(compressionQuality: 0.7), latitude: lat, longitude: lon)
+            if let url = m.videoURL { entry.videoFileName = url.lastPathComponent; entry.videoDuration = m.duration }
+            context.insert(entry)
+        }
+        try? context.save()
+        onDone()
+    }
+}
+
+/// Camera capture via UIKit: a photo, or a video when `video` is set.
+struct CameraPicker: UIViewControllerRepresentable {
+    var video = false
+    var done: (UIImage?, URL?) -> Void
+    func makeUIViewController(context: Context) -> UIImagePickerController {
+        let picker = UIImagePickerController()
+        picker.sourceType = .camera
+        if video {
+            picker.mediaTypes = [UTType.movie.identifier]
+            picker.cameraCaptureMode = .video
+            picker.videoQuality = .typeHigh
+        }
+        picker.delegate = context.coordinator
+        return picker
+    }
+    func updateUIViewController(_ controller: UIImagePickerController, context: Context) {}
+    func makeCoordinator() -> Coordinator { Coordinator(done: done) }
+
+    final class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+        let done: (UIImage?, URL?) -> Void
+        init(done: @escaping (UIImage?, URL?) -> Void) { self.done = done }
+        func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
+            if let tmp = info[.mediaURL] as? URL, let dest = try? VideoStore.newURL(ext: tmp.pathExtension.isEmpty ? "mov" : tmp.pathExtension),
+               (try? FileManager.default.copyItem(at: tmp, to: dest)) != nil {
+                done(nil, dest)
+            } else {
+                done(info[.originalImage] as? UIImage, nil)
+            }
+            picker.dismiss(animated: true)
+        }
+        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+            done(nil, nil)
+            picker.dismiss(animated: true)
+        }
+    }
+}

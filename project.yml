@@ -1,0 +1,91 @@
+name: Dayline
+options:
+  bundleIdPrefix: app.dayline
+  deploymentTarget:
+    iOS: "26.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    DEVELOPMENT_TEAM: ""
+    CODE_SIGN_STYLE: Automatic
+targets:
+  Dayline:
+    type: application
+    platform: iOS
+    sources:
+      - Dayline
+      - Shared
+    entitlements:
+      path: Dayline/Dayline.entitlements
+      properties:
+        com.apple.security.application-groups: [group.app.dayline.shared]
+        com.apple.developer.applesignin: [Default]
+    info:
+      path: Dayline/Info.plist
+      properties:
+        CFBundleDisplayName: Dayline
+        UILaunchScreen: {}
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        NSLocationWhenInUseUsageDescription: Dayline uses your location to build your daily timeline and learn your routine.
+        NSLocationAlwaysAndWhenInUseUsageDescription: Dayline checks your location in the background, as often as you pick in Profile (every 1, 5 or 10 minutes), to build your timeline. It stays on your iPhone.
+        NSCameraUsageDescription: Dayline opens your camera so you can add a photo to your journal at the place you took it.
+        NSPhotoLibraryUsageDescription: Dayline adds your photos to your timeline at the place they were taken.
+        NSMicrophoneUsageDescription: Dayline records voice notes for your journal.
+        NSSpeechRecognitionUsageDescription: Dayline turns your voice notes into text on your device.
+        UIBackgroundModes: [fetch, processing, location]
+        BGTaskSchedulerPermittedIdentifiers: [app.dayline.refresh]
+        NSSupportsLiveActivities: false
+        DaylineAPIBaseURL: ""
+        CFBundleURLTypes:
+          - CFBundleURLName: app.dayline
+            CFBundleURLSchemes: [dayline]
+    dependencies:
+      - target: DaylineWidgets
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.dayline
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+  DaylineWidgets:
+    type: app-extension
+    platform: iOS
+    sources:
+      - DaylineWidgets
+      - Shared
+    entitlements:
+      path: DaylineWidgets/DaylineWidgets.entitlements
+      properties:
+        com.apple.security.application-groups: [group.app.dayline.shared]
+    info:
+      path: DaylineWidgets/Info.plist
+      properties:
+        CFBundleDisplayName: Dayline
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.dayline.widgets
+  DaylineUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [DaylineUITests]
+    dependencies:
+      - target: Dayline
+    settings:
+      base:
+        TEST_TARGET_NAME: Dayline
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: app.dayline.uitests
+schemes:
+  Dayline:
+    build:
+      targets:
+        Dayline: all
+        DaylineWidgets: all
+    test:
+      targets: [DaylineUITests]

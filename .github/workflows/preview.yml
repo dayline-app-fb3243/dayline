@@ -1,0 +1,83 @@
+name: Build and record preview
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  preview:
+    # Xcode 27 image (iOS 27 SDK + simulator). Change to macos-26 to build with Xcode 26 / iOS 26.
+    runs-on: xcode-27
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Tools
+        run: |
+          brew install xcodegen
+          xcodebuild -version
+          xcrun simctl list runtimes
+
+      - name: Generate project
+        run: xcodegen generate
+
+      - name: Pick simulator
+        id: sim
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c '
+          import json,sys
+          d=json.load(sys.stdin)["devices"]
+          ios=[k for k in d if "iOS" in k]
+          ios.sort()
+          for rt in reversed(ios):
+              for dev in d[rt]:
+                  if "iPhone" in dev["name"] and "Pro" in dev["name"] and "Max" not in dev["name"]:
+                      print(dev["udid"]); sys.exit()
+          ')
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+          xcrun simctl boot "$UDID" || true
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl status_bar "$UDID" override --time "9:41" --batteryState charged --batteryLevel 100 --cellularBars 4 --wifiBars 3
+
+      - name: Build
+        run: |
+          set -o pipefail
+          xcodebuild build-for-testing \
+            -project Dayline.xcodeproj -scheme Dayline \
+            -destination "id=${{ steps.sim.outputs.udid }}" \
+            -derivedDataPath build \
+            -quiet CODE_SIGN_IDENTITY="-" CODE_SIGNING_REQUIRED=NO 2>&1 | tee build.log || (grep -E "error:" build.log | sort -u | head -80; exit 1)
+
+      - name: Record demo (light and dark)
+        timeout-minutes: 28
+        run: |
+          mkdir -p preview /tmp/dayline-shots
+          for MODE in light dark; do
+            xcrun simctl ui "${{ steps.sim.outputs.udid }}" appearance $MODE
+            for TEST in testOnboarding testOnboardingEmail testTour; do
+              xcrun simctl io "${{ steps.sim.outputs.udid }}" recordVideo --codec=h264 --force preview/dayline-$MODE-$TEST.mp4 &
+              REC=$!
+              sleep 2
+              TEST_RUNNER_DAYLINE_MODE=$MODE xcodebuild test-without-building \
+                -project Dayline.xcodeproj -scheme Dayline \
+                -destination "id=${{ steps.sim.outputs.udid }}" \
+                -derivedDataPath build -only-testing:DaylineUITests/DemoTourTests/$TEST \
+                -test-timeouts-enabled YES -maximum-test-execution-time-allowance 300 \
+                -collect-test-diagnostics never 2>&1 | tail -40 || true
+              echo "$MODE $TEST done at $(date -u +%T)"
+              cp /tmp/dayline-shots/*.png preview/ 2>/dev/null || true
+              kill -INT $REC; wait $REC || true
+            done
+          done
+          cp /tmp/dayline-shots/*.png preview/ 2>/dev/null || true
+          ls -la preview
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dayline-preview
+          path: |
+            preview/
+            build.log
+          retention-days: 14
