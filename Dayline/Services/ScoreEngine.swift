@@ -222,13 +222,30 @@ enum ScoreEngine {
             if outside.contains(where: { $0.category == .food || $0.category == .coffee }) { summaryBits.append("went out") }
         }
 
+        // Apple Health workouts arrive as journal lines ("Run · 5.2 km · 31 min"); they count as activity, not journaling.
+        let workouts = input.journal.filter { $0.placeName == "Apple Health" }
+        let entries = input.journal.filter { $0.placeName != "Apple Health" }
+
         // 7. Journal
-        if w[.journal] != nil, !input.journal.isEmpty {
-            factors.append(.init(part: .journal, title: "Journaled", effect: .up, points: pts(.journal, Double(input.journal.count) * 0.4)))
+        if w[.journal] != nil, !entries.isEmpty {
+            factors.append(.init(part: .journal, title: "Journaled", effect: .up, points: pts(.journal, Double(entries.count) * 0.4)))
         }
 
-        // 8. Make-up actions: they win back points for missed habits (and nudge the ring back toward blue).
-        let extraNotes = max(0, input.journal.count - 3)
+        // 8. Make-up actions: anything good wins back points for missed habits (and moves the ring back toward blue).
+        // Workouts from Apple Health (a run, a ride, a swim), a lot more steps than usual, extra journaling,
+        // or a gym visit when the gym isn't one of your habits.
+        for wk in workouts.prefix(2) {
+            let kind = wk.text.components(separatedBy: " · ").first ?? "Workout"
+            let rest = wk.text.components(separatedBy: " · ").dropFirst().joined(separator: " · ")
+            factors.append(ScoreFactor(title: "\(kind) (make-up)", effect: .up, points: 12,
+                                       detail: rest.isEmpty ? "From Apple Health" : "\(rest) · from Apple Health", part: bonusPart))
+        }
+        let usual = max(1, s.stepGoal)
+        if input.steps >= usual * 3 / 2 || (!s.walk && input.steps >= usual) {
+            factors.append(ScoreFactor(title: "Lots of steps", effect: .up, points: 8,
+                                       detail: "\(input.steps.formatted()) steps · probably a walk", part: bonusPart))
+        }
+        let extraNotes = max(0, entries.count - 3)
         if extraNotes > 0 {
             factors.append(ScoreFactor(title: "Extra journaling", effect: .up, points: min(15, extraNotes * 3),
                                        detail: "\(extraNotes) more entr\(extraNotes == 1 ? "y" : "ies") than usual", part: bonusPart))
@@ -286,6 +303,10 @@ enum ScoreEngine {
 
     static func tip(factors: [ScoreFactor], plan: [PlanItem], finished: Bool, score: Int) -> String? {
         guard !finished else { return nil }
+        if let good = factors.last(where: { $0.part == bonusPart && $0.points > 0 }) {
+            let name = good.title.replacingOccurrences(of: " (make-up)", with: "")
+            return "You did good. \(name) won back \(good.points) points."
+        }
         if let next = plan.filter({ !$0.isDone && $0.start > .now }).sorted(by: { $0.start < $1.start }).first {
             let gain = max(5, Int(20.0 / Double(max(plan.count, 1))))
             return "Keep going. \(next.title) gets you to \(min(100, score + gain))+."

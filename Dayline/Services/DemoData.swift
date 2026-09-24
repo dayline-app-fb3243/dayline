@@ -132,6 +132,13 @@ enum DemoData {
             if hour >= 12 { f.append(F(.work, "Work", 3, "Got in at 12:10")) }
             if hour >= 20 { f.append(F(.moving, "Gym", 0, "Missed · closed at 8 PM", .pending)) }
             tip = hour < 20 ? "Gym before 8 PM wins a lot back." : "Rest up. Tomorrow starts fresh."
+        case "run":
+            // A late start, then good things win it back: a run from Apple Health and lots of steps.
+            f = [F(.wake, "Up at 9:00", 4, "Late start · goal 7:00")]
+            if hour >= 13 { f += [F(.work, "Work", 8, "At the office since 12:00"), F(.journal, "Journaled", 5, "1 entry")] }
+            if hour >= 15 { f.append(bonus("Run (make-up)", 12, "5.2 km · 31 min · from Apple Health")) }
+            if hour >= 19 { f += [F(.work, "Work", 7, "Full afternoon"), bonus("Lots of steps", 8, "13,900 steps · probably a walk")] }
+            tip = hour < 13 ? "A late start. Anything good wins it back: a run, a long walk, journaling." : hour < 15 ? "A run or a long walk would win points back." : "You did good. The run won back 12 points."
         case "recover":
             // Not a gym person: walks are the habit. A late start, then make-up actions win it back.
             sched = UserSchedule(); sched.gym = false; sched.walk = true
@@ -193,7 +200,11 @@ enum DemoData {
             // Screenshot-only "-demo.day late": up at 9, nothing known until work at noon, a lunch photo.
             add(context, "Office", .work, work, at(today, 12, 0), at(today, 12, 50))
             add(context, "Lucia Trattoria", .food, lunch, at(today, 13, 0), at(today, 13, 45))
-            add(context, "Office", .work, work, at(today, 13, 55), nil)
+            // A run after lunch, from Apple Health (a make-up: anything good wins points back).
+            let run = JournalEntry(date: at(today, 14, 0), kind: .text, text: "Run · 5.2 km · 31 min", latitude: nil, longitude: nil)
+            run.placeName = "Apple Health"
+            context.insert(run)
+            add(context, "Office", .work, work, at(today, 14, 40), nil)
             context.insert(JournalEntry(date: at(today, 13, 20), kind: .photo, text: "Lunch with the team.",
                                         thumbnail: photo("demo-coffee") ?? swatch(.brown), latitude: lunch.0, longitude: lunch.1, isTranscribed: true))
         } else {

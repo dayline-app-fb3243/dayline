@@ -312,6 +312,19 @@ struct DayActivityList: View {
         func covered(_ t: Date) -> Bool { out.contains { r in r.kind == .visit && r.end.map { t >= r.time && t <= $0 } == true } }
         // Journal entries that don't belong to a place row.
         for j in journal where window.contains(j.date) && j.date <= now && !covered(j.date) {
+            if j.placeName == "Apple Health" {
+                // A workout from Apple Health: "Run · 5.2 km · 31 min".
+                let parts = j.text.components(separatedBy: " · ")
+                let kind = parts.first ?? "Workout"
+                let sym = ["Run": "figure.run", "Walk": "figure.walk", "Ride": "figure.outdoor.cycle", "Swim": "figure.pool.swim",
+                           "Yoga": "figure.yoga"][kind] ?? "figure.strengthtraining.traditional"
+                let mins = Int(parts.last?.components(separatedBy: " ").first ?? "") ?? 30
+                out.append(Row(id: "w-\(j.date.timeIntervalSince1970)", time: j.date, title: kind,
+                               detail: parts.dropFirst().joined(separator: " · ") + " · Apple Health", isNow: false, symbol: sym,
+                               end: j.date.addingTimeInterval(Double(mins) * 60), kind: .plan,
+                               note: "From Apple Health. It counts as something good today, so it won back points on your ring."))
+                continue
+            }
             let (title, sym): (String, String) = switch j.kind {
             case .photo: ("Photo", "camera.fill"); case .voice: ("Voice memo", "mic.fill"); case .text: ("Journal entry", "pencil")
             }

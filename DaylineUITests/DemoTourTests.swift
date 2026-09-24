@@ -1418,4 +1418,15 @@ final class DemoTourTests: XCTestCase {
             app.terminate()
         }
     }
+
+    /// Anything good wins points back: a run from Apple Health and lots of steps, on the ring and in the day story.
+    func testMakeUpRun() throws {
+        for (name, hour) in [("mu-1-10am", 10), ("mu-2-4pm", 16), ("mu-3-8pm", 20)] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-demo.pace", "run", "-status.phrase", "1", "-ring.shade", "B"]
+            app.launchEnvironment["TZ"] = Self.zone(localHour: hour)
+            app.launch(); pause(2.5); shot(name)
+            app.terminate()
+        }
+    }
 }
