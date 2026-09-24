@@ -76,7 +76,7 @@ struct TodayView: View {
     private var captureButtons: some View {
         HStack(spacing: 10) {
             Button { capture = .photo } label: { Label("Photo", systemImage: "camera").frame(maxWidth: .infinity) }
-            Button { capture = .voice } label: { Label("Voice note", systemImage: "mic").frame(maxWidth: .infinity) }
+            Button { capture = .voice } label: { Label("Voice memo", systemImage: "mic").frame(maxWidth: .infinity) }
         }
         .buttonStyle(.glass)
         .controlSize(.large)

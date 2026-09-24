@@ -617,23 +617,23 @@ struct TimelineScreen: View {
         }
     }
     /// Preview flag "map.subtitles" (gray line under Journal / Photos / Route), awaiting David's pick:
-    /// A = follows the range ("Notes you wrote this month"), B = the same words for every range ("Shows your notes on the map"),
-    /// C = what's in the range ("4 notes this month"). "" = the old words that always said "today".
-    @AppStorage("map.subtitles") private var subtitleStyle = ""
+    /// B (default) = the same words for every range ("Shows where you journaled"), A = follows the range ("Where you journaled this month"),
+    /// C = what's in the range ("4 entries this month"). "" = the old words that always said "today".
+    @AppStorage("map.subtitles") private var subtitleStyle = "B"
     private enum RowKind { case notes, photos, route }
     private func rowSubtitle(_ kind: RowKind) -> String {
         let when = switch range { case .day: "today"; case .week: "this week"; case .month: "this month"; case .year: "this year" }
         switch (subtitleStyle, kind) {
-        case ("A", .notes): return "Notes you wrote \(when)"
+        case ("A", .notes): return "Where you journaled \(when)"
         case ("A", .photos): return "Photos you took \(when)"
         case ("A", .route): return "The way you went \(when)"
-        case ("B", .notes): return "Shows your notes on the map"
+        case ("B", .notes): return "Shows where you journaled"
         case ("B", .photos): return "Shows your photos on the map"
         case ("B", .route): return "Shows the way you went"
-        case ("C", .notes): let n = rangeNotes.count; return "\(n) note\(n == 1 ? "" : "s") \(when)"
+        case ("C", .notes): let n = rangeNotes.count; return "\(n) entr\(n == 1 ? "y" : "ies") \(when)"
         case ("C", .photos): let n = rangePhotos.count; return "\(n) photo\(n == 1 ? "" : "s") \(when)"
         case ("C", .route): return "\(distanceText) \(when)"
-        case (_, .notes): return "Notes you wrote today"
+        case (_, .notes): return "Where you journaled today"
         case (_, .photos): return "Photos you took today"
         case (_, .route): return "The way you went"
         }

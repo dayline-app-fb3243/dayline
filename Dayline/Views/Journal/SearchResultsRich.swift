@@ -388,7 +388,7 @@ enum SearchSuggestions {
         let week = cal.date(byAdding: .day, value: -7, to: now)!
         if let note = entries.filter({ $0.date >= week && !$0.text.isEmpty && $0.kind != .voice }).sorted(by: { $0.date > $1.date })
             .first(where: { e in placeName(e, visits) != nil }), let place = placeName(note, visits) {
-            out.append(SearchSuggestion(query: "What did I write at \(place)?", why: "Your note from \(note.date.formatted(.dateTime.weekday(.wide)))", symbol: "text.quote"))
+            out.append(SearchSuggestion(query: "What did I write at \(place)?", why: "Your journal from \(note.date.formatted(.dateTime.weekday(.wide)))", symbol: "text.quote"))
         }
         // 3) A place where you took photos recently.
         if let photo = entries.filter({ $0.date >= week && $0.thumbnail != nil }).sorted(by: { $0.date > $1.date })

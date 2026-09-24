@@ -97,7 +97,7 @@ private struct VoiceCaptureSheet: View {
                 Spacer()
             }
             .padding(24)
-            .navigationTitle("Voice note").navigationBarTitleDisplayMode(.inline)
+            .navigationTitle("Voice memo").navigationBarTitleDisplayMode(.inline)
             .backgroundNavBar()
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Close", systemImage: "xmark") { dismiss() } } }
         }
@@ -111,7 +111,7 @@ private struct TextCaptureSheet: View {
     var body: some View {
         NavigationStack {
             TextEditor(text: $text).padding()
-                .navigationTitle("Note").navigationBarTitleDisplayMode(.inline)
+                .navigationTitle("Journal Entry").navigationBarTitleDisplayMode(.inline)
                 .backgroundNavBar()
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) { Button("Close", systemImage: "xmark") { dismiss() } }

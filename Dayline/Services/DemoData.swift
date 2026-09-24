@@ -36,7 +36,7 @@ enum DemoData {
             ScoreFactor(part: .plans, title: "Plans", effect: .neutral, points: 16, detail: "3 of 4 done so far", chip: "At work"),
             ScoreFactor(part: .moving, title: "Moving", effect: .up, points: 10, detail: "6,240 steps · 4.1 km"),
             ScoreFactor(part: .bed, title: "Late night", effect: .up, points: -6, detail: "Phone until 1:10 AM"),
-            ScoreFactor(part: .journal, title: "Journal", effect: .pending, points: 0, detail: "No note yet"),
+            ScoreFactor(part: .journal, title: "Journal", effect: .pending, points: 0, detail: "Not yet today"),
         ]
         return ScoreEngine.Result(
             score: score, label: forced > 0 ? ScoreEngine.label(for: score, finished: false) : "On track",
@@ -88,14 +88,14 @@ enum DemoData {
             sched.wake = 11 * 60; sched.bed = 3 * 60 + 30; sched.gymBy = 22 * 60
             day = cal.date(byAdding: .day, value: -1, to: today)!
             f = [F(.wake, "Woke up on time", 20, "Up at 10:50"), F(.work, "Work", 15, "Full day"), F(.plans, "Plans", 20, "4 of 4 done"),
-                 F(.moving, "Gym", 20, "Done · 9:30 PM"), F(.gotOut, "3 places", 10, "Out and about"), F(.journal, "Journaled", 5, "2 notes")]
+                 F(.moving, "Gym", 20, "Done · 9:30 PM"), F(.gotOut, "3 places", 10, "Out and about"), F(.journal, "Journaled", 5, "2 entries")]
             tip = "Bed by 3:30 keeps a great day great."
         case "b3":
             // Usual schedule (bed at 11), still up at 3 AM after a day that already slipped.
             day = cal.date(byAdding: .day, value: -1, to: today)!
             f = [F(.wake, "Woke up on time", 20, "Up at 6:55"), F(.work, "Work", 15, "9:00 to 5:05"), F(.plans, "Plans", 15, "3 of 4 done"),
                  F(.moving, "Gym", 0, "Missed · closed at 8 PM", .pending), F(.gotOut, "3 places", 10, "Out and about"),
-                 F(.journal, "Journal", 0, "No note", .pending), F(.bed, "Still up", 0, "Phone at 3:00 AM · goal 11 PM", .pending)]
+                 F(.journal, "Journal", 0, "Nothing yet", .pending), F(.bed, "Still up", 0, "Phone at 3:00 AM · goal 11 PM", .pending)]
             tip = "Sleep now. Tomorrow starts fresh."
         case "g9":
             f = [F(.wake, "Woke up on time", 20, "Up at 6:45"), F(.moving, "Gym", 20, "Done · 7:05")]
@@ -135,14 +135,14 @@ enum DemoData {
             sched = UserSchedule(); sched.gym = false; sched.walk = true
             f = [F(.wake, "Up at 8:40", 4, "Late start · goal 7:00")]
             if hour >= 12 {
-                f += [F(.work, "Work", 8, "At the office since 9:40"), F(.journal, "Journaled", 5, "3 notes"),
-                      bonus("Extra journaling", 6, "2 more notes than usual")]
+                f += [F(.work, "Work", 8, "At the office since 9:40"), F(.journal, "Journaled", 5, "3 entries"),
+                      bonus("Extra journaling", 6, "2 more entries than usual")]
             }
             if hour >= 17 {
                 f += [F(.work, "Work", 7, "Full afternoon"), F(.plans, "Plans", 16, "3 of 4 done"),
                       bonus("Gym (make-up)", 15, "Not one of your habits, so it makes up for the late start")]
             }
-            tip = hour < 12 ? "A late start. Extra notes or a workout win it back." : hour < 17 ? "Winning it back. A workout would finish the job." : "Made up for the late start."
+            tip = hour < 12 ? "A late start. Extra journaling or a workout wins it back." : hour < 17 ? "Winning it back. A workout would finish the job." : "Made up for the late start."
         default:
             f = [F(.wake, "Woke up on time", 20, "Up at 6:50")]
         }
@@ -264,7 +264,7 @@ enum DemoData {
                 ScoreFactor(title: "Plans", effect: .up, points: 20, detail: "Everything you usually do"),
                 ScoreFactor(title: "Moving", effect: .up, points: 18, detail: "9,870 steps · 7.2 km"),
                 ScoreFactor(title: "Late night", effect: .up, points: -2, detail: "Phone until 11:40 PM"),
-                ScoreFactor(title: "Journal", effect: .up, points: 10, detail: "1 note"),
+                ScoreFactor(title: "Journal", effect: .up, points: 10, detail: "1 entry"),
             ])
         }
         if score >= 45 {
@@ -274,7 +274,7 @@ enum DemoData {
                 ScoreFactor(title: "Plans", effect: .up, points: 18, detail: "Most of what you usually do"),
                 ScoreFactor(title: "Moving", effect: .up, points: 10, detail: "5,400 steps · 3.8 km"),
                 ScoreFactor(title: "Late night", effect: .up, points: -4, detail: "Phone until 12:30 AM"),
-                ScoreFactor(title: "Journal", effect: .up, points: 10, detail: "1 note"),
+                ScoreFactor(title: "Journal", effect: .up, points: 10, detail: "1 entry"),
             ])
         }
         return ("A slow one. That's okay, rest counts too.", [
@@ -283,7 +283,7 @@ enum DemoData {
             ScoreFactor(title: "Plans", effect: .neutral, points: 8, detail: "1 of 4 done"),
             ScoreFactor(title: "Moving", effect: .neutral, points: 4, detail: "1,900 steps · 1.3 km"),
             ScoreFactor(title: "Late night", effect: .up, points: -8, detail: "Phone until 2:15 AM"),
-            ScoreFactor(title: "Journal", effect: .pending, points: 0, detail: "No note"),
+            ScoreFactor(title: "Journal", effect: .pending, points: 0, detail: "Nothing yet"),
         ])
     }
 

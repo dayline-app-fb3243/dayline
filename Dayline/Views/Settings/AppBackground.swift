@@ -671,7 +671,7 @@ struct PrivacyView: View {
     /// Preview flag "yourData.style" (David picks): now = card; A = gray note on top, button at the bottom, alert;
     /// B = same layout, bottom action sheet; C = note under the button, both at the bottom, action sheet.
     @AppStorage("yourData.style") private var style = "A"
-    private let storedText = "Your places, route, photos and notes are kept on this iPhone. Voice notes are turned into text on the device. With Back Up Timeline on, a copy is kept in your own iCloud."
+    private let storedText = "Your places, route, photos and journal are kept on this iPhone. Voice memos are turned into text on the device. With Back Up Timeline on, a copy is kept in your own iCloud."
     private let deleteText = "Deletes your account, your iCloud backup and everything Dayline saved on this iPhone. This can't be undone."
 
     var body: some View {
@@ -725,7 +725,7 @@ struct PrivacyView: View {
             Card {
                 VStack(alignment: .leading, spacing: 10) {
                     Label("Stored on this iPhone", systemImage: "iphone").font(.headline)
-                    Text("Your places, route, photos and notes are kept on this iPhone. Voice notes are turned into text on the device. With Back Up Timeline on, a copy is kept in your own iCloud.")
+                    Text("Your places, route, photos and journal are kept on this iPhone. Voice memos are turned into text on the device. With Back Up Timeline on, a copy is kept in your own iCloud.")
                         .font(.subheadline).foregroundStyle(.secondary)
                 }
             }
@@ -871,8 +871,8 @@ private struct IntervalID: Identifiable { let id: Int }
 struct PrivacyPolicyView: View {
     @Environment(\.dismiss) private var dismiss
     private let sections: [(String, String)] = [
-        ("The short version", "Your places, routes, photos and notes stay on your iPhone. We don\u{2019}t sell your data and there are no ads."),
-        ("What Dayline collects", "Location, to build your timeline of places and routes. Photos you allow, to show them on your day. Microphone, only while you record a voice note; it\u{2019}s turned into text on your iPhone."),
+        ("The short version", "Your places, routes, photos and journal stay on your iPhone. We don\u{2019}t sell your data and there are no ads."),
+        ("What Dayline collects", "Location, to build your timeline of places and routes. Photos you allow, to show them on your day. Microphone, only while you record a voice memo; it\u{2019}s turned into text on your iPhone."),
         ("What leaves your iPhone", "If Back Up Timeline is on, your timeline and journal are saved in your own iCloud account. Dayline can\u{2019}t see it. If you share with friends, they see only your streak number."),
         ("How we use it", "Only to run Dayline for you: building your timeline, backing it up and showing your streak to people you choose. We don\u{2019}t use it for ads or sell it to anyone."),
         ("Siri", "When you ask Siri about a place, Dayline answers from the data on your iPhone."),

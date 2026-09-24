@@ -1020,6 +1020,20 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Your Schedule with Gym on: the "Go By" time the pace uses.
+    func testGoBySetting() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo"]
+        app.launch(); pause(1.5)
+        tab(app, "Profile"); pause(2)
+        tapID(app, "yourScheduleRow"); pause(2)
+        app.swipeUp(); pause(1)
+        let gym = app.switches["Gym"].firstMatch
+        if gym.exists, (gym.value as? String) == "0" { gym.coordinate(withNormalizedOffset: CGVector(dx: 0.93, dy: 0.5)).tap() }
+        pause(1.5); shot("rh-settings")
+        app.terminate()
+    }
+
     /// Rotating status words: every blue phrase (2pm, on track) and every orange phrase (9pm, gym missed), ring B.
     func testStatusPhrases() throws {
         for (scenario, hour, count, tag) in [("gym", 14, 5, "blue"), ("nogym", 21, 4, "orange")] {

@@ -165,7 +165,7 @@ struct VoiceRecorderBar<Tools: View>: View {
                     }
             )
             .accessibilityElement()
-            .accessibilityLabel("Voice note")
+            .accessibilityLabel("Voice memo")
             .accessibilityHint("Touch and hold to record. Slide up to lock, slide left to cancel.")
             .accessibilityAction { locked = true; Task { try? await voice.start() } }
             .accessibilityIdentifier("voiceMic")

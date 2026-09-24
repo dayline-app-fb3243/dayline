@@ -18,9 +18,9 @@ struct DayScoreIntent: AppIntent {
 /// "Hey Siri, journal my last 3 photos in Dayline" - adds the latest photos plus what you say.
 struct JournalByVoiceIntent: AppIntent {
     static let title: LocalizedStringResource = "Journal by Voice"
-    static let description = IntentDescription("Adds your latest photos to today's journal with a note you dictate.")
+    static let description = IntentDescription("Adds your latest photos to today's journal with words you dictate.")
     @Parameter(title: "Photos", default: 1, inclusiveRange: (0, 20)) var count: Int
-    @Parameter(title: "Note", requestValueDialog: "What do you want to say about it?") var note: String
+    @Parameter(title: "Words", requestValueDialog: "What do you want to say about it?") var note: String
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog & ShowsSnippetView {
@@ -35,7 +35,7 @@ struct JournalByVoiceIntent: AppIntent {
         let photos = added.count == 1 ? "1 photo" : "\(added.count) photos"
         let view = JournalSnippetView(photos: added.compactMap(\.thumbnail), note: text,
                                       detail: "Today · \(Date.now.shortTime)")
-        return .result(dialog: added.isEmpty ? "Saved your note to today's journal." : "Added \(photos) and your note to today's journal.", view: view)
+        return .result(dialog: added.isEmpty ? "Saved it to today's journal." : "Added \(photos) and what you said to today's journal.", view: view)
     }
 }
 

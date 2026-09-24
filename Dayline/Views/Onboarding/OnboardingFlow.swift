@@ -570,7 +570,7 @@ struct PermissionsView: View {
              rows: [("photo.on.rectangle", "Put your photos on the places you took them"), ("calendar", "Show them on your day")],
              note: "Your photos stay on your iPhone. You can change this later in Settings."),
         Page(kind: "mic", title: "Turning on the Microphone lets Dayline:",
-             rows: [("mic", "Record voice notes for your journal"), ("text.bubble", "Turn them into text on your iPhone")],
+             rows: [("mic", "Record voice memos for your journal"), ("text.bubble", "Turn them into text on your iPhone")],
              note: "Dayline only listens while you record. You can change this later in Settings."),
         Page(kind: "motion", title: "Turning on Motion & Fitness lets Dayline:",
              rows: [("moon", "Tell when you fell asleep, so late nights count toward the right day"), ("sun.max", "Know when you woke up"), ("figure.walk", "Count steps and walks in your day")],

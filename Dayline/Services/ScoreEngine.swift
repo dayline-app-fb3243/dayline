@@ -227,7 +227,7 @@ enum ScoreEngine {
         let extraNotes = max(0, input.journal.count - 3)
         if extraNotes > 0 {
             factors.append(ScoreFactor(title: "Extra journaling", effect: .up, points: min(15, extraNotes * 3),
-                                       detail: "\(extraNotes) more note\(extraNotes == 1 ? "" : "s") than usual", part: bonusPart))
+                                       detail: "\(extraNotes) more entr\(extraNotes == 1 ? "y" : "ies") than usual", part: bonusPart))
         }
         if !s.gym, outside.contains(where: { $0.category == .gym && $0.duration > 20 * 60 }) {
             factors.append(ScoreFactor(title: "Gym (make-up)", effect: .up, points: 15, detail: "Not one of your habits, so it makes up for a miss", part: bonusPart))

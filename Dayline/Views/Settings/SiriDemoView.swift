@@ -18,7 +18,7 @@ struct SiriDemoView: View {
         }
         return [
             Item(ask: "Journal my last two photos in Dayline",
-                 reply: "Done. I added 2 photos and your note to today's journal.",
+                 reply: "Done. I added 2 photos and what you said to today's journal.",
                  card: AnyView(JournalSnippetView(photos: photos, note: "Today was a good day.", detail: "Today · 12:40 PM · Blue Door Coffee"))),
             Item(ask: "How's Sam's streak in Dayline",
                  reply: "Sam is on a 9-day streak, you're at 6.",
@@ -32,7 +32,7 @@ struct SiriDemoView: View {
                                                    factors: [("Woke up on time", 14), ("Gym", 18), ("Late night", -6)]))),
             Item(ask: "Where was I yesterday at 3 PM in Dayline",
                  reply: "You were at the Office, from 1:10 to 5:40 PM.",
-                 card: AnyView(WhereWasISnippetView(name: "Office", timeText: "Tuesday · 1:10 – 5:40 PM", note: "Voice note: “Project draft done”", map: nil))),
+                 card: AnyView(WhereWasISnippetView(name: "Office", timeText: "Tuesday · 1:10 – 5:40 PM", note: "Voice memo: “Project draft done”", map: nil))),
             Item(ask: "What's my streak in Dayline",
                  reply: "6 days in a row. Sam and Jordan are ahead of you.",
                  card: AnyView(StreakSnippetView(days: 6, best: 9, rows: [("Sam", Color(red: 1, green: 0.27, blue: 0.23), 9),

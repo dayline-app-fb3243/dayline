@@ -32,7 +32,7 @@ struct VoiceBubble: View {
                         .frame(width: 30, height: 30).background(.white, in: .circle)
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(isPlaying ? "Pause" : "Play voice note")
+                .accessibilityLabel(isPlaying ? "Pause" : "Play voice memo")
                 HStack(spacing: 2) {
                     ForEach(Array(bars.enumerated()), id: \.offset) { i, height in
                         Capsule().fill(.white.opacity(Double(i) / Double(bars.count) < progress ? 1 : 0.45))

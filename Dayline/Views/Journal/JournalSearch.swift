@@ -93,7 +93,7 @@ enum JournalSearch {
                 let place = e.placeName ?? v?.placeName ?? "Journal"
                 let text = [e.text, e.title ?? "", place].joined(separator: " ").lowercased()
                 if let k = keys.first(where: { text.contains($0) }) {
-                    let why = e.kind == .voice ? "Voice note: \u{201C}\(e.text.prefix(48))\u{201D}" : (place.lowercased().contains(k) ? "Place name" : "Journal: \u{201C}\(e.text.prefix(48))\u{201D}")
+                    let why = e.kind == .voice ? "Voice memo: \u{201C}\(e.text.prefix(48))\u{201D}" : (place.lowercased().contains(k) ? "Place name" : "Journal: \u{201C}\(e.text.prefix(48))\u{201D}")
                     hits.append(SearchHit(place: place, date: e.date, reason: why, symbol: v?.category.symbol ?? "doc.text.fill", thumbnail: e.thumbnail, coordinate: e.coordinate ?? v?.coordinate))
                     continue
                 }
@@ -175,7 +175,7 @@ struct JournalSearchField: View {
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
             // No mic here: the keyboard has its own dictation key.
-            TextField("Search places, notes, photos\u{2026}", text: $query)
+            TextField("Search places, journal, photos\u{2026}", text: $query)
                 .submitLabel(.search)
                 .onSubmit(onSubmit)
                 .autocorrectionDisabled()

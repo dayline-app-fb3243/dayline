@@ -257,7 +257,7 @@ struct FriendStreakView: View {
                 }
                 SectionHeader("Past week")
                 Card(padding: 12) { FriendWeekStrip(color: friend.color) { friend.isGood($0) } }
-                Text("Friends see streaks only. Places, photos and notes stay private.")
+                Text("Friends see streaks only. Places, photos and your journal stay private.")
                     .font(.footnote).helperText().padding(.horizontal, 4)
             }
             .padding(.horizontal, 18).padding(.bottom, 30)

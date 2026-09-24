@@ -41,7 +41,7 @@ struct JournalView: View {
                     } else {
                     if entries.isEmpty {
                         ContentUnavailableView("No journal yet", systemImage: "doc.text",
-                                               description: Text("Tap + to add a note, photo or voice memo."))
+                                               description: Text("Tap + to write, add a photo or record a voice memo."))
                     }
                     ForEach(days, id: \.0) { day, groups in
                         Text(Calendar.current.isDateInToday(day) ? "Today" : day.formatted(.dateTime.weekday(.wide).month(.abbreviated).day()))
@@ -155,7 +155,7 @@ struct JournalCard: View {
     let group: JournalGroup
     /// Photos inside the card with a white border, a big photo and a narrow one side by side.
     @AppStorage("journal.cardStyle") private var style = "inset"
-    private var heading: String { group.title ?? group.place ?? (group.kind == .voice ? "Voice note" : group.kind == .photo ? "Photo" : "Note") }
+    private var heading: String { group.title ?? group.place ?? (group.kind == .voice ? "Voice memo" : group.kind == .photo ? "Photo" : "Journal") }
     private var meta: String { [group.title != nil ? group.place : nil, group.date.shortTime].compactMap { $0 }.joined(separator: " · ") }
 
     var body: some View {
