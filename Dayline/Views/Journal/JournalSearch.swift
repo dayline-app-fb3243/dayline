@@ -67,7 +67,12 @@ enum JournalSearch {
         else if words.contains("today") { day = cal.startOfDay(for: now) }
         let lastWeek = q.contains("last week")
         let wantsFood = !eatWords.isDisjoint(with: words)
-        let keys = words.filter { !stop.contains($0) && !eatWords.contains($0) && Int($0) == nil }
+        // Plural to singular, so "danishes" finds "danish".
+        let keys = words.filter { !stop.contains($0) && !eatWords.contains($0) && Int($0) == nil }.map { w -> String in
+            if w.count > 5 && w.hasSuffix("es") { return String(w.dropLast(2)) }
+            if w.count > 4 && w.hasSuffix("s") && !w.hasSuffix("ss") { return String(w.dropLast()) }
+            return w
+        }
 
         func inRange(_ d: Date) -> Bool {
             if let day { return cal.isDate(d, inSameDayAs: day) }
@@ -105,7 +110,7 @@ enum JournalSearch {
             }
         } else if day != nil || lastWeek {
             // "Where was I 4 days ago" / "the place I ate 4 days ago": the visits that day.
-            for v in visits where inRange(v.arrival) && v.category != .home && (!wantsFood || v.category == .food || v.category == .coffee) {
+            for v in visits where inRange(v.arrival) && v.category != .home && (!wantsFood || v.category == .food) {
                 let mins = v.departure.map { Int($0.timeIntervalSince(v.arrival) / 60) }
                 let len = mins.map { $0 >= 60 ? "\($0 / 60) h \($0 % 60) min" : "\($0) min" } ?? "Still here"
                 let note = entries.first { e in e.kind == .text && abs(e.date.timeIntervalSince(v.arrival)) < 3 * 3600 && cal.isDate(e.date, inSameDayAs: v.arrival) }
@@ -113,6 +118,9 @@ enum JournalSearch {
                 hits.append(SearchHit(place: v.placeName, date: v.arrival, reason: why, symbol: v.category.symbol, coordinate: v.coordinate))
             }
         }
+        // One result per place per day.
+        var seen = Set<String>()
+        hits = hits.filter { seen.insert("\($0.place)|\(cal.startOfDay(for: $0.date).timeIntervalSince1970)").inserted }
         return hits.sorted { $0.date > $1.date }
     }
 }
@@ -130,7 +138,7 @@ struct JournalSearchView: View {
         VStack(spacing: 0) {
             if !barAtBottom { bar.padding(.horizontal, 16).padding(.top, 8).padding(.bottom, 6) }
             ScrollView {
-                SearchResultsList(query: query, entries: entries, visits: visits).padding(.horizontal, 16).padding(.top, 8)
+                SearchResultsList(query: query, entries: entries, visits: visits, onPick: { query = $0 }).padding(.horizontal, 16).padding(.top, 8)
             }
             if barAtBottom { bar.padding(.horizontal, 16).padding(.vertical, 10) }
         }
@@ -177,7 +185,16 @@ struct SearchResultsList: View {
     var query: String
     var entries: [JournalEntry]
     var visits: [Visit]
+    @AppStorage("search.results") private var resultsStyle = ""
+    var onPick: (String) -> Void = { _ in }
     var body: some View {
+        if resultsStyle == "rich" {
+            RichSearchResults(query: query, entries: entries, visits: visits, onPick: onPick)
+        } else {
+            plainList
+        }
+    }
+    private var plainList: some View {
         let hits = query.trimmingCharacters(in: .whitespaces).isEmpty ? [] : JournalSearch.run(query, entries: entries, visits: visits)
         VStack(alignment: .leading, spacing: 10) {
             if query.isEmpty {

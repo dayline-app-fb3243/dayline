@@ -9,6 +9,9 @@ struct IntervalRouteMap: View {
     /// Show a dot at every location check, so you can see how precise each rate is.
     var dots = false
     @State private var route: [CLLocationCoordinate2D] = []
+    /// Preview flag "check.line" (none picked yet): how the route and checks are drawn.
+    /// A = street line + small dots, B = dots only, C = thin line + big dots. "" = current.
+    @AppStorage("check.line") private var lineStyle = ""
     private static let stops: [CLLocationCoordinate2D] = [
         .init(latitude: 40.7489, longitude: -73.9857), .init(latitude: 40.7527, longitude: -73.9772),
         .init(latitude: 40.7580, longitude: -73.9712), .init(latitude: 40.7614, longitude: -73.9776),
@@ -26,17 +29,28 @@ struct IntervalRouteMap: View {
         Map(initialPosition: .region(MKCoordinateRegion(center: .init(latitude: 40.7552, longitude: -73.9790),
                                                          span: .init(latitudeDelta: 0.017, longitudeDelta: 0.017))),
             interactionModes: interactive ? .all : []) {
+            if lineStyle == "A" {
+                // A: smooth line along the streets, small dot per check.
+                if route.count > 1 {
+                    MapPolyline(coordinates: route).stroke(.white, style: StrokeStyle(lineWidth: 7, lineCap: .round, lineJoin: .round))
+                    MapPolyline(coordinates: route).stroke(Theme.accent, style: StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round))
+                }
+                if dots { checkDots(size: 5, ring: 1.5) }
+            } else if lineStyle == "B" {
+                // B: dots only, no line.
+                checkDots(size: 9, ring: 2.5)
+            } else if lineStyle == "C" {
+                // C: thin straight line between checks, bigger check dots.
+                if sampled.count > 1 {
+                    MapPolyline(coordinates: sampled).stroke(Theme.accent.opacity(0.55), style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+                }
+                if dots { checkDots(size: 12, ring: 3) }
+            } else {
             if sampled.count > 1 {
                 MapPolyline(coordinates: sampled)
                     .stroke(Theme.accent, style: StrokeStyle(lineWidth: interactive ? 5 : (dots ? 4 : 3), lineCap: .round, lineJoin: .round))
             }
-            if dots {
-                ForEach(Array(sampled.enumerated()), id: \.offset) { _, c in
-                    Annotation("", coordinate: c) {
-                        Circle().fill(Theme.accent).frame(width: 8, height: 8).padding(2).background(Circle().fill(.white))
-                            .shadow(color: .black.opacity(0.2), radius: 1.5, y: 0.5)
-                    }
-                }
+            if dots { checkDots(size: 8, ring: 2) }
             }
             // Same blue Apple-style pins as every other map, icon = place type.
             ForEach(Array(Self.stops.enumerated()), id: \.offset) { i, c in
@@ -49,6 +63,14 @@ struct IntervalRouteMap: View {
         .mapControlVisibility(.hidden)
         .allowsHitTesting(interactive)
         .task { await load() }
+    }
+    @MapContentBuilder private func checkDots(size: CGFloat, ring: CGFloat) -> some MapContent {
+        ForEach(Array(sampled.enumerated()), id: \.offset) { _, c in
+            Annotation("", coordinate: c) {
+                Circle().fill(Theme.accent).frame(width: size, height: size).padding(ring).background(Circle().fill(.white))
+                    .shadow(color: .black.opacity(0.2), radius: 1.5, y: 0.5)
+            }
+        }
     }
     private func load() async {
         var all: [CLLocationCoordinate2D] = []

@@ -92,10 +92,9 @@ struct ScoreCard: View {
         let named = result.factors.filter { $0.chip != nil }
         return Array((named.isEmpty ? result.factors : named).prefix(3))
     }
-    /// Preview flag "today.card" (none picked yet). All three drop the chips (they repeat the schedule)
-    /// and use a tip that follows the time of day. A = same layout, centered. B = label in black, bigger ring.
-    /// C = ring on top, text centered below.
-    @AppStorage("today.card") private var style = ""
+    /// "today.card": A (default) = ring on the left, status in color, no chips, tip that follows the time of day.
+    /// B = label in black, bigger ring. C = ring on top, text centered below. "" = the old card with chips.
+    @AppStorage("today.card") private var style = "A"
     private var tipText: String {
         style.isEmpty ? (result.tip ?? result.summary) : (result.tip == nil ? result.summary : ScoreEngine.dynamicTip(score: result.score, factors: result.factors))
     }
@@ -152,7 +151,8 @@ struct ScoreCard: View {
             }
         }
     }
-    private var labelColor: Color { Theme.scoreColor(result.score) }
+    /// Status color follows the theme: blue while on track, orange when not (below 55, "Slow day" / "Rest day").
+    private var labelColor: Color { result.score >= 55 ? Theme.accent : .orange }
 }
 
 

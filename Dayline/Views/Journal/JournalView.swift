@@ -37,7 +37,7 @@ struct JournalView: View {
                         JournalSearchField(query: $inlineQuery).padding(.bottom, 4)
                     }
                     if searchStyle == "C" && !inlineQuery.isEmpty {
-                        SearchResultsList(query: inlineQuery, entries: entries, visits: visits)
+                        SearchResultsList(query: inlineQuery, entries: entries, visits: visits, onPick: { inlineQuery = $0 })
                     } else {
                     if entries.isEmpty {
                         ContentUnavailableView("No journal yet", systemImage: "doc.text",

@@ -22,8 +22,11 @@ enum DemoData {
     /// Today's score in demo mode, matching the approved design.
     static var todayScore: ScoreEngine.Result {
         let weekday = Date.now.formatted(.dateTime.weekday(.wide))
+        // "-demo.score N" (screenshots only) shows a different score, e.g. a not-on-track day.
+        let forced = UserDefaults.standard.integer(forKey: "demo.score")
+        let score = forced > 0 ? forced : 74
         return ScoreEngine.Result(
-            score: 74, label: "On track",
+            score: score, label: forced > 0 ? ScoreEngine.label(for: score, finished: false) : "On track",
             summary: "Better than your \(weekday) average (68). A 30-min walk tonight gets you to 85+.",
             tip: "Keep going. A walk tonight gets you to 85+.",
             factors: [
@@ -98,6 +101,13 @@ enum DemoData {
             context.insert(JournalEntry(date: at(fourAgo, 19, 55), kind: .text, text: "Best cacio e pepe in a while. Come back with Sam.",
                                         latitude: trattoria.0, longitude: trattoria.1))
         }
+        // Bakery the same morning, with photos: "the place I ate danishes 4 days ago" finds this one.
+        // Photos: Wikimedia Commons, "Spandauer med syltetøj" by Nillerdk (CC BY 3.0), "Danish pastry" by RhinoMind (CC BY-SA 3.0).
+        let bakery = place(0.006, 0.011)
+        add(context, "Ferrara Bakery", .coffee, bakery, at(fourAgo, 9, 10), at(fourAgo, 9, 45))
+        context.insert(JournalEntry(date: at(fourAgo, 9, 18), kind: .photo, text: "Cherry danish here is unreal.",
+                                    thumbnail: photo("demo-danish"), latitude: bakery.0, longitude: bakery.1))
+        context.insert(JournalEntry(date: at(fourAgo, 9, 19), kind: .photo, thumbnail: photo("demo-danish2"), latitude: bakery.0, longitude: bakery.1))
         context.insert(JournalEntry(date: at(today, 11, 40), kind: .voice,
                                     text: "Finished the big project draft early. Feeling good about today.",
                                     audioDuration: 42, latitude: work.0, longitude: work.1, isTranscribed: true))

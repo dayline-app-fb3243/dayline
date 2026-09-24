@@ -872,6 +872,33 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Today card A (default): on track (blue) and not on track (orange).
+    func testTodayStatusColor() throws {
+        for (name, extra) in [("on", [String]()), ("off", ["-demo.score", "42"])] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo"] + extra
+            app.launchEnvironment["TZ"] = Self.morningZone
+            app.launch(); pause(3); shot("ts-\(name)")
+            app.terminate()
+        }
+    }
+
+    /// Search result states (search.results rich): empty, no match, which one, one confident (photos / Look Around).
+    func testRichSearchDemo() throws {
+        let app0 = XCUIApplication()
+        app0.launchArguments = ["-demo", "-journal.search", "B", "-search.results", "rich"]
+        app0.launch(); pause(1.5); tab(app0, "Journal"); pause(1.5)
+        tapID(app0, "journalSearch"); pause(3); shot("rs-empty")
+        app0.terminate()
+        for (name, q) in [("none", "sushi in paris"), ("multi", "where was I 4 days ago"),
+                          ("one", "the place I ate danishes 4 days ago"), ("look", "the place I ate 4 days ago")] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-journal.search", "B", "-search.results", "rich", "-journal.searchQuery", q]
+            app.launch(); pause(1.5); tab(app, "Journal"); pause(name == "look" ? 7 : 4); shot("rs-\(name)")
+            app.terminate()
+        }
+    }
+
     /// Journal search button options (A/B/C) and the search screen with sample questions.
     func testJournalSearchDemo() throws {
         for v in ["A", "B", "C"] {
@@ -906,6 +933,24 @@ final class DemoTourTests: XCTestCase {
         tapID(app, "mapGrabber"); pause(2.5)
         tapID(app, "mapGrabber"); pause(0.25); shot("bs-mid"); pause(2.5)
         app.terminate()
+    }
+
+    /// Check Location big view: line/dot styles A/B/C at 1, 5 and 10 min.
+    func testCheckLineStyles() throws {
+        for v in ["A", "B", "C"] {
+            for m in [1, 5, 10] {
+                let app = XCUIApplication()
+                app.launchArguments = ["-demo", "-check.line", v]
+                app.launchEnvironment["TZ"] = Self.morningZone
+                app.launch(); pause(1.5)
+                tab(app, "Profile"); pause(1.5)
+                let row = app.staticTexts["Check Location"].firstMatch
+                if !row.isHittable { app.swipeUp(); pause(0.8) }
+                row.tap(); pause(3)
+                tapID(app, "thumb-\(m)"); pause(5); shot("cl-\(v)-\(m)")
+                app.terminate()
+            }
+        }
     }
 
     /// Check Location big view C (default): 1, 5 and 10 min, route line and a dot per check.
