@@ -17,7 +17,7 @@ struct SiriCommandsView: View {
             VStack(alignment: .leading, spacing: 10) {
                 Card(padding: 16) {
                     VStack(alignment: .leading, spacing: 8) {
-                        Label { Text("Just ask Siri") } icon: { SiriRowIcon() }.font(.headline)
+                        Label { Text("Ask Siri") } icon: { SiriRowIcon() }.font(.headline)
                         Text("Say \u{201C}Hey Siri\u{201D} and ask in your own words. Add \u{201C}with Dayline\u{201D} so Siri looks in your Dayline.")
                             .font(.subheadline).foregroundStyle(.secondary)
                     }
@@ -47,7 +47,7 @@ struct SiriCommandsView: View {
 }
 
 
-/// Icon next to "Just ask Siri". Preview options until David picks one (-siri.iconStyle orb|circle).
+/// Icon next to "Ask Siri". Preview options until David picks one (-siri.iconStyle orb|circle).
 struct SiriRowIcon: View {
     @AppStorage("siri.iconStyle") private var style = "waveform"
     var body: some View {
