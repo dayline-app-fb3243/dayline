@@ -202,7 +202,7 @@ struct NewEntryView: View {
 
     /// Separate small glass buttons: camera and library on the left, mic on the right (like Messages).
     /// Preview flag "editor.buttons" (David picking, Sep 24): now = outline symbols, B = filled symbols, C = camera + photos in one glass pill.
-    @AppStorage("editor.buttons") private var buttonStyle = "now"
+    @AppStorage("editor.buttons") private var buttonStyle = "B"  // David picked B (filled symbols), Sep 24
     private var cameraOK: Bool { UIImagePickerController.isSourceTypeAvailable(.camera) || ProcessInfo.processInfo.arguments.contains("-demo") }
 
     private var addBar: some View {
