@@ -156,7 +156,7 @@ struct NewEntryView: View {
                 }
             }
             ToolbarItem(placement: .confirmationAction) {
-                Button("Save", systemImage: "checkmark") { save() }
+                Button("Save", systemImage: "checkmark") { Task { await saveTapped() } }
                     .buttonStyle(.glassProminent).disabled(!canSave)
                     .accessibilityIdentifier("saveEntry")
             }
@@ -292,9 +292,16 @@ struct NewEntryView: View {
         loaded = true
         startedAt = g.date
         if let gid = g.entries.first(where: { $0.groupID != nil })?.groupID { groupID = gid }
-        let lines = (g.text ?? "").components(separatedBy: "\n")
-        title = lines.first ?? ""
-        var list: [EntryBlock] = [EntryBlock(kind: .text, text: lines.dropFirst().joined(separator: "\n"))]
+        var list: [EntryBlock]
+        if let t = g.title {
+            title = t
+            list = [EntryBlock(kind: .text, text: g.text ?? "")]
+        } else {
+            // Older entries kept the title as the first line of the text.
+            let lines = (g.text ?? "").components(separatedBy: "\n")
+            title = lines.count > 1 ? lines[0] : ""
+            list = [EntryBlock(kind: .text, text: lines.count > 1 ? lines.dropFirst().joined(separator: "\n") : (lines.first ?? ""))]
+        }
         let media: [EntryMedia] = g.entries.compactMap { e in
             guard let d = e.thumbnail, let img = UIImage(data: d) else { return nil }
             return EntryMedia(image: img, videoURL: e.videoFileName.flatMap { VideoStore.url(for: $0) }, duration: e.videoDuration)
@@ -321,10 +328,16 @@ struct NewEntryView: View {
         onDone()
     }
 
+    /// Save also finishes a voice note that's still recording or under review, so it lands in this entry.
+    private func saveTapped() async {
+        if voice.isActive { await stopVoice() }
+        save()
+    }
+
     private func save() {
         let lat = coordinate?.0, lon = coordinate?.1
         let head = title.trimmingCharacters(in: .whitespacesAndNewlines)
-        let text = [head, bodyText].filter { !$0.isEmpty }.joined(separator: "\n")
+        let text = bodyText
         let media = allMedia
         let place = placeName
         var saved: [JournalEntry] = []
@@ -342,7 +355,15 @@ struct NewEntryView: View {
             if let url = m.videoURL { entry.videoFileName = url.lastPathComponent; entry.videoDuration = m.duration }
             saved.append(entry)
         }
+        if saved.isEmpty, !head.isEmpty, hasVoice {
+            // Title + voice only: keep the title on a text entry so the card shows it.
+            saved.append(JournalEntry(date: startedAt, kind: .text, text: "", latitude: lat, longitude: lon))
+        }
+        if saved.isEmpty, !head.isEmpty, !hasVoice {
+            saved.append(JournalEntry(date: startedAt, kind: .text, text: "", latitude: lat, longitude: lon))
+        }
         for e in saved { e.placeName = place; e.groupID = groupID; context.insert(e) }
+        saved.first?.title = head.isEmpty ? nil : head
         // Voice notes recorded in this entry were saved when recording stopped; link them to this entry.
         let start = editing == nil ? startedAt : openedAt
         if let g = editing { for v in g.entries where v.kind == .voice { v.groupID = groupID } }

@@ -191,6 +191,14 @@ final class DemoTourTests: XCTestCase {
             app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Streak'")).firstMatch.tap(); pause(2); shot("c18c-streak-thick")
             app.terminate()
         }
+        for letter in ["A", "B", "C"] {
+            app = XCUIApplication()
+            app.launchArguments = ["-demo", "-journal.cardStyle", letter]
+            app.launchEnvironment["TZ"] = Self.morningZone
+            app.launch()
+            tab(app, "Journal"); pause(2); shot("c22\(letter)-journal-card")
+            app.terminate()
+        }
         for (style, letter) in [("circle", "A"), ("square", "B"), ("outlined", "C")] {
             app = XCUIApplication()
             app.launchArguments = ["-demo", "-icons.markerStyle", style]

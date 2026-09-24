@@ -67,6 +67,7 @@ struct JournalGroup: Identifiable {
     var photos: [Data] { entries.compactMap(\.thumbnail) }
     var text: String? { entries.first { !$0.text.isEmpty && $0.kind != .voice }?.text }
     var voice: JournalEntry? { entries.first { $0.kind == .voice } }
+    var title: String? { entries.lazy.compactMap(\.title).first { !$0.isEmpty } }
     var kind: JournalKind { voice != nil ? .voice : (photos.isEmpty ? .text : .photo) }
 
     static func placeName(for entry: JournalEntry, visits: [Visit]) -> String? {
@@ -86,8 +87,9 @@ struct JournalGroup: Identifiable {
         var out: [JournalGroup] = []
         for e in sorted {
             let name = placeName(for: e, visits: visits)
-            if var last = out.last, let g = e.groupID, last.entries.contains(where: { $0.groupID == g }) {
-                last.entries.append(e); out[out.count - 1] = last
+            // Everything saved from one entry stays on one card, even if other entries fall in between.
+            if let g = e.groupID, let i = out.firstIndex(where: { $0.entries.contains { $0.groupID == g } }) {
+                out[i].entries.append(e)
             } else if var last = out.last, last.place == name, name != nil, e.groupID == nil,
                abs(e.date.timeIntervalSince(last.entries.last!.date)) < 1800, e.kind != .voice, last.voice == nil {
                 last.entries.append(e); out[out.count - 1] = last
@@ -99,53 +101,114 @@ struct JournalGroup: Identifiable {
     }
 }
 
-/// One card in the Journal, laid out like the design: icon, place, time; photos; then the words.
+/// One card in the Journal. Preview flag "journal.cardStyle" (David picks):
+/// A = icon + title (place under it), photos, text, voice; B = photos on top like Apple Journal, then title, text, voice, place · time at the bottom;
+/// C = no icon: title, place · time, then text, photos, voice.
 struct JournalCard: View {
     let group: JournalGroup
+    @AppStorage("journal.cardStyle") private var style = "A"
+    private var heading: String { group.title ?? group.place ?? (group.kind == .voice ? "Voice note" : group.kind == .photo ? "Photo" : "Note") }
+    private var meta: String { [group.title != nil ? group.place : nil, group.date.shortTime].compactMap { $0 }.joined(separator: " · ") }
+
     var body: some View {
+        switch style {
+        case "B": styleB
+        case "C": styleC
+        default: styleA
+        }
+    }
+
+    private var styleA: some View {
         Card(padding: 14) {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(spacing: 10) {
                     Image(systemName: group.kind == .voice ? "mic" : group.kind == .photo ? "photo" : "pencil")
                         .font(.system(size: 14, weight: .semibold)).foregroundStyle(.white)
                         .frame(width: 29, height: 29).background(Theme.accent.gradient, in: .rect(cornerRadius: 7, style: .continuous))
-                    Text(group.place ?? (group.kind == .voice ? "Voice note" : group.kind == .photo ? "Photo" : "Note"))
-                        .font(.subheadline.weight(.semibold))
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text(heading).font(.subheadline.weight(.semibold))
+                        if group.title != nil, let place = group.place { Text(place).font(.caption).foregroundStyle(.secondary) }
+                    }
                     Spacer()
                     Text(group.date.shortTime).font(.caption).foregroundStyle(.secondary)
                 }
-                if !group.photos.isEmpty {
-                    HStack(spacing: 8) {
-                        ForEach(Array(group.photos.prefix(3).enumerated()), id: \.offset) { i, data in
-                            if let image = UIImage(data: data) {
-                                Image(uiImage: image).resizable().scaledToFill()
-                                    .frame(width: 96, height: 96).clipShape(.rect(cornerRadius: 14))
-                                    .overlay {
-                                        if group.videos.contains(i) {
-                                            Image(systemName: "play.fill").font(.caption).foregroundStyle(.white)
-                                                .frame(width: 30, height: 30).background(.black.opacity(0.35), in: .circle)
-                                        }
-                                    }
-                            }
+                photoRow(size: 96)
+                textBlock
+                voiceBlock
+            }
+        }
+    }
+
+    private var styleB: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if !group.photos.isEmpty {
+                HStack(spacing: 2) {
+                    ForEach(Array(group.photos.prefix(2).enumerated()), id: \.offset) { _, data in
+                        if let image = UIImage(data: data) {
+                            Color.clear.frame(maxWidth: .infinity).frame(height: 150)
+                                .overlay { Image(uiImage: image).resizable().scaledToFill() }.clipped()
                         }
                     }
                 }
-                if group.voice != nil, let text = group.text {
-                    Text(text).font(.subheadline)
+            }
+            VStack(alignment: .leading, spacing: 8) {
+                Text(heading).font(.headline)
+                textBlock
+                voiceBlock
+                Text(meta).font(.caption).foregroundStyle(.secondary)
+            }
+            .padding(14)
+        }
+        .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: Theme.cardRadius, style: .continuous))
+        .clipShape(.rect(cornerRadius: Theme.cardRadius, style: .continuous))
+    }
+
+    private var styleC: some View {
+        Card(padding: 14) {
+            VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(heading).font(.headline)
+                    Text(meta).font(.subheadline).foregroundStyle(.secondary)
                 }
-                if let voice = group.voice {
-                    VoiceBubble(seconds: voice.audioDuration, words: voice.text, transcribed: voice.isTranscribed,
-                                seed: voice.audioFileName ?? "\(voice.date)",
-                                audioURL: voice.audioFileName.map { VoiceNoteService.folder.appending(path: $0) })
-                } else if let text = group.text {
-                    Text(text).font(.subheadline)
+                textBlock
+                photoRow(size: 72)
+                voiceBlock
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    @ViewBuilder private func photoRow(size: CGFloat) -> some View {
+        if !group.photos.isEmpty {
+            HStack(spacing: 8) {
+                ForEach(Array(group.photos.prefix(3).enumerated()), id: \.offset) { i, data in
+                    if let image = UIImage(data: data) {
+                        Image(uiImage: image).resizable().scaledToFill()
+                            .frame(width: size, height: size).clipShape(.rect(cornerRadius: 12, style: .continuous))
+                            .overlay {
+                                if group.videos.contains(i) {
+                                    Image(systemName: "play.fill").font(.caption).foregroundStyle(.white)
+                                        .frame(width: 30, height: 30).background(.black.opacity(0.35), in: .circle)
+                                }
+                            }
+                    }
                 }
             }
         }
     }
+
+    @ViewBuilder private var textBlock: some View {
+        if let text = group.text, !text.isEmpty { Text(text).font(.subheadline) }
+    }
+
+    @ViewBuilder private var voiceBlock: some View {
+        if let voice = group.voice {
+            VoiceBubble(seconds: voice.audioDuration, words: voice.text, transcribed: voice.isTranscribed,
+                        seed: voice.audioFileName ?? "\(voice.date)",
+                        audioURL: voice.audioFileName.map { VoiceNoteService.folder.appending(path: $0) })
+        }
+    }
 }
-
-
 
 /// A journal entry opened full screen: place and time, photos, words and the voice note.
 struct JournalEntryView: View {

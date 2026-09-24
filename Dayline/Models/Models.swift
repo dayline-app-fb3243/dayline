@@ -111,6 +111,8 @@ final class JournalEntry {
     var placeName: String? = nil
     /// Links the text, photos, videos and voice notes saved from one New entry.
     var groupID: String? = nil
+    /// Title typed in the editor (shown as the card title; the place becomes secondary).
+    var title: String? = nil
     var latitude: Double?
     var longitude: Double?
     var isTranscribed: Bool
