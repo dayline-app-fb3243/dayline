@@ -13,7 +13,7 @@ struct YourScheduleView: View {
     @State private var editing: WorkBlock?
     @State private var adding = false
     /// Preview "gym.ask": what happens when you turn the Gym habit on. A = a sheet that asks where your gym is,
-    /// then the latest time you usually go. B = both questions right in the list. C = one sheet with both.
+    /// then when it closes. B = both questions right in the list. C = one sheet with both.
     /// "" = the old plain Go By picker.
     @AppStorage("gym.ask") private var ask = ""
     @State private var askingGym = false
@@ -69,8 +69,8 @@ struct YourScheduleView: View {
                     DatePicker(selection: Binding(get: { UserSchedule.date(s.gymDeadline, on: .now) },
                                                   set: { s.gymBy = UserSchedule.minutes(of: $0) }), displayedComponents: .hourAndMinute) {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("Latest Time")
-                            Text(closesText ?? "The latest you usually go").font(.footnote).foregroundStyle(.secondary)
+                            Text("Gym Closes")
+                            Text(closesText ?? "The gym counts as missed after this").font(.footnote).foregroundStyle(.secondary)
                         }
                     }
                     .accessibilityIdentifier("gymBy")
@@ -84,8 +84,8 @@ struct YourScheduleView: View {
                     DatePicker(selection: Binding(get: { UserSchedule.date(s.gymDeadline, on: .now) },
                                                   set: { s.gymBy = UserSchedule.minutes(of: $0) }), displayedComponents: .hourAndMinute) {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("Latest Time")
-                            Text(closesText ?? "The latest you usually go").font(.footnote).foregroundStyle(.secondary)
+                            Text("Gym Closes")
+                            Text(closesText ?? "The gym counts as missed after this").font(.footnote).foregroundStyle(.secondary)
                         }
                     }
                     .accessibilityIdentifier("gymBy")
@@ -372,8 +372,8 @@ extension UserSchedule {
     }
 }
 
-/// Turning the Gym habit on (preview "gym.ask"). A: step 1 finds your gym on Apple Maps, step 2 asks the
-/// latest time you usually go. C: one page with both questions.
+/// Turning the Gym habit on (preview "gym.ask"). A: step 1 finds your gym on Apple Maps, step 2 asks when
+/// it closes. C: one page with both questions.
 struct GymAskSheet: View {
     var style: String
     @Binding var s: UserSchedule
@@ -400,10 +400,10 @@ struct GymAskSheet: View {
         VStack(spacing: 18) {
             Image(systemName: "dumbbell.fill").font(.system(size: 34, weight: .semibold)).foregroundStyle(Theme.accent)
                 .frame(width: 76, height: 76).background(Theme.accent.opacity(0.14), in: .circle).padding(.top, 24)
-            Text("What\u{2019}s the latest you usually go?").font(.title2.bold()).multilineTextAlignment(.center)
-            Text("If you haven\u{2019}t gone by then, Dayline figures you\u{2019}re not going today.")
+            Text("When does your gym close?").font(.title2.bold()).multilineTextAlignment(.center)
+            Text("If you haven\u{2019}t gone by closing time, Dayline counts the gym as missed for today.")
                 .font(.body).foregroundStyle(.secondary).multilineTextAlignment(.center).padding(.horizontal, 24)
-            DatePicker("Latest Time", selection: latest, displayedComponents: .hourAndMinute)
+            DatePicker("Gym Closes", selection: latest, displayedComponents: .hourAndMinute)
                 .datePickerStyle(.wheel).labelsHidden()
             if let g = s.gymPlace { Label(g.name, systemImage: "mappin.and.ellipse").font(.subheadline).foregroundStyle(.secondary) }
             Spacer()
@@ -430,10 +430,10 @@ struct GymAskSheet: View {
                 .accessibilityIdentifier("gymChoose")
             } header: { Text("Where\u{2019}s your gym?") }
             Section {
-                DatePicker("Latest Time", selection: latest, displayedComponents: .hourAndMinute)
+                DatePicker("Gym Closes", selection: latest, displayedComponents: .hourAndMinute)
                     .datePickerStyle(.wheel).labelsHidden().frame(maxWidth: .infinity)
-            } header: { Text("Latest you usually go") } footer: {
-                Text("If you haven\u{2019}t gone by then, Dayline figures you\u{2019}re not going today.")
+            } header: { Text("When does it close?") } footer: {
+                Text("If you haven\u{2019}t gone by closing time, Dayline counts the gym as missed for today.")
             }
         }
         .navigationTitle("Gym")

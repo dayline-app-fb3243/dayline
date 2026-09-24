@@ -68,11 +68,8 @@ enum ScoreEngine {
             if overdue > 0 { lost += full * Double(overdue) / Double(total); missed.append("Plans") }
         }
         var moveBy = 0
-        // Gym deadline: the latest time you usually go, but never after your gym closes (when hours are known).
-        if s.gym {
-            let close = GymHours.closing(on: day, calendar: calendar)
-            moveBy = max(moveBy, s.gymBy.map { b in close.map { min(b, $0) } ?? b } ?? close ?? s.gymDeadline)
-        }
+        // Gym deadline: when your gym closes. Real hours (Google) when known, otherwise the closing time you entered.
+        if s.gym { moveBy = max(moveBy, GymHours.closing(on: day, calendar: calendar) ?? s.gymDeadline) }
         if s.walk || s.outside { moveBy = max(moveBy, bed - 60) }
         if moveBy > 0 { miss(.moving, s.gym && !(s.walk || s.outside) ? "Gym" : "Moving", deadline: moveBy) }
         miss(.gotOut, "Getting out", deadline: bed - 60)
