@@ -66,6 +66,9 @@ struct AppBackgroundView: View {
     @AppStorage("background.preset") private var presetRaw = BackgroundPreset.system.rawValue
     @AppStorage("background.style") private var styleRaw = PhotoStyle.blur.rawValue
     @AppStorage("background.version") private var version = 0
+    /// Proposed: "White" uses Apple's light gray grouped background so the white cards stand out (like Settings).
+    /// Off until David approves the picture; screenshots turn it on with -background.whiteGrouped YES.
+    @AppStorage("background.whiteGrouped") private var whiteGrouped = false
     @Environment(\.colorScheme) private var scheme
 
     private func blob(_ color: Color, _ size: CGFloat) -> some View {
@@ -95,6 +98,8 @@ struct AppBackgroundView: View {
                         .overlay(Color.black.opacity(style == .dim ? 0.35 : (scheme == .dark ? 0.25 : 0.05)))
                         .id(version)
                 }
+            case .white where whiteGrouped:
+                Color(.systemGroupedBackground)
             default:
                 LinearGradient(colors: preset.colors, startPoint: .topLeading, endPoint: .bottomTrailing)
                     .opacity(scheme == .dark && preset != .night ? 0.35 : 1)

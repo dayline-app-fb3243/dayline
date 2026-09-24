@@ -20,7 +20,7 @@ struct DaylineApp: App {
         if args.contains("-demo") {
             let d = UserDefaults.standard
             if args.contains("-onboarding") { ["auth.userID", "auth.name", "auth.email", "auth.provider"].forEach { d.removeObject(forKey: $0) } }
-            else { d.set("demo", forKey: "auth.userID"); d.set("Alex", forKey: "auth.name"); d.set("alex@example.com", forKey: "auth.email"); d.set("apple", forKey: "auth.provider") }
+            else { d.set("demo", forKey: "auth.userID"); d.set("Alex Kim", forKey: "auth.name"); d.set("alex@example.com", forKey: "auth.email"); d.set("apple", forKey: "auth.provider") }
         }
     }
 

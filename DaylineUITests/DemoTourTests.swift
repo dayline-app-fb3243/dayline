@@ -117,6 +117,47 @@ final class DemoTourTests: XCTestCase {
         let eCode = app.textFields["emailCodeField"]; _ = eCode.waitForExistence(timeout: 5); eCode.tap(); eCode.typeText("5710"); pause(1); shot("05b-email-code")
     }
 
+    /// Just the screens changed in the latest round, for a quick picture set.
+    func testChangedScreens() throws {
+        var app = XCUIApplication()
+        app.launchArguments = ["-demo", "-onboarding"]
+        app.launchEnvironment["TZ"] = Self.morningZone
+        app.launch()
+        pause(1.5)
+        tapID(app, "splashContinue"); pause(1.5)
+        tapID(app, "signInOption-Email"); pause(0.5)
+        tapID(app, "signInContinue"); pause(1.8)
+        let email = app.textFields["emailField"]; _ = email.waitForExistence(timeout: 5); email.tap(); email.typeText("alex@example.com"); pause(1); shot("c1-email")
+        tapID(app, "setupPrimary"); pause(1.5)
+        let eCode = app.textFields["emailCodeField"]; _ = eCode.waitForExistence(timeout: 5); eCode.tap(); eCode.typeText("571042"); pause(1); shot("c2-email-code")
+        tapID(app, "setupPrimary"); pause(1.8)
+        let phone = app.textFields["phoneField"]
+        if phone.waitForExistence(timeout: 5) {
+            phone.tap(); phone.typeText("2015550142"); tapID(app, "setupPrimary"); pause(1.5)
+            let code = app.textFields["codeField"]; _ = code.waitForExistence(timeout: 5); code.tap(); code.typeText("482913"); pause(1); shot("c3-phone-code")
+        }
+        app.terminate()
+
+        for (bg, extra, name) in [("system", [String](), "c4-profile"), ("black", [], "c5-profile-black"), ("white", [], "c6-profile-white-now"), ("white", ["-background.whiteGrouped", "YES"], "c7-profile-white-proposed")] {
+            app = XCUIApplication()
+            app.launchArguments = ["-demo", "-background.preset", bg] + extra
+            app.launchEnvironment["TZ"] = Self.morningZone
+            app.launch()
+            tab(app, "Profile"); pause(2); shot(name)
+            app.swipeUp(); pause(1.2); shot(name + "-scrolled")
+            if bg == "system" {
+                app.swipeDown(); pause(1)
+                tapID(app, "accountRow"); pause(1.8); shot("c4b-account")
+                goBack(app)
+                tab(app, "Timeline"); pause(3)
+                let card = app.descendants(matching: .any)["mapCard"].firstMatch
+                if card.waitForExistence(timeout: 3) { card.coordinate(withNormalizedOffset: CGVector(dx: 0.4, dy: 0.5)).tap() }
+                pause(2.5); shot("c8-full-map")
+            }
+            app.terminate()
+        }
+    }
+
     func testTour() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-demo"]
