@@ -119,9 +119,6 @@ struct NewEntryView: View {
                             .contextMenu { Button("Remove", systemImage: "trash", role: .destructive) { remove(block.id) } }
                     }
                 }
-                if voice.isRecording {
-                    voiceRow(voice.elapsed, recording: true) { Task { await stopVoice() } }
-                }
             }
             .padding(.horizontal, 20).padding(.top, 4).padding(.bottom, 30)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -133,7 +130,7 @@ struct NewEntryView: View {
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
                 Button("Close", systemImage: "xmark") {
-                    if canSave || voice.isRecording { confirmDiscard = true } else { onDone() }
+                    if canSave || voice.isActive { confirmDiscard = true } else { onDone() }
                 }
                 .confirmationDialog("Discard this entry?", isPresented: $confirmDiscard, titleVisibility: .visible) {
                     Button("Discard Entry", role: .destructive) { Task { await discard() } }
@@ -146,7 +143,9 @@ struct NewEntryView: View {
                     .accessibilityIdentifier("saveEntry")
             }
         }
-        .safeAreaInset(edge: .bottom) { addBar }
+        .safeAreaInset(edge: .bottom) {
+            VoiceRecorderBar(voice: voice, onSend: { await stopVoice() }) { addBar }
+        }
         .photosPicker(isPresented: $showLibrary, selection: $picks, maxSelectionCount: 10,
                       matching: .any(of: [.images, .videos]))
         .onChange(of: picks) { _, items in
@@ -190,13 +189,13 @@ struct NewEntryView: View {
             barButton("video", "Record video") { camera = .video }
                 .disabled(!UIImagePickerController.isSourceTypeAvailable(.camera))
             barButton("photo.on.rectangle", "Photo and video library") { showLibrary = true }
-            barButton(voice.isRecording ? "stop.circle.fill" : "mic", voice.isRecording ? "Stop voice note" : "Voice note") {
-                Task { if voice.isRecording { await stopVoice() } else { try? await voice.start() } }
-            }
+            // Touch and hold (handled by VoiceRecorderBar, which sits over this spot).
+            Image(systemName: "mic").font(.system(size: 19, weight: .medium)).foregroundStyle(Theme.accent)
+                .frame(maxWidth: .infinity).frame(height: 44)
+                .accessibilityHidden(true)
         }
         .padding(.vertical, 4)
         .glassEffect(.regular.interactive(), in: .capsule)
-        .padding(.horizontal, 16).padding(.bottom, 6)
     }
 
     private func barButton(_ symbol: String, _ label: String, action: @escaping () -> Void) -> some View {
@@ -232,22 +231,6 @@ struct NewEntryView: View {
             }
         }
         .padding(.vertical, 2)
-    }
-
-    private func voiceRow(_ seconds: Double, recording: Bool, tap: @escaping () -> Void) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: recording ? "stop.fill" : "play.fill").font(.system(size: 11, weight: .bold))
-                .foregroundStyle(.white).frame(width: 28, height: 28)
-                .background(Theme.accent, in: .circle)
-                .onTapGesture { if recording { tap() } }
-            Text(recording ? "Recording…" : "Voice note").font(.subheadline).foregroundStyle(.primary).lineLimit(1)
-            Spacer()
-            Text(Duration.seconds(seconds).formatted(.time(pattern: .minuteSecond)))
-                .font(.footnote.weight(.semibold)).monospacedDigit().foregroundStyle(.secondary)
-        }
-        .padding(.horizontal, 10).padding(.vertical, 8)
-        .background(Color(.tertiarySystemFill), in: .rect(cornerRadius: 14, style: .continuous))
-        .contextMenu { if !recording { Button("Remove", systemImage: "trash", role: .destructive, action: tap) } }
     }
 
     // MARK: editing
@@ -286,7 +269,7 @@ struct NewEntryView: View {
 
     /// Throws away everything added in this entry, including voice notes saved while recording.
     private func discard() async {
-        if voice.isRecording { await voice.stop(context: context, coordinate: coordinate) }
+        if voice.isActive { voice.cancel() }
         let start = startedAt
         if let voices = try? context.fetch(FetchDescriptor<JournalEntry>(predicate: #Predicate { $0.date >= start })) {
             for v in voices where v.kind == .voice && v.groupID == nil { context.delete(v) }
