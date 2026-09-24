@@ -885,6 +885,7 @@ struct SplashLoop: View {
     @State private var showNext = false
     /// The first map needs a moment to load its 3D tiles; fade it in after that so there's no empty grid.
     @State private var shown = false
+    @State private var ready = false
     var body: some View {
         ZStack {
             // Keyed by scene, so when the next scene takes over it keeps its map (no reload).
@@ -893,10 +894,19 @@ struct SplashLoop: View {
                     .opacity(i == next && !showNext ? 0.001 : 1)
             }
         }
-        .opacity(shown ? 1 : 0)
+        // 0.001, not 0: the map keeps loading its tiles while hidden.
+        .opacity(shown ? 1 : 0.001)
+        .background {
+            // An invisible map at the same spot tells us when the tiles are fully drawn.
+            MapReadyProbe(center: CLLocationCoordinate2D(latitude: 40.7534, longitude: -73.9836)) { ready = true }
+                .frame(width: 300, height: 400).opacity(0.001).allowsHitTesting(false)
+        }
         .task {
-            // 2.6 s: on a slow connection the tiles were still a gray grid at 1.6 s (CI video, Sep 24).
-            try? await Task.sleep(for: .seconds(2.6))
+            // Wait for the first map to finish drawing (at least 1.2 s, at most 10 s) so it never fades in as a plain grid.
+            try? await Task.sleep(for: .seconds(1.2))
+            var waited = 1.2
+            while !ready && waited < 10 { try? await Task.sleep(for: .seconds(0.2)); waited += 0.2 }
+            try? await Task.sleep(for: .seconds(0.6))
             withAnimation(.easeIn(duration: 1.0)) { shown = true }
             while !Task.isCancelled {
                 // 4 s on its own, then the next scene starts loading underneath (3 s head start), then a 1.6 s crossfade.
@@ -1055,5 +1065,31 @@ struct SplashLiveMap: View {
         }
         route = all
         Self.routeCache[style] = all
+    }
+}
+
+
+/// A hidden MKMapView that reports once its 3D tiles are fully drawn (it also warms the tile cache for the real map).
+struct MapReadyProbe: UIViewRepresentable {
+    var center: CLLocationCoordinate2D
+    var onReady: () -> Void
+    func makeCoordinator() -> Coordinator { Coordinator(onReady: onReady) }
+    func makeUIView(context: Context) -> MKMapView {
+        let m = MKMapView()
+        m.delegate = context.coordinator
+        m.pointOfInterestFilter = .excludingAll
+        m.camera = MKMapCamera(lookingAtCenter: center, fromDistance: 600, pitch: 45, heading: 60)
+        return m
+    }
+    func updateUIView(_ uiView: MKMapView, context: Context) {}
+    final class Coordinator: NSObject, MKMapViewDelegate {
+        let onReady: () -> Void
+        var done = false
+        init(onReady: @escaping () -> Void) { self.onReady = onReady }
+        func mapViewDidFinishRenderingMap(_ mapView: MKMapView, fullyRendered: Bool) {
+            guard fullyRendered, !done else { return }
+            done = true
+            DispatchQueue.main.async { self.onReady() }
+        }
     }
 }
