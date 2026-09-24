@@ -322,6 +322,11 @@ struct ProfileView: View {
     /// Preview (awaiting David's OK): "Show Symbols" row appears only with -symbols.preview YES.
     @AppStorage("symbols.preview") private var symbolsPreview = false
     @AppStorage("symbols.show") private var showSymbols = true
+    /// Preview flag "settings.noHeaders" (awaiting David's OK): no section titles, just space, like iOS Settings.
+    @AppStorage("settings.noHeaders") private var noHeaders = false
+    @ViewBuilder private func profileHeader(_ title: String) -> some View {
+        if noHeaders { Color.clear.frame(height: 14) } else { SectionHeader(title) }
+    }
     @Environment(\.openURL) private var openURL
 
     var body: some View {
@@ -351,7 +356,7 @@ struct ProfileView: View {
                     }
                 }
                 .accessibilityIdentifier("accountRow")
-                SectionHeader("Your Day")
+                profileHeader("Your Day")
                 Card(padding: 0) {
                     VStack(spacing: 0) {
                         NavigationLink { YourScheduleView() } label: {
@@ -365,7 +370,7 @@ struct ProfileView: View {
                         .accessibilityIdentifier("placesRow")
                     }
                 }
-                SectionHeader("Look")
+                profileHeader("Look")
                 Card(padding: 0) {
                     VStack(spacing: 0) {
                         NavigationLink { BackgroundPickerView() } label: {
@@ -395,7 +400,7 @@ struct ProfileView: View {
                     Text("Shows the blue symbols next to places and score items.")
                         .font(.footnote).helperText().padding(.horizontal, 16).padding(.top, 6)
                 }
-                SectionHeader("Tracking")
+                profileHeader("Tracking")
                 Card(padding: 0) {
                     VStack(spacing: 0) {
                         NavigationLink { CheckLocationView() } label: {
@@ -422,7 +427,7 @@ struct ProfileView: View {
                 Text("Dayline asks quick yes/no questions, like \u{201C}Going to sleep now?\u{201D}, when it isn\u{2019}t sure. Answer right from the notification. Off by default.")
                     .font(.footnote).helperText().padding(.horizontal, 16).padding(.top, 6)
                 if SiriSupport.isAvailable {
-                    SectionHeader("Siri")
+                    profileHeader("Siri")
                     Card(padding: 0) {
                         NavigationLink { SiriCommandsView() } label: {
                             ProfileRow(symbol: "waveform", title: "Use with Siri", value: "Examples")
@@ -430,7 +435,7 @@ struct ProfileView: View {
                         .accessibilityIdentifier("useWithSiriRow")
                     }
                 }
-                SectionHeader("Privacy")
+                profileHeader("Privacy")
                 Card(padding: 0) {
                     NavigationLink { PrivacyView() } label: { ProfileRow(symbol: "lock.fill", title: "Your data", value: "On this iPhone") }
                         .simultaneousGesture(LongPressGesture(minimumDuration: 1.2).onEnded { _ in showSiriDemo = true })
@@ -768,14 +773,20 @@ private struct BackgroundText: ViewModifier {
     @AppStorage("background.preset") private var presetRaw = BackgroundPreset.system.rawValue
     @AppStorage("background.style") private var styleRaw = PhotoStyle.blur.rawValue
     @Environment(\.colorScheme) private var scheme
+    /// Preview flag "text.gray" (awaiting David's OK): on dark backgrounds use Apple's dark-mode gray
+    /// (secondaryLabel, 60% light gray) instead of blue.
+    @AppStorage("text.gray") private var grayText = false
+    private var darkHelper: AnyShapeStyle {
+        grayText ? AnyShapeStyle(Color(red: 235/255, green: 235/255, blue: 245/255).opacity(0.6)) : AnyShapeStyle(Theme.accent)
+    }
 
     func body(content: Content) -> some View {
         let dark = BackgroundTone.isDark(presetRaw: presetRaw, styleRaw: styleRaw, scheme: scheme)
         switch role {
         // Small gray helper text (section headers, footers): blue on dark backgrounds, gray otherwise.
-        case .helper: content.foregroundStyle(dark ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(.secondary))
+        case .helper: content.foregroundStyle(dark ? darkHelper : AnyShapeStyle(.secondary))
         // Footer text with a link: helper color, and the link turns white on dark backgrounds.
-        case .link: content.foregroundStyle(dark ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(.secondary)).tint(dark ? .white : Theme.accent)
+        case .link: content.foregroundStyle(dark ? darkHelper : AnyShapeStyle(.secondary)).tint(dark ? (grayText ? Theme.accent : .white) : Theme.accent)
         // Big titles on the background: white on dark backgrounds.
         case .title: content.foregroundStyle(dark ? AnyShapeStyle(Color.white) : AnyShapeStyle(.primary))
         }

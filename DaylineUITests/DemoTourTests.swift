@@ -538,6 +538,24 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Settings look preview: section titles vs none, blue vs gray helper text, light and dark.
+    func testSettingsLookDemo() throws {
+        for mode in ["Light", "Dark"] {
+            for v in ["old", "new"] {
+                let on = v == "new" ? "YES" : "NO"
+                let app = XCUIApplication()
+                app.launchArguments = ["-demo", "-appearance", mode, "-settings.noHeaders", on, "-text.gray", on]
+                app.launchEnvironment["TZ"] = Self.morningZone
+                app.launch(); pause(1.5)
+                tab(app, "Profile"); pause(2); shot("sl\(v)\(mode)-top")
+                app.swipeUp(); pause(1.5); shot("sl\(v)\(mode)-rows")
+                tab(app, "Timeline"); pause(2); tapSegment(app, "Week"); pause(2.5)
+                app.swipeUp(); pause(1.5); shot("sl\(v)\(mode)-week")
+                app.terminate()
+            }
+        }
+    }
+
     /// Previews for David: sign-in sheets sized to content, splash A/B/C, streak day opening the Day score page.
     func testPreviewsDemo() throws {
         var app = XCUIApplication()
