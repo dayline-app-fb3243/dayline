@@ -28,7 +28,7 @@ struct InsightsView: View {
             .navigationTitle("Insights")
             .backgroundNavBar()
             .navigationDestination(isPresented: $showStreak) { StreakView() }
-            .toolbarRole(.editor)
+            .navigationBarTitleDisplayMode(.large)
         }
     }
 

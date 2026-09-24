@@ -429,15 +429,17 @@ struct SetupStep<Content: View>: View {
             content.padding(.top, 24)
             Spacer()
             VStack(spacing: 10) {
-                Button(action: onPrimary) { Text(primary).font(.headline).frame(maxWidth: .infinity).frame(height: 40) }
-                    .buttonStyle(.glassProminent).disabled(!primaryEnabled).accessibilityIdentifier("setupPrimary")
+                // Apple's standard filled button: large control size, system semibold text.
+                Button(action: onPrimary) { Text(primary).font(.headline).frame(maxWidth: .infinity) }
+                    .buttonStyle(.borderedProminent).buttonBorderShape(.capsule)
+                    .disabled(!primaryEnabled).accessibilityIdentifier("setupPrimary")
                 if let secondary {
                     if secondaryIsLink {
                         Button(secondary, action: onSecondary).font(.subheadline).foregroundStyle(Theme.accent)
                             .accessibilityIdentifier("setupSecondary")
                     } else {
-                        Button(action: onSecondary) { Text(secondary).font(.headline).frame(maxWidth: .infinity).frame(height: 40) }
-                            .buttonStyle(.glass).foregroundStyle(.primary).accessibilityIdentifier("setupSecondary")
+                        Button(action: onSecondary) { Text(secondary).font(.headline).frame(maxWidth: .infinity) }
+                            .buttonStyle(.bordered).buttonBorderShape(.capsule).accessibilityIdentifier("setupSecondary")
                     }
                 }
             }

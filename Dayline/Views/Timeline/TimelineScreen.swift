@@ -337,7 +337,7 @@ struct MostVisitedList: View {
     var clusters: [TimelineScreen.Cluster]
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Most visited").font(.footnote.weight(.semibold)).helperText().textCase(.uppercase)
+            Text("Most visited").font(.footnote).helperText().textCase(.uppercase)
                 .padding(.horizontal, 4).padding(.top, 8).padding(.bottom, 2)
             let top = Array(clusters.sorted { $0.hours > $1.hours }.prefix(6))
             if top.isEmpty {

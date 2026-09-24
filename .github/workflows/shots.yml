@@ -24,7 +24,7 @@ jobs:
       - name: Apple Siri artwork for preview (downloaded at build time, never committed)
         run: |
           curl -sL -o /tmp/siri.dmg https://devimages-cdn.apple.com/design/resources/download/Icon-Siri.dmg
-          hdiutil attach -nobrowse -readonly -mountpoint /tmp/sirimnt /tmp/siri.dmg
+          yes | hdiutil attach -nobrowse -readonly -mountpoint /tmp/sirimnt /tmp/siri.dmg
           mkdir -p Dayline/Resources
           cp "/tmp/sirimnt/Siri Icons/Siri - Orb.png" Dayline/Resources/SiriOrb.png
           hdiutil detach /tmp/sirimnt || true

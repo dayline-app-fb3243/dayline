@@ -31,7 +31,7 @@ struct JournalView: View {
                     }
                     ForEach(days, id: \.0) { day, groups in
                         Text(Calendar.current.isDateInToday(day) ? "Today" : day.formatted(.dateTime.weekday(.wide).month(.abbreviated).day()))
-                            .font(.footnote.weight(.semibold)).helperText().textCase(.uppercase)
+                            .font(.footnote).helperText().textCase(.uppercase)
                             .padding(.leading, 4).padding(.top, 6)
                         ForEach(groups) { JournalCard(group: $0) }
                     }

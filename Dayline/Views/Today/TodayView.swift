@@ -33,8 +33,8 @@ struct TodayView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) { EmptyView() }
             }
-            // iOS 26+ back button: round Liquid Glass circle with a chevron, no text.
-            .toolbarRole(.editor)
+            .navigationBarTitleDisplayMode(.large)
+            .backgroundNavBar()
             .sheet(item: $capture) { mode in CaptureSheet(mode: mode) }
         }
     }

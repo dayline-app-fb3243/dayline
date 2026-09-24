@@ -120,7 +120,7 @@ struct BackgroundPickerView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 8) {
-                Text("Backgrounds").font(.footnote.weight(.semibold)).helperText()
+                Text("Backgrounds").font(.footnote).helperText()
                     .textCase(.uppercase).padding(.leading, 16).padding(.top, 8)
                 LazyVGrid(columns: columns, spacing: 14) {
                     PhotosPicker(selection: $pick, matching: .images) {
@@ -157,7 +157,7 @@ struct BackgroundPickerView: View {
                 .padding(.horizontal, 2)
 
                 if presetRaw == BackgroundPreset.photo.rawValue {
-                    Text("Photo style").font(.footnote.weight(.semibold)).helperText()
+                    Text("Photo style").font(.footnote).helperText()
                         .textCase(.uppercase).padding(.leading, 16).padding(.top, 14)
                     Picker("Photo style", selection: $styleRaw) {
                         ForEach(PhotoStyle.allCases) { Text($0.title).tag($0.rawValue) }
@@ -227,7 +227,7 @@ struct SectionHeader: View {
     var title: String
     init(_ title: String) { self.title = title }
     var body: some View {
-        Text(title).font(.footnote.weight(.semibold)).helperText().textCase(.uppercase)
+        Text(title).font(.footnote).helperText().textCase(.uppercase)
             .padding(.leading, 4).padding(.top, 6)
     }
 }
@@ -323,7 +323,7 @@ struct ProfileView: View {
                                     .foregroundStyle(Theme.accent).frame(width: 64, height: 64)
                             }
                             VStack(alignment: .leading, spacing: 3) {
-                                Text(auth.isSignedIn ? auth.displayName : "Sign In").font(.title3.bold()).foregroundStyle(.primary).lineLimit(1)
+                                Text(auth.isSignedIn ? auth.displayName : "Sign In").font(.title3.weight(.semibold)).foregroundStyle(.primary).lineLimit(1)
                                 Text(auth.isSignedIn ? "Account, Backup, and Sign-In" : "Back up your timeline and use it on other devices")
                                     .font(.subheadline).foregroundStyle(.secondary).lineLimit(2)
                             }
@@ -423,7 +423,7 @@ struct ProfileView: View {
         .background(AppBackgroundView())
         .navigationTitle("Profile")
         .backgroundNavBar()
-        .toolbarRole(.editor)
+        .navigationBarTitleDisplayMode(.large)
         .navigationDestination(isPresented: $showSiriDemo) { SiriDemoView() }
         .sheet(isPresented: $showPolicy) { PrivacyPolicyView() }
         .alert("Sign Out?", isPresented: $confirmSignOut) {
@@ -675,7 +675,30 @@ private struct BackgroundNavBar: ViewModifier {
     @Environment(\.colorScheme) private var scheme
     func body(content: Content) -> some View {
         let dark = BackgroundTone.isDark(presetRaw: presetRaw, styleRaw: styleRaw, scheme: scheme)
-        content.toolbarColorScheme(dark ? .dark : nil, for: .navigationBar)
+        content.background(NavBarStyle(dark: dark).frame(width: 0, height: 0))
+    }
+}
+
+/// Makes the navigation bar (large title, back button) use light text on dark backgrounds.
+private struct NavBarStyle: UIViewControllerRepresentable {
+    var dark: Bool
+    func makeUIViewController(context: Context) -> UIViewController { Controller() }
+    func updateUIViewController(_ vc: UIViewController, context: Context) {
+        (vc as? Controller)?.dark = dark
+        (vc as? Controller)?.apply()
+    }
+    final class Controller: UIViewController {
+        var dark = false
+        override func viewWillAppear(_ animated: Bool) { super.viewWillAppear(animated); apply() }
+        override func didMove(toParent parent: UIViewController?) { super.didMove(toParent: parent); apply() }
+        func apply() {
+            DispatchQueue.main.async { [weak self] in
+                guard let self, let nav = self.navigationController else { return }
+                nav.navigationBar.overrideUserInterfaceStyle = self.dark ? .dark : .unspecified
+                // Back buttons show just the chevron (like Settings), with the title centered.
+                nav.viewControllers.forEach { $0.navigationItem.backButtonDisplayMode = .minimal }
+            }
+        }
     }
 }
 
