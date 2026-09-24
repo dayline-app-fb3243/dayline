@@ -88,11 +88,7 @@ final class DemoTourTests: XCTestCase {
 
         // Headline feature, below the day's list: take me back to where I ate 4 days ago.
         app.swipeUp(); pause(1); app.swipeUp(); pause(1.5); shot("11-timeline-scrolled")
-        tapID(app, "takeMeBack"); pause(3.5); shot("12-take-me-back")
-        app.swipeUp(); pause(1.5); shot("13-take-me-back-scrolled"); app.swipeDown(); pause(1)
-        let back = app.navigationBars.buttons.element(boundBy: 0)
-        if back.waitForExistence(timeout: 3) { back.tap() }
-        pause(1.5)
+        app.swipeDown(); pause(1); app.swipeDown(); pause(1)
 
         tab(app, "Insights"); pause(2.5); shot("30-insights-month")
         tapID(app, "streakCard"); pause(2); shot("33-streak")

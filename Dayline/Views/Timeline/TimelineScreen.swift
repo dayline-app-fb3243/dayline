@@ -43,10 +43,6 @@ struct TimelineScreen: View {
                             infoChip("\(rangePhotos.count)", "photos")
                         }
                         DayPhotoCards(visits: rangeVisits, journal: journal.filter { interval.contains($0.date) })
-                        NavigationLink { PlaceRecallView() } label: { TakeMeBackRow() }
-                            .buttonStyle(.plain)
-                            .accessibilityIdentifier("takeMeBack")
-                            .padding(.top, 8)
                     } else {
                         // Week / month / year: every place and route in the range, stats on the map, then a plain list.
                         mapCard(height: 330, hint: false)
