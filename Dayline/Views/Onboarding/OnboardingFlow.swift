@@ -895,7 +895,8 @@ struct SplashLoop: View {
         }
         .opacity(shown ? 1 : 0)
         .task {
-            try? await Task.sleep(for: .seconds(1.6))
+            // 2.6 s: on a slow connection the tiles were still a gray grid at 1.6 s (CI video, Sep 24).
+            try? await Task.sleep(for: .seconds(2.6))
             withAnimation(.easeIn(duration: 1.0)) { shown = true }
             while !Task.isCancelled {
                 // 4 s on its own, then the next scene starts loading underneath (3 s head start), then a 1.6 s crossfade.
