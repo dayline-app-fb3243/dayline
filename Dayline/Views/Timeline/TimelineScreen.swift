@@ -354,7 +354,37 @@ struct TimelineScreen: View {
                 .onTapGesture { withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) { sheetOpen.toggle() } }
                 .accessibilityIdentifier("mapGrabber")
             }
-            if sheetOpen {
+            if sheetOpen && ["D", "E", "F"].contains(mapSheet) {
+                // D/E/F: more like the Find My "Me" sheet. D = big title + summary, one card, taller bold rows.
+                // E = D with each switch in its own card and a short line under it. F = D with a line under each row, one card.
+                VStack(alignment: .leading, spacing: 16) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Map").font(.largeTitle.weight(.bold))
+                        Text("\(title) · \(daySummary)").font(.body.weight(.medium)).foregroundStyle(.secondary)
+                    }
+                    .padding(.horizontal, 24)
+                    if mapSheet == "E" {
+                        VStack(spacing: 12) {
+                            findMyRow("Journal", "Notes you wrote today", $showJournal).findMyCard()
+                            findMyRow("Photos", "Photos you took today", $showPhotos).findMyCard()
+                            findMyRow("Route", "The way you went", $showRoute).findMyCard()
+                        }
+                        .padding(.horizontal, 16)
+                    } else {
+                        VStack(spacing: 0) {
+                            findMyRow("Journal", mapSheet == "F" ? "Notes you wrote today" : nil, $showJournal)
+                            Divider().padding(.leading, 20)
+                            findMyRow("Photos", mapSheet == "F" ? "Photos you took today" : nil, $showPhotos)
+                            Divider().padding(.leading, 20)
+                            findMyRow("Route", mapSheet == "F" ? "The way you went" : nil, $showRoute)
+                        }
+                        .findMyCard()
+                        .padding(.horizontal, 16)
+                    }
+                }
+                .padding(.top, 4).padding(.bottom, 14)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+            } else if sheetOpen {
                 VStack(alignment: .leading, spacing: mapSheet == "C" ? 8 : 14) {
                     if mapSheet != "C" {
                         Text("Show on Map").font(.title2.weight(.bold)).padding(.horizontal, 20)
@@ -394,6 +424,19 @@ struct TimelineScreen: View {
                 if g.translation.height < -30 { sheetOpen = true } else if g.translation.height > 30 { sheetOpen = false }
             }
         })
+    }
+
+    private func findMyRow(_ title: String, _ detail: String?, _ on: Binding<Bool>) -> some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(.body.weight(.semibold))
+                if let detail { Text(detail).font(.subheadline).foregroundStyle(.secondary) }
+            }
+            Spacer()
+            Toggle(title, isOn: on).labelsHidden().tint(Theme.accent)
+        }
+        .padding(.horizontal, 20).padding(.vertical, detail == nil ? 16 : 13)
+        .accessibilityIdentifier("layer\(title)")
     }
 
     private func layerRow(_ title: String, _ symbol: String, _ on: Binding<Bool>) -> some View {
@@ -670,4 +713,9 @@ struct DayPhotoCards: View {
         let dur = minutes < 60 ? "\(minutes) min" : "\(minutes / 60) h \(minutes % 60) min"
         return "\(TimelineClock.string(from: v.arrival)) – \(TimelineClock.string(from: d)) · \(dur)"
     }
+}
+
+private extension View {
+    /// Rounded translucent card like the groups in Find My's sheet.
+    func findMyCard() -> some View { background(Color.primary.opacity(0.06), in: .rect(cornerRadius: 26, style: .continuous)) }
 }

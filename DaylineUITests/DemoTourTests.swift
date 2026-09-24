@@ -844,6 +844,19 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Open pull-up sheet, three more in A's direction (D/E/F, Find My style).
+    func testMapSheetMoreDemo() throws {
+        for v in ["D", "E", "F"] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-map.3d", "YES", "-map.grabber", "A", "-map.sheet", v, "-map.sheetOpen", "YES"]
+            app.launchEnvironment["TZ"] = Self.morningZone
+            app.launch(); pause(1.5)
+            tab(app, "Timeline"); pause(3)
+            tapID(app, "mapCard"); pause(6); shot("ms2-\(v)")
+            app.terminate()
+        }
+    }
+
     /// Splash G/H/I: C's 3D look, new pins, closer and more top-down.
     func testSplashPinDemo() throws {
         for v in ["G", "H", "I"] {
