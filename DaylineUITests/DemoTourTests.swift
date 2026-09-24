@@ -1422,6 +1422,20 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Your Schedule settings redesign samples 1-8 (Places / Times / Habits), top and scrolled.
+    func testSettingsSamples() throws {
+        for v in ["1", "2", "3", "4", "5", "6", "7", "8"] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-settings.layout", v]
+            app.launch(); pause(1.5)
+            tab(app, "Profile"); pause(1.5)
+            tapID(app, "yourScheduleRow"); pause(2)
+            shot("ss-\(v)-1")
+            if v != "5" { app.swipeUp(); pause(1.2); shot("ss-\(v)-2") }
+            app.terminate()
+        }
+    }
+
     /// Ring join preview: how blue meets orange, with a lighter orange capped short of dark. "" = now.
     func testRingJoin() throws {
         for v in ["", "A", "B", "C"] {
