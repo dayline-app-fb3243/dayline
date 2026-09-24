@@ -594,6 +594,22 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Privacy Policy as a row in the Your data group (no footer), light and dark.
+    func testPrivacyRowDemo() throws {
+        for mode in ["Light", "Dark"] {
+            for on in ["NO", "YES"] {
+                let app = XCUIApplication()
+                app.launchArguments = ["-demo", "-appearance", mode, "-privacy.row", on]
+                app.launchEnvironment["TZ"] = Self.morningZone
+                app.launch(); pause(1.5)
+                tab(app, "Profile"); pause(1.5)
+                for _ in 0..<3 { app.swipeUp(); pause(0.8) }
+                pause(1); shot("pr\(on)\(mode)")
+                app.terminate()
+            }
+        }
+    }
+
     /// Previews for David: sign-in sheets sized to content, splash A/B/C, streak day opening the Day score page.
     func testPreviewsDemo() throws {
         var app = XCUIApplication()

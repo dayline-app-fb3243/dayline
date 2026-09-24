@@ -374,6 +374,7 @@ struct ProfileView: View {
     @AppStorage("symbols.preview") private var symbolsPreview = true
     @AppStorage("symbols.show") private var showSymbols = true
     /// Preview flag "settings.noHeaders" (awaiting David's OK): no section titles, just space, like iOS Settings.
+    @AppStorage("privacy.row") private var privacyRow = false
     @AppStorage("settings.noHeaders") private var noHeaders = true // Sep 24: David approved
     @ViewBuilder private func profileHeader(_ title: String) -> some View {
         if noHeaders { Color.clear.frame(height: 14) } else { SectionHeader(title) }
@@ -488,16 +489,24 @@ struct ProfileView: View {
                     }
                 }
                 profileHeader("Privacy")
-                Card(padding: 0) {
+                Card(padding: 0) { VStack(spacing: 0) {
                     NavigationLink { PrivacyView() } label: { ProfileRow(symbol: "lock.fill", title: "Your data", value: "On this iPhone") }
                         .simultaneousGesture(LongPressGesture(minimumDuration: 1.2).onEnded { _ in showSiriDemo = true })
                         .accessibilityIdentifier("yourDataRow")
+                    // Preview flag "privacy.row" (awaiting David's OK): Privacy Policy is a row in this group, no footer.
+                    if privacyRow {
+                        Divider().padding(.leading, 57)
+                        Button { showPolicy = true } label: { ProfileRow(symbol: "hand.raised.fill", title: "Privacy Policy", value: "") }
+                            .accessibilityIdentifier("privacyPolicyRow")
+                    }
+                } }
+                if !privacyRow {
+                    Text("Your places and photos stay on your iPhone. See our [Privacy Policy](dayline://privacy).")
+                        .font(.footnote).helperLinkText()
+                        .padding(.horizontal, 4).padding(.top, -3)
+                        .environment(\.openURL, OpenURLAction { _ in showPolicy = true; return .handled })
+                        .accessibilityIdentifier("privacyPolicyLink")
                 }
-                Text("Your places and photos stay on your iPhone. See our [Privacy Policy](dayline://privacy).")
-                    .font(.footnote).helperLinkText()
-                    .padding(.horizontal, 4).padding(.top, -3)
-                    .environment(\.openURL, OpenURLAction { _ in showPolicy = true; return .handled })
-                    .accessibilityIdentifier("privacyPolicyLink")
                 if auth.isSignedIn {
                     Button { confirmSignOut = true } label: {
                         Text("Sign Out").foregroundStyle(.red).frame(maxWidth: .infinity).frame(minHeight: 52)
