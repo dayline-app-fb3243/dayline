@@ -460,7 +460,7 @@ struct PrivacyPolicyView: View {
         ("What Dayline collects", "Location, to build your timeline of places and routes. Photos you allow, to show them on your day. Microphone, only while you record a voice note; it\u{2019}s turned into text on your iPhone."),
         ("What leaves your iPhone", "If you sign in, your name, email and an encrypted backup of your timeline are stored for you only. If you share with friends, they see only your streak number."),
         ("How we use it", "Only to run Dayline for you: building your timeline, backing it up and showing your streak to people you choose. We don\u{2019}t use it for ads or sell it to anyone."),
-        ("Siri and Shortcuts", "When you ask Siri about a place, Dayline answers from the data on your iPhone."),
+        ("Siri", "When you ask Siri about a place, Dayline answers from the data on your iPhone."),
         ("Keeping it safe", "Your backup is encrypted in transit and at rest. Only you can restore it."),
         ("Your choices", "Change what Dayline can use at any time in Settings. Delete your account and backup from Profile > Your Data."),
         ("Children", "Dayline isn\u{2019}t meant for children under 13."),

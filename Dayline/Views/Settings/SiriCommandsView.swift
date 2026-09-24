@@ -34,8 +34,6 @@ struct SiriCommandsView: View {
                         }
                     }
                 }
-                Text("Asking in your own words needs an iPhone with Apple Intelligence. On other iPhones, say it like the examples.")
-                    .font(.footnote).foregroundStyle(.secondary).padding(.horizontal, 4)
             }
             .padding(.horizontal, 18).padding(.bottom, 30)
         }
