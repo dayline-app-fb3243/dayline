@@ -351,9 +351,24 @@ enum DemoData {
             var t = s.arrival
             while t <= max(stayEnd, s.arrival) { put(t, s.at.0, s.at.1, "visit"); t += step }
             guard let n = next, travel > 60, abs(dx) + abs(dy) > 60 else { continue }
-            // Street leg, then avenue leg.
-            let a1 = dx * street.x + dy * street.y, a2 = dx * ave.x + dy * ave.y
-            let corner = (x: street.x * a1, y: street.y * a1)
+            // Street leg then avenue leg, or avenue first: pick the order that stays on real streets
+            // (Stuy Town / Peter Cooper Village and the river have no grid to walk through).
+            let sa = dx * street.x + dy * street.y, aa = dx * ave.x + dy * ave.y
+            func offGrid(_ lat: Double, _ lon: Double) -> Bool {
+                (lat > 40.7285 && lat < 40.7375 && lon > -73.9820 && lon < -73.9710) || lon > -73.9720 && lat < 40.745
+            }
+            func badCount(_ first: (x: Double, y: Double), _ f: Double, _ second: (x: Double, y: Double), _ g: Double) -> Int {
+                (0...20).filter { k in
+                    let u = Double(k) / 20 * 2
+                    let (x, y) = u <= 1 ? (first.x * f * u, first.y * f * u)
+                                        : (first.x * f + second.x * g * (u - 1), first.y * f + second.y * g * (u - 1))
+                    return offGrid(s.at.0 + y / mPerLat, s.at.1 + x / mPerLon)
+                }.count
+            }
+            let aveFirst = badCount(ave, aa, street, sa) < badCount(street, sa, ave, aa)
+            let (a1, a2) = aveFirst ? (aa, sa) : (sa, aa)
+            let dir1 = aveFirst ? ave : street, dir2 = aveFirst ? street : ave
+            let corner = (x: dir1.x * a1, y: dir1.y * a1)
             let start = max(stayEnd, s.arrival), dur = n.arrival.timeIntervalSince(start)
             let total = abs(a1) + abs(a2)
             // The corner where the street leg turns onto the avenue: the phone logs a point when you change
@@ -365,8 +380,8 @@ enum DemoData {
             while t < n.arrival {
                 let d = total * t.timeIntervalSince(start) / dur
                 let (x, y) = d <= abs(a1)
-                    ? (corner.x * d / abs(a1), corner.y * d / abs(a1))
-                    : (corner.x + ave.x * a2 * (d - abs(a1)) / abs(a2), corner.y + ave.y * a2 * (d - abs(a1)) / abs(a2))
+                    ? (corner.x * d / max(abs(a1), 1), corner.y * d / max(abs(a1), 1))
+                    : (corner.x + dir2.x * a2 * (d - abs(a1)) / max(abs(a2), 1), corner.y + dir2.y * a2 * (d - abs(a1)) / max(abs(a2), 1))
                 put(t, s.at.0 + y / mPerLat, s.at.1 + x / mPerLon, "gps")
                 t += step
             }
