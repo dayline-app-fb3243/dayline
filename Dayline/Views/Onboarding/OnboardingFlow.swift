@@ -34,12 +34,50 @@ struct OnboardingFlow: View {
 struct AppMark: View {
     var size: CGFloat = 96
     var shadow = true
+    /// Preview flag "mark.rings" (awaiting David's pick): just the two rings, no square.
+    /// blue = app blue, ink = black/white, sky = light-to-deep blue, duo = blue + teal.
+    @AppStorage("mark.rings") private var rings = ""
     var body: some View {
+        if rings.isEmpty { iconBody } else { RingMark(size: size, palette: rings) }
+    }
+    private var iconBody: some View {
         // The exact app icon (#5), so every in-app logo matches the Home Screen icon.
         Image("AppIconImage").resizable().interpolation(.high)
             .clipShape(RoundedRectangle(cornerRadius: size * 0.225, style: .continuous))
             .frame(width: size, height: size)
         .shadow(color: .blue.opacity(shadow ? 0.3 : 0), radius: size * 0.19, y: size * 0.08)
+    }
+}
+
+/// The app's two rings on their own (no icon square), for in-app logos.
+struct RingMark: View {
+    var size: CGFloat
+    var palette: String
+    var body: some View {
+        let u = size / 100
+        let (outer, inner): (AnyShapeStyle, AnyShapeStyle) = {
+            switch palette {
+            case "ink": return (AnyShapeStyle(Color.primary), AnyShapeStyle(Color.primary.opacity(0.55)))
+            case "sky": return (AnyShapeStyle(LinearGradient(colors: [Color(red: 0.30, green: 0.65, blue: 1), Color(red: 0.07, green: 0.38, blue: 0.92)], startPoint: .top, endPoint: .bottom)),
+                                AnyShapeStyle(Color(red: 0.45, green: 0.75, blue: 1)))
+            case "duo": return (AnyShapeStyle(Theme.accent), AnyShapeStyle(Color(red: 0.19, green: 0.78, blue: 0.75)))
+            default: return (AnyShapeStyle(Theme.accent), AnyShapeStyle(Theme.accent.opacity(0.6)))
+            }
+        }()
+        ZStack {
+            ring(r: 38 * u, w: 14 * u, frac: 0.8, style: outer)
+            ring(r: 21 * u, w: 14 * u, frac: 0.6, style: inner)
+        }
+        .frame(width: size, height: size)
+    }
+    private func ring(r: CGFloat, w: CGFloat, frac: CGFloat, style: AnyShapeStyle) -> some View {
+        ZStack {
+            Circle().stroke(Color.primary.opacity(0.08), lineWidth: w)
+            Circle().trim(from: 0, to: frac)
+                .stroke(style, style: StrokeStyle(lineWidth: w, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+        }
+        .frame(width: r * 2, height: r * 2)
     }
 }
 
@@ -280,6 +318,7 @@ struct SplashView: View {
 
 /// Sign-in sheet in the style of Apple's own "Sign in with Apple" sheet: pick one, then the blue button.
 struct SignInSheet: View {
+    @AppStorage("signin.small") private var smallButton = false
     @AppStorage("signin.pinned") private var pinned = true // Sep 24: David approved (fitted sheet, full-width button)
     @State private var fitHeight: CGFloat = 0
     var next: () -> Void
@@ -319,7 +358,13 @@ struct SignInSheet: View {
                 Text(error).font(.footnote).foregroundStyle(.red).frame(maxWidth: .infinity).padding(.top, 8)
             }
             // Preview flag "signin.pinned" (awaiting David's OK): full-width button pinned to the bottom.
-            if pinned {
+            if pinned && smallButton {
+                // Preview flag "signin.small" (awaiting David's OK): fitted sheet, small centered "Continue" pill.
+                Button(action: go) { Text("Continue").font(.headline).padding(.horizontal, 30) }
+                    .buttonStyle(.glassProminent).tint(Theme.accent).controlSize(.large)
+                    .frame(maxWidth: .infinity).padding(.top, 18)
+                    .accessibilityIdentifier("signInContinue")
+            } else if pinned {
                 Button(action: go) { Text("Continue with \(choice.rawValue)").font(.headline).frame(maxWidth: .infinity) }
                     .buttonStyle(.glassProminent).tint(Theme.accent).controlSize(.extraLarge)
                     .accessibilityIdentifier("signInContinue")
@@ -414,6 +459,7 @@ final class AppleSignInRunner: NSObject, ASAuthorizationControllerDelegate, ASAu
 /// Demo stand-in for Apple's own Sign in with Apple sheet (the real one needs a paid developer account).
 /// Laid out like the real iOS 26 sheet.
 struct AppleSignInDemoSheet: View {
+    @AppStorage("signin.small") private var smallButton = false
     @AppStorage("signin.pinned") private var pinned = true // Sep 24: David approved (fitted sheet, full-width button)
     @State private var fitHeight: CGFloat = 0
     var onContinue: () -> Void
@@ -450,10 +496,10 @@ struct AppleSignInDemoSheet: View {
             .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 24, style: .continuous))
             .padding(.top, 10)
             Button(action: onContinue) {
-                if pinned { Text("Continue").font(.headline).frame(maxWidth: .infinity) } else { Text("Continue").font(.headline).padding(.horizontal, 30) }
+                if pinned && !smallButton { Text("Continue").font(.headline).frame(maxWidth: .infinity) } else { Text("Continue").font(.headline).padding(.horizontal, 30) }
             }
-                .buttonStyle(.glassProminent).tint(Theme.accent).controlSize(pinned ? .extraLarge : .large)
-                .frame(maxWidth: .infinity).padding(.top, pinned ? 20 : 18)
+                .buttonStyle(.glassProminent).tint(Theme.accent).controlSize(pinned && !smallButton ? .extraLarge : .large)
+                .frame(maxWidth: .infinity).padding(.top, pinned && !smallButton ? 20 : 18)
                 .accessibilityIdentifier("appleDemoContinue")
             Text("Use a different Apple Account").font(.subheadline).foregroundStyle(Theme.accent)
                 .frame(maxWidth: .infinity).padding(.top, 12)

@@ -17,6 +17,10 @@ struct TimelineScreen: View {
     @State private var showJournal = true
     @State private var expanded = false
     @State private var region: MKCoordinateRegion?
+    /// Preview flag "route.style" (awaiting David's pick): now = straight lines between points,
+    /// snap = path snapped to streets with Apple directions, gps = precise GPS-style track.
+    @AppStorage("route.style") private var routeStyle = "now"
+    @State private var streetRoute: [CLLocationCoordinate2D] = []
 
     private var interval: DateInterval {
         let cal = Calendar.current
@@ -77,7 +81,10 @@ struct TimelineScreen: View {
         Map(position: $camera, interactionModes: interactive ? .all : []) {
             UserAnnotation()
             if showRoute {
-                if range == .day {
+                if range == .day && routeStyle != "now" && streetRoute.count > 1 {
+                    MapPolyline(coordinates: streetRoute)
+                        .stroke(Theme.accent, style: StrokeStyle(lineWidth: routeStyle == "gps" ? 3.5 : 5, lineCap: .round, lineJoin: .round))
+                } else if range == .day {
                     MapPolyline(coordinates: rangeSamples.map(\.coordinate))
                         .stroke(Theme.accent, style: StrokeStyle(lineWidth: 5, lineCap: .round, lineJoin: .round))
                 } else {
@@ -126,6 +133,45 @@ struct TimelineScreen: View {
         .mapControls { MapCompass(); MapScaleView() }
         .mapControlVisibility(showsControls ? .automatic : .hidden)
         .onMapCameraChange(frequency: .onEnd) { context in region = context.region }
+        .task(id: "\(routeStyle)-\(interval.start.timeIntervalSince1970)-\(range == .day)") { await buildStreetRoute() }
+    }
+
+    private func buildStreetRoute() async {
+        guard routeStyle != "now", range == .day else { streetRoute = []; return }
+        let pts = rangeSamples.map(\.coordinate)
+        guard pts.count > 1 else { streetRoute = []; return }
+        var all: [CLLocationCoordinate2D] = []
+        for (a, b) in zip(pts, pts.dropFirst()) {
+            let r = MKDirections.Request()
+            r.source = MKMapItem(placemark: MKPlacemark(coordinate: a))
+            r.destination = MKMapItem(placemark: MKPlacemark(coordinate: b))
+            r.transportType = .walking
+            if let res = try? await MKDirections(request: r).calculate(), let poly = res.routes.first?.polyline {
+                var seg = [CLLocationCoordinate2D](repeating: .init(), count: poly.pointCount)
+                poly.getCoordinates(&seg, range: NSRange(location: 0, length: poly.pointCount))
+                all += seg
+            } else { all += [a, b] }
+        }
+        if routeStyle == "gps" { all = Self.gpsTrack(all) }
+        streetRoute = all
+    }
+
+    /// Densify every ~12 m and add a few meters of wobble, like a real GPS track.
+    private static func gpsTrack(_ route: [CLLocationCoordinate2D]) -> [CLLocationCoordinate2D] {
+        var out: [CLLocationCoordinate2D] = []; var seed: UInt64 = 42
+        func rnd() -> Double { seed = seed &* 6364136223846793005 &+ 1442695040888963407; return Double(seed >> 33) / Double(1 << 31) - 0.5 }
+        for (a, b) in zip(route, route.dropFirst()) {
+            let d = CLLocation(latitude: a.latitude, longitude: a.longitude).distance(from: CLLocation(latitude: b.latitude, longitude: b.longitude))
+            let n = max(1, Int(d / 12))
+            for i in 0..<n {
+                let t = Double(i) / Double(n)
+                let j = 0.00004 // about 4 m
+                out.append(.init(latitude: a.latitude + (b.latitude - a.latitude) * t + rnd() * j,
+                                 longitude: a.longitude + (b.longitude - a.longitude) * t + rnd() * j))
+            }
+        }
+        if let last = route.last { out.append(last) }
+        return out
     }
 
     /// Map card: tap anywhere to open the full-screen map.

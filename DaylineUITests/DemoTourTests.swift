@@ -621,6 +621,37 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Sign-in: small "Continue" pill + ring mark colors (no icon square).
+    func testSignInMarkDemo() throws {
+        for v in ["icon", "blue", "ink", "sky", "duo"] {
+            let app = XCUIApplication()
+            var args = ["-demo", "-onboarding", "-signin.small", "YES"]
+            if v != "icon" { args += ["-mark.rings", v] }
+            app.launchArguments = args
+            app.launchEnvironment["TZ"] = Self.morningZone
+            app.launch(); pause(1.5)
+            tapID(app, "splashContinue"); pause(1.8); shot("mk-\(v)-signin")
+            if v == "icon" || v == "blue" {
+                tapID(app, "signInOption-Google"); pause(0.8); shot("mk-\(v)-google")
+                tapID(app, "signInOption-Apple"); pause(0.5)
+                tapID(app, "signInContinue"); pause(1.8); shot("mk-\(v)-apple")
+            }
+            app.terminate()
+        }
+    }
+
+    /// Timeline Day map route: now vs snapped to streets vs precise GPS track.
+    func testRouteDemo() throws {
+        for v in ["now", "snap", "gps"] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-route.style", v]
+            app.launchEnvironment["TZ"] = Self.morningZone
+            app.launch(); pause(1.5)
+            tab(app, "Timeline"); pause(6); shot("rt-\(v)")
+            app.terminate()
+        }
+    }
+
     /// Previews for David: sign-in sheets sized to content, splash A/B/C, streak day opening the Day score page.
     func testPreviewsDemo() throws {
         var app = XCUIApplication()
