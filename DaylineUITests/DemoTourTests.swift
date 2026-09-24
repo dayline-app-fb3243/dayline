@@ -1312,4 +1312,40 @@ final class DemoTourTests: XCTestCase {
     }
 
     private func pause(_ seconds: TimeInterval) { Thread.sleep(forTimeInterval: seconds) }
+
+    /// Today's "Schedule · built from your day" list: A / B / C at 9 AM and 2 PM, plus C with a row opened.
+    func testScheduleOptions() throws {
+        for v in ["A", "B", "C"] {
+            for hour in [9, 14] {
+                let app = XCUIApplication()
+                app.launchArguments = ["-demo", "-today.schedule", v]
+                app.launchEnvironment["TZ"] = Self.zone(localHour: hour)
+                app.launch(); pause(2.5)
+                let list = app.descendants(matching: .any)["todaySchedule"].firstMatch
+                for _ in 0..<3 where list.exists && list.frame.maxY > app.frame.maxY - 90 { app.swipeUp(velocity: .slow); pause(1) }
+                shot("sc-\(v)-\(hour)")
+                if v == "C" && hour == 9 {
+                    let row = app.descendants(matching: .any)["scheduleRow-2"].firstMatch
+                    if row.exists { row.tap(); pause(3); app.swipeUp(velocity: .slow); pause(1.5); shot("sc-C-open") }
+                }
+                app.terminate()
+            }
+        }
+    }
+
+    /// Demo route every 5 minutes along streets; Month view draws one line per trip.
+    func testRouteDensity() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo", "-route.style", "snap", "-pin.style", "D", "-map.3d", "YES", "-map.sheet", "G", "-map.subtitles", "B"]
+        app.launchEnvironment["TZ"] = Self.zone(localHour: 14)
+        app.launch(); pause(1.5)
+        tab(app, "Timeline"); pause(3)
+        tapID(app, "mapCard"); pause(5)
+        for r in ["Day", "Week", "Month"] {
+            let b = app.buttons[r].firstMatch
+            if b.exists { b.tap() }; pause(4)
+            shot("rt-\(r.lowercased())")
+        }
+        app.terminate()
+    }
 }

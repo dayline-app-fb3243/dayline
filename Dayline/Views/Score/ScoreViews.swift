@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import MapKit
 
 /// Tap the Today score card: the full breakdown of a day's score.
 /// Swipe sideways (or use the arrows) to see earlier days, like Screen Time. Tap the date for a calendar.
@@ -241,7 +242,18 @@ struct DayActivityList: View {
     @Query(sort: \Visit.arrival) private var visits: [Visit]
     @Query(sort: \JournalEntry.date) private var journal: [JournalEntry]
 
-    struct Row: Identifiable { var id: String; var time: Date; var title: String; var detail: String; var isNow: Bool }
+    @Query(sort: \PlanItem.start) private var plans: [PlanItem]
+    /// Preview flag "today.schedule": A (default) = plain list, no taps. B = timeline with a line through
+    /// category symbols, plus plans still to come today in gray. C = A plus tap a row to open it: time there,
+    /// photos, and a small map of the place.
+    @AppStorage("today.schedule") private var style = "A"
+    @State private var open: String?
+
+    struct Row: Identifiable {
+        var id: String; var time: Date; var title: String; var detail: String; var isNow: Bool
+        var symbol = "sun.max.fill"; var upcoming = false
+        var place: CLLocationCoordinate2D? = nil; var end: Date? = nil
+    }
 
     static let clock: DateFormatter = { let f = DateFormatter(); f.dateFormat = "h:mm"; return f }()
 
@@ -256,15 +268,48 @@ struct DayActivityList: View {
             : DayData.input(for: day, context: context).firstActivity
         let wakeDetail = DemoData.isDemo ? "Phone first used" : (sensedWake != nil ? "First move after sleep" : "First activity")
         if let wake { out.append(Row(id: "wake", time: wake, title: "Woke up", detail: wakeDetail, isNow: false)) }
+        if style == "B" && isToday {
+            for p in plans where cal.isDate(p.start, inSameDayAs: day) && p.start > now && !p.isDone {
+                out.append(Row(id: "plan-\(p.start.timeIntervalSince1970)-\(p.title)", time: p.start, title: p.title,
+                               detail: "Planned · \(Self.duration(p.end.timeIntervalSince(p.start)))", isNow: false,
+                               symbol: p.category.symbol, upcoming: true))
+            }
+        }
         for v in visits where window.contains(v.arrival) && v.category != .home && v.arrival <= now {
             let here = v.departure.map { $0 > now } ?? true
             let end = here ? now : v.departure!
             var detail = here && isToday ? "Here since \(Self.clock.string(from: v.arrival))" : Self.duration(end.timeIntervalSince(v.arrival))
             let photos = journal.filter { $0.kind == .photo && $0.date >= v.arrival && $0.date <= end }.count
             if photos > 0 { detail += " · \(photos) photo\(photos == 1 ? "" : "s")" }
-            out.append(Row(id: "\(v.arrival.timeIntervalSince1970)-\(v.placeKey)", time: v.arrival, title: v.placeName, detail: detail, isNow: here && isToday))
+            out.append(Row(id: "\(v.arrival.timeIntervalSince1970)-\(v.placeKey)", time: v.arrival, title: v.placeName, detail: detail, isNow: here && isToday,
+                           symbol: v.category.symbol, place: CLLocationCoordinate2D(latitude: v.latitude, longitude: v.longitude), end: end))
         }
         return out.sorted { $0.time < $1.time }
+    }
+
+    /// C: the opened row. From arrival to leaving (or now), the photos taken there, and a small map.
+    @ViewBuilder private func detail(_ r: Row, _ place: CLLocationCoordinate2D) -> some View {
+        let end = r.end ?? .now
+        let pics = journal.filter { $0.kind == .photo && $0.date >= r.time && $0.date <= end }.compactMap { $0.thumbnail.flatMap(UIImage.init(data:)) }
+        VStack(alignment: .leading, spacing: 10) {
+            Text("\(Self.clock.string(from: r.time)) - \(r.isNow ? "now" : Self.clock.string(from: end))")
+                .font(.subheadline).foregroundStyle(.secondary)
+            if !pics.isEmpty {
+                HStack(spacing: 6) {
+                    ForEach(pics.indices.prefix(4), id: \.self) { k in
+                        Image(uiImage: pics[k]).resizable().scaledToFill().frame(width: 64, height: 64).clipShape(.rect(cornerRadius: 10))
+                    }
+                }
+            }
+            Map(initialPosition: .camera(MapCamera(centerCoordinate: place, distance: 700))) {
+                Marker(r.title, systemImage: r.symbol, coordinate: place).tint(Theme.accent)
+            }
+            .mapStyle(.standard(pointsOfInterest: .excludingAll))
+            .allowsHitTesting(false)
+            .frame(height: 120).clipShape(.rect(cornerRadius: 12))
+        }
+        .padding(.leading, 70).padding(.trailing, 14).padding(.bottom, 12)
+        .transition(.opacity)
     }
 
     static func duration(_ t: TimeInterval) -> String {
@@ -273,8 +318,56 @@ struct DayActivityList: View {
     }
 
     var body: some View {
+        switch style {
+        case "B": timelineBody
+        default: listBody
+        }
+    }
+
+    /// B: a line through the day, a symbol per stop, the next plans in gray under a "Later today" dot.
+    private var timelineBody: some View {
         let rows = rows
-        Card(padding: 0) {
+        return Card(padding: 0) {
+            if rows.isEmpty {
+                Text("Nothing yet. Dayline fills this in from where you go.")
+                    .font(.subheadline).foregroundStyle(.secondary).padding(16)
+            } else {
+                VStack(spacing: 0) {
+                    ForEach(Array(rows.enumerated()), id: \.element.id) { i, r in
+                        HStack(alignment: .center, spacing: 12) {
+                            Text(Self.clock.string(from: r.time))
+                                .font(.subheadline.weight(.semibold)).foregroundStyle(r.upcoming ? .tertiary : .secondary).monospacedDigit()
+                                .frame(width: 46, alignment: .leading)
+                            ZStack {
+                                // The line: solid for what happened, dotted for what is still planned.
+                                VStack(spacing: 0) {
+                                    Rectangle().fill(i == 0 ? .clear : (r.upcoming ? Color.secondary.opacity(0.3) : Theme.accent.opacity(0.35))).frame(width: 2)
+                                    Rectangle().fill(i == rows.count - 1 ? .clear : (rows[i + 1].upcoming ? Color.secondary.opacity(0.3) : Theme.accent.opacity(0.35))).frame(width: 2)
+                                }
+                                Image(systemName: r.symbol).font(.system(size: 13, weight: .semibold))
+                                    .foregroundStyle(r.upcoming ? Color.secondary : (r.isNow ? .white : Theme.accent))
+                                    .frame(width: 30, height: 30)
+                                    .background(r.upcoming ? AnyShapeStyle(Color(.secondarySystemFill)) : (r.isNow ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(Theme.accent.opacity(0.14))), in: .circle)
+                            }
+                            .frame(width: 30)
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(r.title).font(.body.weight(.semibold)).foregroundStyle(r.upcoming ? .secondary : .primary)
+                                Text(r.detail).font(.caption).foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            if r.isNow { Text("now").font(.caption.weight(.semibold)).foregroundStyle(Theme.accent) }
+                        }
+                        .padding(.horizontal, 14).frame(minHeight: 58)
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+        }
+    }
+
+    private var listBody: some View {
+        let rows = rows
+        return Card(padding: 0) {
             if rows.isEmpty {
                 Text("Nothing yet. Dayline fills this in from where you go.")
                     .font(.subheadline).foregroundStyle(.secondary).padding(16)
@@ -292,8 +385,19 @@ struct DayActivityList: View {
                             }
                             Spacer()
                             if r.isNow { Text("now").font(.caption.weight(.semibold)).foregroundStyle(Theme.accent) }
+                            if style == "C" && r.place != nil {
+                                Image(systemName: "chevron.down").font(.footnote.weight(.semibold)).foregroundStyle(.tertiary)
+                                    .rotationEffect(.degrees(open == r.id ? 180 : 0))
+                            }
                         }
                         .padding(.horizontal, 14).padding(.vertical, 11)
+                        .contentShape(.rect)
+                        .onTapGesture {
+                            guard style == "C", r.place != nil else { return }
+                            withAnimation(.snappy) { open = open == r.id ? nil : r.id }
+                        }
+                        .accessibilityIdentifier("scheduleRow-\(i)")
+                        if style == "C", open == r.id, let place = r.place { detail(r, place) }
                         if i < rows.count - 1 { Divider().padding(.leading, 70) }
                     }
                 }

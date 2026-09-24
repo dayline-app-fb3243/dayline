@@ -209,8 +209,11 @@ enum DemoData {
                           placeName: "Lucia Trattoria", category: .food)
             v.phoneNumber = "(212) 555-0148"
             context.insert(v)
-            context.insert(LocationSample(timestamp: at(fourAgo, 19, 40), latitude: trattoria.0, longitude: trattoria.1,
-                                          horizontalAccuracy: 30, source: "visit"))
+            stops.append((at(fourAgo, 19, 40), at(fourAgo, 21, 5), trattoria))
+            // That evening: home, out to dinner, home again (split the evening at home around it).
+            stops.removeAll { $0.at == home && $0.arrival == at(fourAgo, 17, 45) }
+            stops.append((at(fourAgo, 17, 45), at(fourAgo, 19, 15), home))
+            stops.append((at(fourAgo, 21, 30), at(fourAgo, 23, 59), home))
             context.insert(JournalEntry(date: at(fourAgo, 19, 55), kind: .text, text: "Best cacio e pepe in a while. Come back with Sam.",
                                         latitude: trattoria.0, longitude: trattoria.1))
         }
@@ -221,6 +224,7 @@ enum DemoData {
         context.insert(JournalEntry(date: at(fourAgo, 9, 18), kind: .photo, text: "Cherry danish here is unreal.",
                                     thumbnail: photo("demo-danish"), latitude: bakery.0, longitude: bakery.1))
         context.insert(JournalEntry(date: at(fourAgo, 9, 19), kind: .photo, thumbnail: photo("demo-danish2"), latitude: bakery.0, longitude: bakery.1))
+        writeTrack(context)
         context.insert(JournalEntry(date: at(today, 11, 40), kind: .voice,
                                     text: "Finished the big project draft early. Feeling good about today.",
                                     audioDuration: 42, latitude: work.0, longitude: work.1, isTranscribed: true))
@@ -287,9 +291,57 @@ enum DemoData {
         ])
     }
 
+    /// Every demo stay, in order, so the GPS track can be written once all of them are known.
+    private static var stops: [(arrival: Date, departure: Date?, at: (Double, Double))] = []
+
     private static func add(_ c: ModelContext, _ name: String, _ cat: PlaceCategory, _ p: (Double, Double), _ a: Date, _ d: Date?) {
         c.insert(Visit(arrival: a, departure: d, latitude: p.0, longitude: p.1, placeName: name, category: cat))
-        c.insert(LocationSample(timestamp: a, latitude: p.0, longitude: p.1, horizontalAccuracy: 50, source: "visit"))
+        stops.append((a, d, p))
+    }
+
+    /// Writes the demo GPS track the way the phone records it at the default check rate: one point every
+    /// 5 minutes, staying put during a visit and following the Manhattan street grid between places
+    /// (along a street, then up an avenue), so no line ever cuts across blocks.
+    private static func writeTrack(_ c: ModelContext) {
+        let list = stops.sorted { $0.arrival < $1.arrival }
+        stops = []
+        let step: TimeInterval = 5 * 60
+        let mPerLat = 111_000.0, mPerLon = 111_000.0 * cos(base.lat * .pi / 180)
+        let tilt = 29.0 * .pi / 180            // avenues run about 29° east of north
+        let ave = (x: sin(tilt), y: cos(tilt)), street = (x: cos(tilt), y: -sin(tilt))
+        var seed: UInt64 = 7
+        func jitter() -> Double { seed = seed &* 6364136223846793005 &+ 1442695040888963407; return (Double(seed >> 33) / Double(1 << 31) - 0.5) * 8 }
+        func put(_ t: Date, _ lat: Double, _ lon: Double, _ src: String) {
+            c.insert(LocationSample(timestamp: t, latitude: lat + jitter() / mPerLat, longitude: lon + jitter() / mPerLon,
+                                    horizontalAccuracy: 15, source: src))
+        }
+        for (i, s) in list.enumerated() {
+            let next = i + 1 < list.count ? list[i + 1] : nil
+            // Leave early enough to walk to the next place at about 80 m a minute.
+            var travel: TimeInterval = 0, dx = 0.0, dy = 0.0
+            if let n = next {
+                dx = (n.at.1 - s.at.1) * mPerLon; dy = (n.at.0 - s.at.0) * mPerLat
+                travel = (abs(dx * street.x + dy * street.y) + abs(dx * ave.x + dy * ave.y)) / 80 * 60
+            }
+            let stayEnd = min(s.departure ?? .now, next.map { $0.arrival.addingTimeInterval(-travel) } ?? .now)
+            var t = s.arrival
+            while t <= max(stayEnd, s.arrival) { put(t, s.at.0, s.at.1, "visit"); t += step }
+            guard let n = next, travel > 60, abs(dx) + abs(dy) > 60 else { continue }
+            // Street leg, then avenue leg.
+            let a1 = dx * street.x + dy * street.y, a2 = dx * ave.x + dy * ave.y
+            let corner = (x: street.x * a1, y: street.y * a1)
+            let start = max(stayEnd, s.arrival), dur = n.arrival.timeIntervalSince(start)
+            let total = abs(a1) + abs(a2)
+            t = start + step
+            while t < n.arrival {
+                let d = total * t.timeIntervalSince(start) / dur
+                let (x, y) = d <= abs(a1)
+                    ? (corner.x * d / abs(a1), corner.y * d / abs(a1))
+                    : (corner.x + ave.x * a2 * (d - abs(a1)) / abs(a2), corner.y + ave.y * a2 * (d - abs(a1)) / abs(a2))
+                put(t, s.at.0 + y / mPerLat, s.at.1 + x / mPerLon, "gps")
+                t += step
+            }
+        }
     }
 
     private static func photo(_ name: String) -> Data? {

@@ -126,10 +126,13 @@ struct TimelineScreen: View {
                     MapPolyline(coordinates: Self.thinned(rangeSamples, minutes: checkMinutes))
                         .stroke(Theme.accent, style: StrokeStyle(lineWidth: 5, lineCap: .round, lineJoin: .round))
                 } else {
-                    // Full route for the whole range, thinned so a year stays fast.
-                    MapPolyline(coordinates: thinnedRoute)
-                        // Preview flag "route.blue": every route line the same solid theme blue.
-                        .stroke(UserDefaults.standard.bool(forKey: "route.blue") ? Theme.accent : Theme.accent.opacity(0.45), style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
+                    // Every trip in the range as its own line (never joined across days), thinned so a year stays fast.
+                    let segs = routeSegments
+                    ForEach(segs.indices, id: \.self) { i in
+                        MapPolyline(coordinates: segs[i])
+                            // Preview flag "route.blue": every route line the same solid theme blue.
+                            .stroke(UserDefaults.standard.bool(forKey: "route.blue") ? Theme.accent : Theme.accent.opacity(0.45), style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
+                    }
                 }
             }
             if range == .day {
@@ -232,7 +235,8 @@ struct TimelineScreen: View {
 
     private func buildStreetRoute() async {
         guard routeStyle != "now", range == .day else { streetRoute = []; return }
-        let pts = Self.thinned(rangeSamples, minutes: checkMinutes)
+        // Only the points where you moved: checks during a stay are all the same spot.
+        let pts = Self.moving(Self.thinned(rangeSamples, minutes: checkMinutes))
         guard pts.count > 1 else { streetRoute = []; return }
         var all: [CLLocationCoordinate2D] = []
         for (a, b) in zip(pts, pts.dropFirst()) {
@@ -248,6 +252,45 @@ struct TimelineScreen: View {
         }
         if routeStyle == "gps" { all = Self.gpsTrack(all) }
         streetRoute = all
+    }
+
+    /// Drops points within 60 m of the last kept one (the checks while you stay somewhere).
+    private static func moving(_ pts: [CLLocationCoordinate2D]) -> [CLLocationCoordinate2D] {
+        var out: [CLLocationCoordinate2D] = []
+        for p in pts {
+            if let last = out.last,
+               CLLocation(latitude: last.latitude, longitude: last.longitude).distance(from: CLLocation(latitude: p.latitude, longitude: p.longitude)) < 60 { continue }
+            out.append(p)
+        }
+        if let l = pts.last, let o = out.last, (o.latitude, o.longitude) != (l.latitude, l.longitude) { out.append(l) }
+        return out
+    }
+
+    /// Week / month / year: the route split into separate trips. A new line starts after a long gap
+    /// (overnight, or the phone was off) or a jump no one could make between two checks, so days are never
+    /// joined with straight lines across the city.
+    private var routeSegments: [[CLLocationCoordinate2D]] {
+        let pts = rangeSamples.sorted { $0.timestamp < $1.timestamp }
+        var segs: [[CLLocationCoordinate2D]] = [], cur: [CLLocationCoordinate2D] = []
+        var last: LocationSample?
+        for s in pts {
+            if let l = last {
+                let gap = s.timestamp.timeIntervalSince(l.timestamp)
+                let meters = CLLocation(latitude: l.latitude, longitude: l.longitude).distance(from: CLLocation(latitude: s.latitude, longitude: s.longitude))
+                // Over 40 min apart, or faster than ~40 km/h between checks (not a walk or a short ride).
+                if gap > 40 * 60 || meters / max(gap, 1) > 11 {
+                    if cur.count > 1 { segs.append(cur) }
+                    cur = []
+                }
+            }
+            cur.append(s.coordinate); last = s
+        }
+        if cur.count > 1 { segs.append(cur) }
+        // Keep a year fast: at most ~3000 points in total.
+        let total = segs.reduce(0) { $0 + $1.count }
+        guard total > 3000 else { return segs }
+        let step = total / 3000 + 1
+        return segs.map { seg in stride(from: 0, to: seg.count, by: step).map { seg[$0] } + [seg[seg.count - 1]] }
     }
 
     /// Keep one sample per check (at least `minutes` apart), like the phone would record at that rate.
