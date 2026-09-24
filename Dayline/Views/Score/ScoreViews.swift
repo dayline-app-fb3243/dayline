@@ -304,7 +304,7 @@ struct DayActivityList: View {
 
 struct FactorRow: View {
     var factor: ScoreFactor
-    /// Sep 24: David picked "blue" = bold blue symbol, no tile (demo-24). Old previews: icons.tile A/A2/A3/C/C2.
+    /// no tile. Old previews: icons.tile A/A2/A3/C/C2.
     @AppStorage("icons.tile") private var tile = "blue"
     @AppStorage("symbols.show") private var showSymbols = true
     var body: some View {

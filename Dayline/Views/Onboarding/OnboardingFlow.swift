@@ -34,7 +34,7 @@ struct OnboardingFlow: View {
 struct AppMark: View {
     var size: CGFloat = 96
     var shadow = true
-    /// "mark.rings": rings-only logo approved 9/24; color light to deep (David "Yes" 1:36 9/24; set "" for the old square icon): just the two rings, no square.
+    /// "mark.rings": rings-only logo color light to deep (set "" for the old square icon): just the two rings, no square.
     /// blue = app blue, ink = black/white, sky = light-to-deep blue, duo = blue + teal.
     @AppStorage("mark.rings") private var rings = "sky"
     var body: some View {
@@ -319,7 +319,7 @@ struct SplashView: View {
 /// Sign-in sheet in the style of Apple's own "Sign in with Apple" sheet: pick one, then the blue button.
 struct SignInSheet: View {
     @AppStorage("signin.small") private var smallButton = true
-    @AppStorage("signin.pinned") private var pinned = true // Sep 24: David approved (fitted sheet, full-width button)
+    @AppStorage("signin.pinned") private var pinned = true
     @State private var fitHeight: CGFloat = 0
     var next: () -> Void
     var email: () -> Void
@@ -460,7 +460,7 @@ final class AppleSignInRunner: NSObject, ASAuthorizationControllerDelegate, ASAu
 /// Laid out like the real iOS 26 sheet.
 struct AppleSignInDemoSheet: View {
     @AppStorage("signin.small") private var smallButton = true
-    @AppStorage("signin.pinned") private var pinned = true // Sep 24: David approved (fitted sheet, full-width button)
+    @AppStorage("signin.pinned") private var pinned = true
     @State private var fitHeight: CGFloat = 0
     var onContinue: () -> Void
     @State private var hideEmail = true

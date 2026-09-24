@@ -861,6 +861,17 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Today card options A/B/C (no chips, time-of-day tip), plus B at noon, evening and night to show the greeting and tip change.
+    func testTodayCardDemo() throws {
+        for (v, hour) in [("A", 9), ("B", 9), ("C", 9), ("B", 14), ("B", 19), ("B", 22)] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-today.card", v]
+            app.launchEnvironment["TZ"] = Self.zone(localHour: hour)
+            app.launch(); pause(3); shot("tc-\(v)-\(hour)")
+            app.terminate()
+        }
+    }
+
     /// Splash G/H/I: C's 3D look, new pins, closer and more top-down.
     func testSplashPinDemo() throws {
         for v in ["G", "H", "I"] {

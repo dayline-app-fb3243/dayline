@@ -108,7 +108,7 @@ struct JournalGroup: Identifiable {
 /// C = no icon: title, place · time, then text, photos, voice.
 struct JournalCard: View {
     let group: JournalGroup
-    /// David picked "inset" (demo 7 B, Sep 24): photos inside the card with a white border, a big photo and a narrow one side by side.
+    /// Photos inside the card with a white border, a big photo and a narrow one side by side.
     @AppStorage("journal.cardStyle") private var style = "inset"
     private var heading: String { group.title ?? group.place ?? (group.kind == .voice ? "Voice note" : group.kind == .photo ? "Photo" : "Note") }
     private var meta: String { [group.title != nil ? group.place : nil, group.date.shortTime].compactMap { $0 }.joined(separator: " · ") }

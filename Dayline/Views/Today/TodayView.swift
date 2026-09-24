@@ -92,8 +92,47 @@ struct ScoreCard: View {
         let named = result.factors.filter { $0.chip != nil }
         return Array((named.isEmpty ? result.factors : named).prefix(3))
     }
+    /// Preview flag "today.card" (none picked yet). All three drop the chips (they repeat the schedule)
+    /// and use a tip that follows the time of day. A = same layout, centered. B = label in black, bigger ring.
+    /// C = ring on top, text centered below.
+    @AppStorage("today.card") private var style = ""
+    private var tipText: String {
+        style.isEmpty ? (result.tip ?? result.summary) : (result.tip == nil ? result.summary : ScoreEngine.dynamicTip(score: result.score, factors: result.factors))
+    }
     var body: some View {
         Card {
+            if style == "C" {
+                VStack(spacing: 10) {
+                    ScoreRing(score: result.score, size: 104)
+                    VStack(spacing: 3) {
+                        Text("DAY SCORE").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                        Text(result.label).font(.title2.weight(.bold)).foregroundStyle(labelColor)
+                        Text(tipText).font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .overlay(alignment: .trailing) {
+                    if showsChevron { Image(systemName: "chevron.right").font(.subheadline.weight(.semibold)).foregroundStyle(.tertiary) }
+                }
+                .padding(.vertical, 4)
+            } else if !style.isEmpty {
+                HStack(alignment: .center, spacing: 16) {
+                    ScoreRing(score: result.score, size: style == "B" ? 96 : 84)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("DAY SCORE").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                        Text(result.label).font(style == "B" ? .title2.weight(.semibold) : .title2.weight(.bold))
+                            .foregroundStyle(style == "B" ? Color.primary : labelColor)
+                        Text(tipText).font(.subheadline).foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    Spacer(minLength: 0)
+                    if showsChevron {
+                        Image(systemName: "chevron.right").font(.subheadline.weight(.semibold)).foregroundStyle(.tertiary)
+                    }
+                }
+                .padding(.vertical, 4)
+            } else {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 16) {
                     ScoreRing(score: result.score, size: 84)
@@ -109,6 +148,7 @@ struct ScoreCard: View {
                     }
                 }
                 FlowLayout { ForEach(chips) { FactorChip(factor: $0) } }
+            }
             }
         }
     }

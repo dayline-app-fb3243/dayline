@@ -183,6 +183,21 @@ enum ScoreEngine {
         return "The day's still young. One small win gets you moving."
     }
 
+    /// Preview flag "today.card": the tip follows the time of day and what's still open.
+    /// No walk ideas before the evening; a missing journal is the first suggestion.
+    static func dynamicTip(score: Int, factors: [ScoreFactor], at date: Date = .now) -> String {
+        let hour = Calendar.current.component(.hour, from: date)
+        func to(_ gain: Int) -> Int { min(100, score + gain) }
+        let journalOpen = factors.contains { $0.title == "Journal" && $0.effect == .pending }
+        if journalOpen && hour >= 7 { return "A journal now gets you to \(to(6))." }
+        switch hour {
+        case 5..<12: return "Getting to your plans on time keeps you at \(score)+."
+        case 12..<17: return "Finish your afternoon plans to reach \(to(8))."
+        case 17..<21: return "A 20-min walk tonight gets you to \(to(10))."
+        default: return "Bed by 11:30 keeps tomorrow on track."
+        }
+    }
+
     static func tip(factors: [ScoreFactor], plan: [PlanItem], finished: Bool, score: Int) -> String? {
         guard !finished else { return nil }
         if let next = plan.filter({ !$0.isDone && $0.start > .now }).sorted(by: { $0.start < $1.start }).first {

@@ -30,12 +30,12 @@ struct TimelineScreen: View {
     /// Preview flag "pin.style" (awaiting David's pick): "" = current pins, A = big Apple pin with dot,
     /// B = compact Apple pin with tail, C = native Apple Maps marker.
     @AppStorage("pin.style") private var pinStyle = "D"
-    /// Preview flag "map.sheet" (David 2:08, Find My reference): no floating toggles; a grabber on the range bar
+    /// Preview flag "map.sheet": no floating toggles; a grabber on the range bar
     /// pulls up a glass sheet with Journal / Photos / Route switches. A = Find My card, B = Settings-style icons, C = compact.
     @AppStorage("map.sheet") private var mapSheet = "A"
     /// Preview flag "map.grabber": where the grabber sits so the range words stay centered.
     /// A = grabber drawn over the top edge (takes no space), B = grabber just above the bar, C = even space above and below the words.
-    @AppStorage("map.grabber") private var grabber = ""
+    @AppStorage("map.grabber") private var grabber = "C"
     @State private var sheetOpen = UserDefaults.standard.bool(forKey: "map.sheetOpen")
 
     private var interval: DateInterval {
@@ -404,13 +404,13 @@ struct TimelineScreen: View {
             }
             CapsuleSegmented(selection: $range, options: MapRange.allCases.map { ($0, $0.rawValue) }, plain: true)
                 .padding(.horizontal, 4)
-                .padding(.top, !grabber.isEmpty && !sheetOpen ? (grabber == "C" ? 14 : 4) : 0)
-                .padding(.bottom, grabber == "C" && !sheetOpen ? 14 : 4)
+                .padding(.top, !grabber.isEmpty && !sheetOpen ? (grabber == "C" ? 12 : 4) : 0)
+                .padding(.bottom, grabber == "C" && !sheetOpen ? 12 : 4)
         }
         .overlay(alignment: .top) {
             if !grabber.isEmpty && !sheetOpen {
                 Capsule().fill(Color.secondary.opacity(0.5)).frame(width: 36, height: 5)
-                    .padding(.top, grabber == "A" ? 3 : (grabber == "C" ? 5 : 0))
+                    .padding(.top, grabber == "A" ? 3 : (grabber == "C" ? 6 : 0))
                     .offset(y: grabber == "B" ? -12 : 0)
                     .frame(width: 120, height: 20, alignment: .top).contentShape(.rect)
                     .onTapGesture { withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) { sheetOpen.toggle() } }
@@ -468,7 +468,7 @@ struct TimelineScreen: View {
     private func mapToggle(_ title: String, _ symbol: String, _ on: Binding<Bool>) -> some View {
         Button { withAnimation(.snappy) { on.wrappedValue.toggle() } } label: {
             Image(systemName: symbol).font(.scaled(size: 19, weight: .semibold))
-                // Preview flag "toggle.black" (David 2:07): off = black like the tab bar, on = blue.
+                // Preview flag "toggle.black": off = black like the tab bar, on = blue.
                 .foregroundStyle(on.wrappedValue ? Theme.accent : (UserDefaults.standard.bool(forKey: "toggle.black") ? Color.primary : Color.secondary))
                 .frame(width: 56, height: 56)
                 .contentShape(.circle)
@@ -596,7 +596,7 @@ struct MostVisitedList: View {
     var clusters: [TimelineScreen.Cluster]
     /// Preview flag "visited.icon" (David picks, Sep 24): "tile" = blue tile (default, now);
     /// A = no icon; B = bold blue symbol, no tile; C = blue symbol in a light round circle (Maps style).
-    @AppStorage("visited.icon") private var visitedIcon = "C" // Sep 24: David picked C (round tint); B dropped
+    @AppStorage("visited.icon") private var visitedIcon = "C" // B dropped
     /// Global "Show Symbols" (Profile > Look). On = C (round tint), off = no symbol (option A).
     @AppStorage("symbols.show") private var showSymbols = true
     private var iconStyle: String { showSymbols ? visitedIcon : "A" }

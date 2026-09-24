@@ -47,7 +47,7 @@ struct SiriCommandsView: View {
 }
 
 
-/// Icon next to "Ask Siri". David picked the mark on its own (demo-20 A), Sep 24. Old previews: -siri.iconStyle orb|circle|waveform.
+/// Icon next to "Ask Siri". Old previews: -siri.iconStyle orb|circle|waveform.
 struct SiriRowIcon: View {
     @AppStorage("siri.iconStyle") private var style = "mark"
     var body: some View {

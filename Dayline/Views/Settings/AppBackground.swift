@@ -67,7 +67,7 @@ struct AppBackgroundView: View {
     @AppStorage("background.style") private var styleRaw = PhotoStyle.blur.rawValue
     @AppStorage("background.version") private var version = 0
     /// Proposed: "White" uses Apple's light gray grouped background so the white cards stand out (like Settings).
-    /// Sep 24: David picked A (keep the light gray grouped look), so this stays off. Old preview: -background.whiteGrouped YES.
+    /// so this stays off. Old preview: -background.whiteGrouped YES.
     @AppStorage("background.whiteGrouped") private var whiteGrouped = false
     @Environment(\.colorScheme) private var scheme
 
@@ -243,7 +243,7 @@ struct CapsuleSegmented<Value: Hashable>: View {
     /// Liquid Glass only while the pill is moving or being dragged, like the tab bar.
     @State private var moving = false
     @State private var width: CGFloat = 0
-    private var flat: Bool { (UserDefaults.standard.string(forKey: "pill.style") ?? "flat") == "flat" } // Sep 24: David approved
+    private var flat: Bool { (UserDefaults.standard.string(forKey: "pill.style") ?? "flat") == "flat" }
     private var showGlass: Bool { moving || UserDefaults.standard.bool(forKey: "pill.forceMoving") }
     /// Preview flag "pill.jelly" (awaiting David's pick): while sliding, the glass lens grows past the bar
     /// and stretches wide then squishes narrow, like the Find My tab bar. A = subtle, B = like Find My, C = strong.
@@ -259,7 +259,7 @@ struct CapsuleSegmented<Value: Hashable>: View {
 
     var body: some View {
         if UserDefaults.standard.bool(forKey: "pill.native") {
-            // Preview flag "pill.native" (David 2:04: "exactly like Apple's"): the system segmented control,
+            // Preview flag "pill.native": the system segmented control,
             // so the Liquid Glass lens, stretch, squish and edge bounce are Apple's own.
             // Selected word in theme blue, like the selected tab in the tab bar.
             let _ = segmentedSelectedTint
@@ -411,15 +411,15 @@ struct ProfileView: View {
     @ObservedObject private var location = LocationService.shared
     @AppStorage("background.preset") private var presetRaw = BackgroundPreset.system.rawValue
     /// Preview flag "notifications.style": now = opens iOS Settings (old); A/B/C = in-app page versions.
-    @AppStorage("notifications.style") private var notifStyle = "B1"  // David picked A (sections, plain on/off), Sep 24
+    @AppStorage("notifications.style") private var notifStyle = "B1"
     @AppStorage("appearance") private var appearanceRaw = Appearance.system.rawValue
     @AppStorage(CheckInService.enabledKey) private var checkIns = false
-    /// Sep 24: David approved the "Show Symbols" switch (on = C, off = A).
+    / the "Show Symbols" switch (on = C, off = A).
     @AppStorage("symbols.preview") private var symbolsPreview = true
     @AppStorage("symbols.show") private var showSymbols = true
     /// Preview flag "settings.noHeaders" (awaiting David's OK): no section titles, just space, like iOS Settings.
     @AppStorage("privacy.row") private var privacyRow = true
-    @AppStorage("settings.noHeaders") private var noHeaders = true // Sep 24: David approved
+    @AppStorage("settings.noHeaders") private var noHeaders = true
     @ViewBuilder private func profileHeader(_ title: String) -> some View {
         if noHeaders { Color.clear.frame(height: 14) } else { SectionHeader(title) }
     }
@@ -527,7 +527,7 @@ struct ProfileView: View {
                     Card(padding: 0) {
                         NavigationLink { SiriCommandsView() } label: {
                             ProfileRow(symbol: "waveform", title: "Use with Siri", value: "Examples",
-                                       siriMark: UserDefaults.standard.object(forKey: "profile.siriMark") as? Bool ?? true) // Sep 24: David approved ("Perfect")
+                                       siriMark: UserDefaults.standard.object(forKey: "profile.siriMark") as? Bool ?? true)
                         }
                         .accessibilityIdentifier("useWithSiriRow")
                     }
@@ -646,7 +646,7 @@ struct ProfileRow: View {
     var body: some View {
         HStack(spacing: 13) {
             if siriMark {
-                // The Siri mark David picked (demo-20 A), white on the same blue tile as the other rows.
+                // The Siri mark, white on the same blue tile as the other rows.
                 SiriMark(color: .white).padding(5)
                     .frame(width: 30, height: 30)
                     .background(Theme.accent, in: .rect(cornerRadius: 30 * 0.24, style: .continuous))
@@ -670,7 +670,7 @@ struct PrivacyView: View {
     @State private var confirmDelete = false
     /// Preview flag "yourData.style" (David picks): now = card; A = gray note on top, button at the bottom, alert;
     /// B = same layout, bottom action sheet; C = note under the button, both at the bottom, action sheet.
-    @AppStorage("yourData.style") private var style = "A"  // David picked A (Sep 24)
+    @AppStorage("yourData.style") private var style = "A"
     private let storedText = "Your places, route, photos and notes are kept on this iPhone. Voice notes are turned into text on the device. With Back Up Timeline on, a copy is kept in your own iCloud."
     private let deleteText = "Deletes your account, your iCloud backup and everything Dayline saved on this iPhone. This can't be undone."
 
@@ -948,7 +948,7 @@ private struct BackgroundText: ViewModifier {
     @Environment(\.colorScheme) private var scheme
     /// Preview flag "text.gray" (awaiting David's OK): on dark backgrounds use Apple's dark-mode gray
     /// (secondaryLabel, 60% light gray) instead of blue.
-    @AppStorage("text.gray") private var grayText = true // Sep 24: David approved
+    @AppStorage("text.gray") private var grayText = true
     private var darkHelper: AnyShapeStyle {
         grayText ? AnyShapeStyle(Color(red: 235/255, green: 235/255, blue: 245/255).opacity(0.6)) : AnyShapeStyle(Theme.accent)
     }
@@ -1017,7 +1017,7 @@ extension View {
 /// Versions (preview flag "notifications.style"): A = Settings-style rows with icon tiles and a note under each group;
 /// B = plain switches, one group, one note; C = like iOS Settings > Notifications: Allow Notifications on top, then the types.
 struct NotificationsView: View {
-    @AppStorage("notifications.style") private var style = "B1"  // David picked (demo-18 A)
+    @AppStorage("notifications.style") private var style = "B1"
     @AppStorage("notify.follows") private var follows = true
     @AppStorage("notify.score80") private var score80 = true
     @AppStorage(CheckInService.enabledKey) private var checkIns = false

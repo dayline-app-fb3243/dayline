@@ -60,7 +60,7 @@ struct ScoreRing: View {
     var lineWidthOverride: CGFloat? = nil
     var size: CGFloat = 88
     @AppStorage("rings.thick") private var thick = false
-    private var lineWidth: CGFloat { lineWidthOverride ?? (thick ? (size * 0.17).rounded() : (size >= 120 ? 20 : 14)) }  // David picked C (Sep 24): 14 pt small, 20 pt large
+    private var lineWidth: CGFloat { lineWidthOverride ?? (thick ? (size * 0.17).rounded() : (size >= 120 ? 20 : 14)) }  // 14 pt small, 20 pt large
     var body: some View {
         ZStack {
             Circle().stroke(.quaternary, lineWidth: lineWidth)
@@ -156,7 +156,7 @@ extension Date {
 struct MarkerBackground<S: ShapeStyle>: ViewModifier {
     var fill: S
     var size: CGFloat
-    /// Map pins: David picked C (outlined round) on Sep 24. People initials still follow the preview flag.
+    /// Map pins: People initials still follow the preview flag.
     var isMapPin = false
     @AppStorage("icons.markerStyle") private var flagStyle = "outlined"  // David: round, C outlined like map pins (Sep 24)
     private var style: String { isMapPin ? "outlined" : flagStyle }
@@ -181,7 +181,7 @@ extension View {
 
 enum ChromeStyle {
     static var tint: Color {
-        // David picked B (black, like iOS) on Sep 24. "A" keeps the old blue for comparison.
+        // "A" keeps the old blue for comparison.
         switch UserDefaults.standard.string(forKey: "chrome.style") ?? "B" {
         case "A", "now": return Theme.accent
         case "C": return Color.secondary
