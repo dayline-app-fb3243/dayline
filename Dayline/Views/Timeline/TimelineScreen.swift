@@ -286,6 +286,8 @@ struct TimelineScreen: View {
             cur.append(s.coordinate); last = s
         }
         if cur.count > 1 { segs.append(cur) }
+        // The checks while you stay somewhere are all the same spot; keep only where you moved.
+        segs = segs.map(Self.moving).filter { $0.count > 1 }
         // Keep a year fast: at most ~3000 points in total.
         let total = segs.reduce(0) { $0 + $1.count }
         guard total > 3000 else { return segs }

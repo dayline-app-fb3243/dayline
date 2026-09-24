@@ -1325,7 +1325,7 @@ final class DemoTourTests: XCTestCase {
                 for _ in 0..<3 where list.exists && list.frame.maxY > app.frame.maxY - 90 { app.swipeUp(velocity: .slow); pause(1) }
                 shot("sc-\(v)-\(hour)")
                 if v == "C" && hour == 9 {
-                    let row = app.descendants(matching: .any)["scheduleRow-2"].firstMatch
+                    let row = app.staticTexts["Blue Door Coffee"].firstMatch
                     if row.exists { row.tap(); pause(3); app.swipeUp(velocity: .slow); pause(1.5); shot("sc-C-open") }
                 }
                 app.terminate()

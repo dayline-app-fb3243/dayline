@@ -332,6 +332,11 @@ enum DemoData {
             let corner = (x: street.x * a1, y: street.y * a1)
             let start = max(stayEnd, s.arrival), dur = n.arrival.timeIntervalSince(start)
             let total = abs(a1) + abs(a2)
+            // The corner where the street leg turns onto the avenue: the phone logs a point when you change
+            // direction, so the line turns the corner instead of cutting across the block.
+            if abs(a1) > 30 && abs(a2) > 30 {
+                put(start.addingTimeInterval(dur * abs(a1) / total), s.at.0 + corner.y / mPerLat, s.at.1 + corner.x / mPerLon, "gps")
+            }
             t = start + step
             while t < n.arrival {
                 let d = total * t.timeIntervalSince(start) / dur
