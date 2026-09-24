@@ -144,6 +144,7 @@ final class DemoTourTests: XCTestCase {
         if sunset.waitForExistence(timeout: 3) { sunset.tap() }
         pause(1.5); shot("62-background-sunset")
         goBack(app)
+        tapID(app, "yourDataRow"); pause(2); shot("65-your-data"); goBack(app)
         tab(app, "Today"); pause(1.5); shot("63-today-sunset")
     }
 
