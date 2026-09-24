@@ -108,16 +108,54 @@ struct JournalGroup: Identifiable {
 /// C = no icon: title, place · time, then text, photos, voice.
 struct JournalCard: View {
     let group: JournalGroup
-    @AppStorage("journal.cardStyle") private var style = "A"
+    /// David picked "inset" (demo 7 B, Sep 24): photos inside the card with a white border, a big photo and a narrow one side by side.
+    @AppStorage("journal.cardStyle") private var style = "inset"
     private var heading: String { group.title ?? group.place ?? (group.kind == .voice ? "Voice note" : group.kind == .photo ? "Photo" : "Note") }
     private var meta: String { [group.title != nil ? group.place : nil, group.date.shortTime].compactMap { $0 }.joined(separator: " · ") }
 
     var body: some View {
         switch style {
+        case "A": styleA
         case "B": styleB
         case "C": styleC
-        default: styleA
+        default: styleInset
         }
+    }
+
+    private var styleInset: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if !group.photos.isEmpty {
+                GeometryReader { g in
+                    let images = group.photos.prefix(2).compactMap { UIImage(data: $0) }
+                    let gap: CGFloat = 6
+                    HStack(spacing: gap) {
+                        ForEach(Array(images.enumerated()), id: \.offset) { i, image in
+                            let w = images.count == 1 ? g.size.width : (i == 0 ? (g.size.width - gap) * 0.62 : (g.size.width - gap) * 0.38)
+                            Color.clear.frame(width: w, height: g.size.height)
+                                .overlay { Image(uiImage: image).resizable().scaledToFill() }
+                                .clipShape(.rect(cornerRadius: 16, style: .continuous))
+                                .overlay {
+                                    if group.videos.contains(i) {
+                                        Image(systemName: "play.fill").font(.caption).foregroundStyle(.white)
+                                            .frame(width: 30, height: 30).background(.black.opacity(0.35), in: .circle)
+                                    }
+                                }
+                        }
+                    }
+                }
+                .frame(height: 150)
+                .padding([.horizontal, .top], 10)
+            }
+            VStack(alignment: .leading, spacing: 6) {
+                Text(heading).font(.headline)
+                textBlock
+                voiceBlock
+                Text(meta).font(.caption).foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(14)
+        }
+        .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: Theme.cardRadius, style: .continuous))
     }
 
     private var styleA: some View {
