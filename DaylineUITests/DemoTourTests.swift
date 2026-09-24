@@ -610,6 +610,17 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Splash with real Apple Maps and a street-following route: A standard, B muted + times, C 3D.
+    func testSplashMapDemo() throws {
+        for v in ["A", "B", "C"] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-onboarding", "-splash.map", v]
+            app.launchEnvironment["TZ"] = Self.morningZone
+            app.launch(); pause(6); shot("sm-map-\(v)")
+            app.terminate()
+        }
+    }
+
     /// Previews for David: sign-in sheets sized to content, splash A/B/C, streak day opening the Day score page.
     func testPreviewsDemo() throws {
         var app = XCUIApplication()

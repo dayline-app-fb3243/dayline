@@ -95,6 +95,20 @@ jobs:
           cp /tmp/dayline-shots/*.png shots/ || true
           ls shots
 
+      - name: Zip simulator app (for browser streaming)
+        if: inputs.tests != 'icon'
+        run: |
+          APP=$(find build/Build/Products -maxdepth 2 -name "Dayline.app" -path "*iphonesimulator*" | head -1)
+          echo "app=$APP"; mkdir -p simapp
+          [ -n "$APP" ] && (cd "$(dirname "$APP")" && zip -qry "$GITHUB_WORKSPACE/simapp/Dayline-sim.zip" Dayline.app) || true
+          ls -la simapp
+
+      - uses: actions/upload-artifact@v4
+        if: inputs.tests != 'icon'
+        with:
+          name: sim-app
+          path: simapp
+
       - uses: actions/upload-artifact@v4
         if: always()
         with:

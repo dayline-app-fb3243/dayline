@@ -1,4 +1,5 @@
 import SwiftUI
+import MapKit
 import CoreMotion
 import AVFoundation
 import Photos
@@ -245,10 +246,16 @@ struct SplashView: View {
         .background(Color(.systemBackground))
     }
 
+    /// Preview flag "splash.map" (awaiting David's pick): A/B/C = real Apple Maps with a street-following route.
+    @AppStorage("splash.map") private var liveMap = ""
+
     private var splashMap: some View {
         VStack(alignment: .leading, spacing: 0) {
             Color.clear.frame(maxWidth: .infinity).frame(height: 560)
-                .overlay(alignment: .top) { Image("SplashMap").resizable().scaledToFill() }
+                .overlay(alignment: .top) {
+                    if liveMap.isEmpty { Image("SplashMap").resizable().scaledToFill() }
+                    else { SplashLiveMap(style: liveMap).frame(height: 560).allowsHitTesting(false) }
+                }
                 .clipped()
                 .overlay(alignment: .bottom) {
                     LinearGradient(stops: [.init(color: Color(.systemBackground).opacity(0), location: 0), .init(color: Color(.systemBackground), location: 0.8)],
@@ -814,5 +821,62 @@ struct EmailCodeView: View {
             }
         }
         .onAppear { focused = true }
+    }
+}
+
+
+/// Real Apple Maps behind the splash, with a walking route that follows the streets (MapKit directions),
+/// like a precise GPS track, plus the day's stops. A = standard, B = muted with time labels, C = 3D.
+struct SplashLiveMap: View {
+    var style: String
+    @State private var route: [CLLocationCoordinate2D] = []
+    private struct Stop: Identifiable { let id = UUID(); let name: String; let time: String; let symbol: String; let c: CLLocationCoordinate2D }
+    private let stops: [Stop] = [
+        Stop(name: "Home", time: "8:10", symbol: "house.fill", c: .init(latitude: 40.7489, longitude: -73.9857)),
+        Stop(name: "Blue Door Coffee", time: "8:32", symbol: "cup.and.saucer.fill", c: .init(latitude: 40.7527, longitude: -73.9772)),
+        Stop(name: "Office", time: "9:02", symbol: "briefcase.fill", c: .init(latitude: 40.7580, longitude: -73.9712)),
+        Stop(name: "Noodle Bar", time: "12:30", symbol: "fork.knife", c: .init(latitude: 40.7614, longitude: -73.9776)),
+    ]
+    var body: some View {
+        Map(initialPosition: position, interactionModes: []) {
+            if route.count > 1 {
+                MapPolyline(coordinates: route)
+                    .stroke(Theme.accent, style: StrokeStyle(lineWidth: 5, lineCap: .round, lineJoin: .round))
+            }
+            ForEach(stops) { s in
+                Annotation(style == "B" ? s.time : "", coordinate: s.c) {
+                    Image(systemName: s.symbol).font(.system(size: 12, weight: .bold)).foregroundStyle(.white)
+                        .frame(width: 28, height: 28).background(Theme.accent, in: .circle)
+                        .overlay(Circle().stroke(.white, lineWidth: 2.5)).shadow(color: .black.opacity(0.25), radius: 4, y: 2)
+                }
+            }
+        }
+        .mapStyle(style == "B" ? .standard(emphasis: .muted, pointsOfInterest: .excludingAll) :
+                  style == "C" ? .standard(elevation: .realistic, pointsOfInterest: .excludingAll) :
+                  .standard(pointsOfInterest: .excludingAll))
+        .mapControlVisibility(.hidden)
+        .task { await loadRoute() }
+    }
+    private var position: MapCameraPosition {
+        let center = CLLocationCoordinate2D(latitude: 40.7552, longitude: -73.9790)
+        if style == "C" { return .camera(MapCamera(centerCoordinate: center, distance: 2600, heading: 29, pitch: 55)) }
+        return .region(MKCoordinateRegion(center: center, span: .init(latitudeDelta: 0.021, longitudeDelta: 0.021)))
+    }
+    private func loadRoute() async {
+        var all: [CLLocationCoordinate2D] = []
+        for (a, b) in zip(stops, stops.dropFirst()) {
+            let r = MKDirections.Request()
+            r.source = MKMapItem(placemark: MKPlacemark(coordinate: a.c))
+            r.destination = MKMapItem(placemark: MKPlacemark(coordinate: b.c))
+            r.transportType = .walking
+            if let res = try? await MKDirections(request: r).calculate(), let poly = res.routes.first?.polyline {
+                var pts = [CLLocationCoordinate2D](repeating: .init(), count: poly.pointCount)
+                poly.getCoordinates(&pts, range: NSRange(location: 0, length: poly.pointCount))
+                all += pts
+            } else {
+                all += [a.c, b.c]
+            }
+        }
+        route = all
     }
 }
