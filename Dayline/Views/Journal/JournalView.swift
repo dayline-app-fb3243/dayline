@@ -20,6 +20,8 @@ struct JournalView: View {
             .map { day, items in (day, JournalGroup.make(items.sorted { $0.date > $1.date }, visits: visits)) }
     }
 
+    /// Preview "journal.page" 1-5: Journal layouts ("" = the current cards). Sample-only until one is picked.
+    @AppStorage("journal.page") private var jPage = ""
     @State private var composing = false
     /// Search button style "journal.search": B (default) = one glass capsule holding search and +.
     /// A = its own glass circle next to +, C = a search field under the title (kept as preview options).
@@ -43,6 +45,9 @@ struct JournalView: View {
                         ContentUnavailableView("No journal yet", systemImage: "doc.text",
                                                description: Text("Tap + to write, add a photo or record a voice memo."))
                     }
+                    if !jPage.isEmpty {
+                        JournalPageSample(page: jPage, days: days) { editingGroup = $0 }
+                    } else {
                     ForEach(days, id: \.0) { day, groups in
                         Text(Calendar.current.isDateInToday(day) ? "Today" : day.formatted(.dateTime.weekday(.wide).month(.abbreviated).day()))
                             .font(.subheadline.weight(.semibold)).helperText()
@@ -51,6 +56,7 @@ struct JournalView: View {
                             Button { editingGroup = g } label: { JournalCard(group: g) }.buttonStyle(.plain)
                                 .accessibilityIdentifier("journalCard")
                         }
+                    }
                     }
                     }
                 }
