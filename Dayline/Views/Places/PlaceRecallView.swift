@@ -97,12 +97,12 @@ struct PlaceCard: View {
                 .padding(14)
                 HStack(spacing: 10) {
                     Button(action: go) {
-                        Label("Go Now", systemImage: "car.fill").frame(maxWidth: .infinity)
+                        Label("Go Now", systemImage: "car.fill").lineLimit(1).frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.borderedProminent).buttonBorderShape(.capsule)
-                    Button(action: call) { Label("Call", systemImage: "phone.fill") }
+                    Button(action: call) { Label("Call", systemImage: "phone.fill").lineLimit(1).fixedSize() }
                         .buttonStyle(.bordered).buttonBorderShape(.capsule).disabled(place.phone == nil)
-                    Button(action: info) { Label("Hours", systemImage: "clock") }
+                    Button(action: info) { Label("Hours", systemImage: "clock").lineLimit(1).fixedSize() }
                         .buttonStyle(.bordered).buttonBorderShape(.capsule)
                 }
                 .controlSize(.large)
