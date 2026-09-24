@@ -217,6 +217,11 @@ final class DemoTourTests: XCTestCase {
                 tab(app, "Journal"); pause(2); shot("c19-journal")
                 let jc = app.buttons["journalCard"].firstMatch
                 if jc.waitForExistence(timeout: 3) { jc.tap(); pause(2); shot("c19b-journal-edit"); app.buttons["Close"].firstMatch.tap(); pause(1.2) }
+                tapID(app, "newEntry"); pause(1.5)
+                let mic = app.descendants(matching: .any)["voiceMic"].firstMatch
+                if mic.waitForExistence(timeout: 3) { mic.tap(); pause(0.6); shot("c21-tap-hold-hint") }
+                app.buttons["Close"].firstMatch.tap(); pause(1)
+                if app.buttons["Discard Entry"].exists { app.buttons["Discard Entry"].tap(); pause(1) }
                 tab(app, "Insights"); pause(1.5); shot("c20-insights-month")
                 tab(app, "Today"); pause(2); shot("c10a-today-ring"); tapID(app, "scoreCard"); pause(2); shot("c10b-day-score"); app.swipeUp(); pause(1.2); shot("c10-factor-tiles")
                 goBack(app)
