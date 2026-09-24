@@ -16,7 +16,8 @@ jobs:
       - name: Check it builds for the simulator with default settings (no team)
         run: |
           set -o pipefail
-          xcodebuild -project Dayline.xcodeproj -scheme Dayline -destination 'generic/platform=iOS Simulator' -derivedDataPath /tmp/dd build | tail -n 30
+          xcodebuild -project Dayline.xcodeproj -scheme Dayline -destination 'generic/platform=iOS Simulator' -derivedDataPath /tmp/dd build > /tmp/b.log 2>&1 || { grep -E 'error:' /tmp/b.log | sort -u | head -60; exit 1; }
+          tail -n 5 /tmp/b.log
       - name: Zip
         run: |
           rm -rf /tmp/out && mkdir -p /tmp/out/Dayline

@@ -29,7 +29,15 @@ enum ScoreEngine {
     /// Base sizes. Anything switched off drops out and the rest grow evenly, so they still add up to 100.
     enum Part: String, CaseIterable { case wake, bed, work, plans, moving, gotOut, journal
         var base: Double {
-            switch self { case .wake: 20; case .bed: 10; case .work: 15; case .plans: 20; case .moving: 20; case .gotOut: 10; case .journal: 5 }
+            switch self {
+            case .wake: return 20
+            case .bed: return 10
+            case .work: return 15
+            case .plans: return 20
+            case .moving: return 20
+            case .gotOut: return 10
+            case .journal: return 5
+            }
         }
     }
 

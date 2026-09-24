@@ -404,7 +404,7 @@ struct SetupStep<Content: View>: View {
     var subtitle: String
     var primary: String
     var primaryEnabled: Bool
-    var secondary: String?
+    var secondary: String
     var back: (() -> Void)?
     var onPrimary: () -> Void
     var onSecondary: () -> Void
@@ -426,16 +426,13 @@ struct SetupStep<Content: View>: View {
             Text(subtitle).font(.title3).foregroundStyle(.secondary).padding(.top, 4)
             content.padding(.top, 24)
             Spacer()
-            // Same size as every other Continue button in the app.
             VStack(spacing: 10) {
-                Button(action: onPrimary) { Text(primary).font(.headline).frame(maxWidth: .infinity) }
+                Button(action: onPrimary) { Text(primary).font(.headline).frame(maxWidth: .infinity).frame(height: 40) }
                     .buttonStyle(.glassProminent).disabled(!primaryEnabled).accessibilityIdentifier("setupPrimary")
-                if let secondary {
-                    Button(action: onSecondary) { Text(secondary).font(.headline).frame(maxWidth: .infinity) }
-                        .buttonStyle(.glass).foregroundStyle(.primary).accessibilityIdentifier("setupSecondary")
-                }
+                Button(action: onSecondary) { Text(secondary).font(.headline).frame(maxWidth: .infinity).frame(height: 40) }
+                    .buttonStyle(.glass).foregroundStyle(.primary).accessibilityIdentifier("setupSecondary")
             }
-            .controlSize(.extraLarge)
+            .controlSize(.large)
         }
         .padding(.horizontal, 32).padding(.bottom, 20)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -559,7 +556,7 @@ struct EmailView: View {
     var body: some View {
         SetupStep(symbol: "envelope", title: "Email Address",
                   subtitle: "Enter your email to back up your timeline and sign in on other devices.",
-                  primary: "Continue", primaryEnabled: valid, secondary: nil,
+                  primary: "Continue", primaryEnabled: valid, secondary: "Use Sign in with Apple",
                   back: back, onPrimary: { savedEmail = email; next() }, onSecondary: back) {
             TextField("name@example.com", text: $email)
                 .keyboardType(.emailAddress).textContentType(.emailAddress)
