@@ -549,7 +549,7 @@ struct PhoneCodeView: View {
                     .allowsHitTesting(false)
                 }
                 .onTapGesture { focused = true }
-                Button("Didn't get a code?") {}.font(.subheadline)
+                Button("Didn't get a code?") {}.font(.subheadline).foregroundStyle(Theme.accent)
             }
         }
         .onAppear { focused = true }
@@ -614,7 +614,7 @@ struct EmailCodeView: View {
                     .allowsHitTesting(false)
                 }
                 .onTapGesture { focused = true }
-                Button("Resend Code") {}.font(.subheadline)
+                Button("Resend Code") {}.font(.subheadline).foregroundStyle(Theme.accent)
             }
         }
         .onAppear { focused = true }
