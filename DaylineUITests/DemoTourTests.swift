@@ -137,8 +137,6 @@ final class DemoTourTests: XCTestCase {
         let siriRow = app.descendants(matching: .any)["useWithSiriRow"].firstMatch
         if siriRow.waitForExistence(timeout: 3) {
             siriRow.tap(); pause(2); shot("70-use-with-siri")
-            app.swipeUp(); pause(1); shot("70b-use-with-siri-more")
-            app.swipeUp(); pause(1); shot("70c-use-with-siri-end")
             goBack(app); pause(1.2)
         }
         let policy = app.links["Privacy Policy"].firstMatch

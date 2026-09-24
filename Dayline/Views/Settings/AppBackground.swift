@@ -287,7 +287,7 @@ struct ProfileView: View {
                 SectionHeader("Siri")
                 Card(padding: 0) {
                     NavigationLink { SiriCommandsView() } label: {
-                        ProfileRow(symbol: "waveform", title: "Use with Siri", value: "\(SiriCommands.all.count) commands")
+                        ProfileRow(symbol: "waveform", title: "Use with Siri", value: "Examples")
                     }
                     .accessibilityIdentifier("useWithSiriRow")
                 }
