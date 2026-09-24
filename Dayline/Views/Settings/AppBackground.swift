@@ -498,7 +498,7 @@ struct PrivacyView: View {
     @State private var confirmDelete = false
     /// Preview flag "yourData.style" (David picks): now = card; A = gray note on top, button at the bottom, alert;
     /// B = same layout, bottom action sheet; C = note under the button, both at the bottom, action sheet.
-    @AppStorage("yourData.style") private var style = "now"
+    @AppStorage("yourData.style") private var style = "A"  // David picked A (Sep 24)
     private let storedText = "Your places, route, photos and notes are kept on this iPhone. Voice notes are turned into text on the device. With Back Up Timeline on, a copy is kept in your own iCloud."
     private let deleteText = "Deletes your account, your iCloud backup and everything Dayline saved on this iPhone. This can't be undone."
 
