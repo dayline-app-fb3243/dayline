@@ -258,7 +258,16 @@ struct CapsuleSegmented<Value: Hashable>: View {
     }
 
     var body: some View {
-        if plain && flat {
+        if UserDefaults.standard.bool(forKey: "pill.native") {
+            // Preview flag "pill.native" (David 2:04: "exactly like Apple's"): the system segmented control,
+            // so the Liquid Glass lens, stretch, squish and edge bounce are Apple's own.
+            Picker("", selection: $selection) {
+                ForEach(options, id: \.0) { value, title in Text(title).tag(value) }
+            }
+            .pickerStyle(.segmented)
+            .controlSize(.large)
+            .padding(plain ? 3 : 0)
+        } else if plain && flat {
             flatBody
         } else if plain {
             // Inside a glass bar: the selected item is a real Liquid Glass lens that morphs between options.

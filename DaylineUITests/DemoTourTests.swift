@@ -621,6 +621,29 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Video: Apple's own segmented control (pill.native) on the Timeline: taps, fast drags, and drags past the ends.
+    func testNativePillVideo() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo", "-pill.native", "YES"]
+        app.launchEnvironment["TZ"] = Self.morningZone
+        app.launch(); pause(1.5)
+        tab(app, "Timeline"); pause(1.5)
+        let seg = app.segmentedControls.firstMatch
+        guard seg.waitForExistence(timeout: 5) else { return }
+        pause(1)
+        shot("np-rest")
+        for s in ["Year", "Day", "Month", "Week"] { seg.buttons[s].tap(); pause(1.0) }
+        let l = seg.coordinate(withNormalizedOffset: CGVector(dx: 0.12, dy: 0.5))
+        let r = seg.coordinate(withNormalizedOffset: CGVector(dx: 0.88, dy: 0.5))
+        let farR = seg.coordinate(withNormalizedOffset: CGVector(dx: 1.25, dy: 0.5))
+        let farL = seg.coordinate(withNormalizedOffset: CGVector(dx: -0.25, dy: 0.5))
+        l.press(forDuration: 0.3, thenDragTo: r, withVelocity: .fast, thenHoldForDuration: 0.3); pause(1.2)
+        r.press(forDuration: 0.3, thenDragTo: l, withVelocity: .fast, thenHoldForDuration: 0.3); pause(1.2)
+        l.press(forDuration: 0.3, thenDragTo: farR, withVelocity: .default, thenHoldForDuration: 0.6); pause(1.2)
+        r.press(forDuration: 0.3, thenDragTo: farL, withVelocity: .default, thenHoldForDuration: 0.6); pause(1.5)
+        app.terminate()
+    }
+
     /// Privacy Policy as a row in the Your data group (no footer), light and dark.
     func testPrivacyRowDemo() throws {
         for mode in ["Light", "Dark"] {
