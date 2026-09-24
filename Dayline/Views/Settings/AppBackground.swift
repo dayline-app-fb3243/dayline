@@ -239,9 +239,17 @@ struct CapsuleSegmented<Value: Hashable>: View {
     /// No track behind it (used inside a glass capsule).
     var plain = false
     @Namespace private var ns
+    /// Preview flag pill.style = "flat" (awaiting David's OK): plain gray highlight at rest,
+    /// Liquid Glass only while the pill is moving or being dragged, like the tab bar.
+    @State private var moving = false
+    @State private var width: CGFloat = 0
+    private var flat: Bool { UserDefaults.standard.string(forKey: "pill.style") == "flat" }
+    private var showGlass: Bool { moving || UserDefaults.standard.bool(forKey: "pill.forceMoving") }
 
     var body: some View {
-        if plain {
+        if plain && flat {
+            flatBody
+        } else if plain {
             // Inside a glass bar: the selected item is a real Liquid Glass lens that morphs between options.
             // The labels sit on top of the lens (not inside the glass), so the selected word stays sharp,
             // and it turns blue like the selected tab in the tab bar (David).
@@ -278,6 +286,49 @@ struct CapsuleSegmented<Value: Hashable>: View {
         } else {
             solid
         }
+    }
+
+    private func pick(_ value: Value) {
+        moving = true
+        withAnimation(.snappy) { selection = value }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { withAnimation(.easeOut(duration: 0.2)) { moving = false } }
+    }
+
+    private var flatBody: some View {
+        HStack(spacing: 0) {
+            ForEach(options, id: \.0) { value, title in
+                Button { pick(value) } label: {
+                    Text(title).font(.subheadline.weight(.semibold))
+                        .foregroundStyle(selection == value ? Theme.accent : Color.primary)
+                        .frame(maxWidth: .infinity).padding(.vertical, 8)
+                        .background {
+                            if selection == value {
+                                ZStack {
+                                    Capsule().fill(Color.primary.opacity(showGlass ? 0 : 0.09))
+                                    if showGlass { Color.clear.glassEffect(.regular.interactive(), in: .capsule) }
+                                }
+                                .scaleEffect(showGlass ? 1.1 : 1)
+                                .matchedGeometryEffect(id: "flatPill", in: ns)
+                            }
+                        }
+                        .contentShape(.capsule)
+                }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(selection == value ? .isSelected : [])
+            }
+        }
+        .padding(3)
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 8)
+                .onChanged { g in
+                    guard width > 0, !options.isEmpty else { return }
+                    if !moving { withAnimation(.snappy) { moving = true } }
+                    let i = min(max(Int(g.location.x / (width / CGFloat(options.count))), 0), options.count - 1)
+                    if options[i].0 != selection { withAnimation(.snappy) { selection = options[i].0 } }
+                }
+                .onEnded { _ in withAnimation(.easeOut(duration: 0.2)) { moving = false } }
+        )
     }
 
     private var solid: some View {

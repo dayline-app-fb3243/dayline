@@ -582,6 +582,18 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Segment pill: now (glass pill) vs flat gray at rest, and the glass look while it moves.
+    func testPillDemo() throws {
+        for (name, args) in [("now", ["-pill.style", "gray"]), ("flat", ["-pill.style", "flat"]), ("moving", ["-pill.style", "flat", "-pill.forceMoving", "YES"])] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo"] + args
+            app.launchEnvironment["TZ"] = Self.morningZone
+            app.launch(); pause(1.5)
+            tab(app, "Timeline"); pause(2); tapSegment(app, "Week"); pause(2.5); shot("pl-\(name)")
+            app.terminate()
+        }
+    }
+
     /// Previews for David: sign-in sheets sized to content, splash A/B/C, streak day opening the Day score page.
     func testPreviewsDemo() throws {
         var app = XCUIApplication()
