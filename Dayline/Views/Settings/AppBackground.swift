@@ -735,6 +735,8 @@ private struct BackgroundNavBar: ViewModifier {
     func body(content: Content) -> some View {
         let dark = BackgroundTone.isDark(presetRaw: presetRaw, styleRaw: styleRaw, scheme: scheme)
         content.background(NavBarStyle(dark: dark).frame(width: 0, height: 0))
+            // Black back/close buttons (David's pick) must turn white on dark backgrounds.
+            .toolbarColorScheme(dark ? .dark : nil, for: .navigationBar)
     }
 }
 
