@@ -12,8 +12,15 @@ struct YourScheduleEntry: View {
 
 struct ScheduleSettingsSamples: View {
     var style: String
-    @State private var gym = true, run = false, walk = true, journal = true, work = true, school = false
-    @State private var read = false, meditate = false, water = false
+    @State private var gym = true
+    @State private var run = false
+    @State private var walk = true
+    @State private var journal = true
+    @State private var work = true
+    @State private var school = false
+    @State private var read = false
+    @State private var meditate = false
+    @State private var water = false
     @State private var wake = UserSchedule.date(7 * 60, on: .now)
     @State private var bed = UserSchedule.date(23 * 60, on: .now)
     @State private var gymTime = UserSchedule.date(18 * 60, on: .now)
