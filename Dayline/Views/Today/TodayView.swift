@@ -85,7 +85,7 @@ struct TakeMeBackRow: View {
     var body: some View {
         Card {
             HStack(spacing: 12) {
-                Image(systemName: "car.fill").font(.title3).foregroundStyle(.white)
+                Image(systemName: "arrow.triangle.turn.up.right.diamond.fill").font(.title3).foregroundStyle(.white)
                     .frame(width: 40, height: 40).background(Color.blue.gradient, in: .rect(cornerRadius: 11))
                 VStack(alignment: .leading, spacing: 1) {
                     Text("Take me back").font(.headline)

@@ -66,7 +66,7 @@ struct PlaceRecallView: View {
     }
 }
 
-/// Solid white card (matches the Timeline design) with Go Now, Call and Hours.
+/// Solid white card (matches the Timeline design) with Go Now plus round Call and Hours buttons.
 struct PlaceCard: View {
     var place: RecalledPlace
     var go: () -> Void
@@ -97,13 +97,15 @@ struct PlaceCard: View {
                 .padding(14)
                 HStack(spacing: 10) {
                     Button(action: go) {
-                        Label("Go Now", systemImage: "car.fill").lineLimit(1).frame(maxWidth: .infinity)
+                        Label("Go Now", systemImage: "arrow.triangle.turn.up.right.diamond.fill").lineLimit(1).frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.borderedProminent).buttonBorderShape(.capsule)
-                    Button(action: call) { Label("Call", systemImage: "phone.fill").lineLimit(1).fixedSize() }
-                        .buttonStyle(.bordered).buttonBorderShape(.capsule).disabled(place.phone == nil)
-                    Button(action: info) { Label("Hours", systemImage: "clock").lineLimit(1).fixedSize() }
-                        .buttonStyle(.bordered).buttonBorderShape(.capsule)
+                    Button(action: call) { Image(systemName: "phone.fill") }
+                        .buttonStyle(.bordered).buttonBorderShape(.circle).disabled(place.phone == nil)
+                        .accessibilityLabel("Call")
+                    Button(action: info) { Image(systemName: "clock") }
+                        .buttonStyle(.bordered).buttonBorderShape(.circle)
+                        .accessibilityLabel("Hours")
                 }
                 .controlSize(.large)
                 .padding([.horizontal, .bottom], 14)

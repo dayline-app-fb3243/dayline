@@ -124,7 +124,7 @@ struct DaylineShortcuts: AppShortcutsProvider {
             "Find the \(\.$kind) I went to in \(.applicationName)",
             "Take me to where I ate in \(.applicationName)",
             "Where did I eat in \(.applicationName)"
-        ], shortTitle: "Take Me Back", systemImageName: "car.fill")
+        ], shortTitle: "Take Me Back", systemImageName: "arrow.triangle.turn.up.right.diamond.fill")
         AppShortcut(intent: JournalByVoiceIntent(), phrases: [
             "Journal in \(.applicationName)",
             "Journal my latest photos in \(.applicationName)",
