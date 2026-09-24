@@ -27,7 +27,9 @@ final class DemoTourTests: XCTestCase {
         app.launchEnvironment["TZ"] = Self.morningZone
         app.launch()
         pause(1.5); shot("01-splash")
-        tapID(app, "splashContinue"); pause(1.5); shot("02-sign-in-sheet")
+        tapID(app, "splashContinue")
+        if !app.descendants(matching: .any)["signInOption-Apple"].waitForExistence(timeout: 3) { app.buttons["Continue"].firstMatch.tap() }
+        pause(1.5); shot("02-sign-in-sheet")
         tapID(app, "signInOption-Google"); pause(0.8); shot("02b-sign-in-google")
         tapID(app, "signInOption-Email"); pause(0.8); shot("02c-sign-in-email")
         tapID(app, "signInOption-Apple"); pause(0.5)

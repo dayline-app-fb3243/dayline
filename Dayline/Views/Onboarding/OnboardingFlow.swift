@@ -95,6 +95,7 @@ struct SplashView: View {
                 .accessibilityIdentifier("splashContinue")
         }
         .background(Color(.systemBackground))
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("splash")
         .sheet(isPresented: $showSignIn) {
             SignInSheet(next: { showSignIn = false; next() }, email: { showSignIn = false; email() })
