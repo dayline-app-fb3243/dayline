@@ -12,6 +12,18 @@ struct YourScheduleView: View {
     @State private var s = UserSchedule.current
     @State private var editing: WorkBlock?
     @State private var adding = false
+    /// Preview "gym.ask": what happens when you turn the Gym habit on. A = a sheet that asks where your gym is,
+    /// then the latest time you usually go. B = both questions right in the list. C = one sheet with both.
+    /// "" = the old plain Go By picker.
+    @AppStorage("gym.ask") private var ask = ""
+    @State private var askingGym = false
+    @State private var pickingGym = false
+
+    private var closesText: String? {
+        guard let c = GymHours.cached, let close = GymHours.closing(on: .now) else { return nil }
+        return "\(c.name) closes \(UserSchedule.date(close, on: .now).formatted(date: .omitted, time: .shortened))\(c.sample ? " · sample hours" : "")"
+    }
+    private func setGym(_ item: MKMapItem) { s.setGym(item) }
 
     var body: some View {
         Form {
@@ -46,7 +58,38 @@ struct YourScheduleView: View {
             }
             Section {
                 Toggle("Gym", isOn: $s.gym)
-                if s.gym, GymHours.enabled, let c = GymHours.cached, let close = GymHours.closing(on: .now) {
+                if s.gym && ask == "B" {
+                    Button { pickingGym = true } label: {
+                        LabeledContent("Gym Location") {
+                            Text(s.gymPlace?.name ?? "Choose").foregroundStyle(s.gymPlace == nil ? Theme.accent : .secondary)
+                        }
+                    }
+                    .tint(.primary)
+                    .accessibilityIdentifier("gymLocation")
+                    DatePicker(selection: Binding(get: { UserSchedule.date(s.gymDeadline, on: .now) },
+                                                  set: { s.gymBy = UserSchedule.minutes(of: $0) }), displayedComponents: .hourAndMinute) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Latest Time")
+                            Text(closesText ?? "The latest you usually go").font(.footnote).foregroundStyle(.secondary)
+                        }
+                    }
+                    .accessibilityIdentifier("gymBy")
+                } else if s.gym && (ask == "A" || ask == "C") {
+                    Button { askingGym = true } label: {
+                        LabeledContent("Gym Location") {
+                            Text(s.gymPlace?.name ?? "Choose").foregroundStyle(s.gymPlace == nil ? Theme.accent : .secondary)
+                        }
+                    }
+                    .tint(.primary)
+                    DatePicker(selection: Binding(get: { UserSchedule.date(s.gymDeadline, on: .now) },
+                                                  set: { s.gymBy = UserSchedule.minutes(of: $0) }), displayedComponents: .hourAndMinute) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Latest Time")
+                            Text(closesText ?? "The latest you usually go").font(.footnote).foregroundStyle(.secondary)
+                        }
+                    }
+                    .accessibilityIdentifier("gymBy")
+                } else if s.gym, GymHours.enabled, let c = GymHours.cached, let close = GymHours.closing(on: .now) {
                     // Preview "gym.hours": the real closing time replaces the picker.
                     LabeledContent("Go By") {
                         VStack(alignment: .trailing, spacing: 1) {
@@ -80,6 +123,17 @@ struct YourScheduleView: View {
         .navigationTitle("Your Schedule")
         .backgroundNavBar()
         .navigationBarTitleDisplayMode(.inline)
+        .onChange(of: s.gym) { _, on in
+            if on && s.gymPlace == nil && (ask == "A" || ask == "C") { askingGym = true }
+        }
+        .sheet(isPresented: $askingGym) {
+            GymAskSheet(style: ask, s: $s).presentationDetents(ask == "C" ? [.large] : [.large])
+        }
+        .sheet(isPresented: $pickingGym) {
+            NavigationStack {
+                AddPlaceView(title: "Your Gym", prompt: "Search for your gym") { item in setGym(item) }
+            }
+        }
         .onChange(of: s) { _, new in UserSchedule.current = new }
         .onAppear { s = UserSchedule.current }
         .sheet(item: $editing) { b in
@@ -252,6 +306,8 @@ final class PlaceSearch: NSObject, ObservableObject, MKLocalSearchCompleterDeleg
 
 struct AddPlaceView: View {
     var title: String
+    var prompt = "Search Maps"
+    var dismissOnPick = true
     var onPick: (MKMapItem) -> Void
     @StateObject private var search = PlaceSearch()
     @State private var query = ""
@@ -274,7 +330,7 @@ struct AddPlaceView: View {
                 .buttonStyle(.plain)
             }
         }
-        .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search Maps")
+        .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: prompt)
         .onChange(of: query) { _, q in search.update(q) }
         .navigationTitle(title)
         .backgroundNavBar()
@@ -296,7 +352,7 @@ struct AddPlaceView: View {
     private func pick(_ r: MKLocalSearchCompletion) {
         Task {
             if let item = try? await MKLocalSearch(request: .init(completion: r)).start().mapItems.first {
-                onPick(item); dismiss()
+                onPick(item); if dismissOnPick { dismiss() }
             }
         }
     }
@@ -304,5 +360,89 @@ struct AddPlaceView: View {
     static func address(_ item: MKMapItem) -> String {
         if let a = item.address?.shortAddress ?? item.address?.fullAddress { return a }
         return item.name ?? ""
+    }
+}
+
+
+extension UserSchedule {
+    mutating func setGym(_ item: MKMapItem) {
+        places.removeAll { $0.kind == "gym" }
+        places.append(SavedPlace(kind: "gym", name: item.name ?? "Gym", address: AddPlaceView.address(item),
+                                 latitude: item.location.coordinate.latitude, longitude: item.location.coordinate.longitude))
+    }
+}
+
+/// Turning the Gym habit on (preview "gym.ask"). A: step 1 finds your gym on Apple Maps, step 2 asks the
+/// latest time you usually go. C: one page with both questions.
+struct GymAskSheet: View {
+    var style: String
+    @Binding var s: UserSchedule
+    @Environment(\.dismiss) private var dismiss
+    @State private var step2 = false
+    @State private var picking = false
+
+    private var latest: Binding<Date> {
+        Binding(get: { UserSchedule.date(s.gymDeadline, on: .now) }, set: { s.gymBy = UserSchedule.minutes(of: $0) })
+    }
+
+    var body: some View {
+        NavigationStack {
+            if style == "C" { onePage } else {
+                AddPlaceView(title: "Where\u{2019}s Your Gym?", prompt: "Search for your gym", dismissOnPick: false) { item in
+                    s.setGym(item); step2 = true
+                }
+                .navigationDestination(isPresented: $step2) { latestPage }
+            }
+        }
+    }
+
+    private var latestPage: some View {
+        VStack(spacing: 18) {
+            Image(systemName: "dumbbell.fill").font(.system(size: 34, weight: .semibold)).foregroundStyle(Theme.accent)
+                .frame(width: 76, height: 76).background(Theme.accent.opacity(0.14), in: .circle).padding(.top, 24)
+            Text("What\u{2019}s the latest you usually go?").font(.title2.bold()).multilineTextAlignment(.center)
+            Text("If you haven\u{2019}t gone by then, Dayline figures you\u{2019}re not going today.")
+                .font(.body).foregroundStyle(.secondary).multilineTextAlignment(.center).padding(.horizontal, 24)
+            DatePicker("Latest Time", selection: latest, displayedComponents: .hourAndMinute)
+                .datePickerStyle(.wheel).labelsHidden()
+            if let g = s.gymPlace { Label(g.name, systemImage: "mappin.and.ellipse").font(.subheadline).foregroundStyle(.secondary) }
+            Spacer()
+            Button { dismiss() } label: { Text("Done").font(.headline).frame(maxWidth: .infinity) }
+                .buttonStyle(.glassProminent).tint(Theme.accent).controlSize(.large).padding(.horizontal, 20).padding(.bottom, 12)
+                .accessibilityIdentifier("gymAskDone")
+        }
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private var onePage: some View {
+        Form {
+            Section {
+                Button { picking = true } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: "dumbbell.fill").font(.footnote.weight(.bold)).foregroundStyle(.white)
+                            .frame(width: 32, height: 32).background(Color.purple, in: .circle)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(s.gymPlace?.name ?? "Choose Your Gym").foregroundStyle(s.gymPlace == nil ? Theme.accent : .primary)
+                            if let a = s.gymPlace?.address, !a.isEmpty { Text(a).font(.subheadline).foregroundStyle(.secondary).lineLimit(1) }
+                        }
+                    }
+                }
+                .accessibilityIdentifier("gymChoose")
+            } header: { Text("Where\u{2019}s your gym?") }
+            Section {
+                DatePicker("Latest Time", selection: latest, displayedComponents: .hourAndMinute)
+                    .datePickerStyle(.wheel).labelsHidden().frame(maxWidth: .infinity)
+            } header: { Text("Latest you usually go") } footer: {
+                Text("If you haven\u{2019}t gone by then, Dayline figures you\u{2019}re not going today.")
+            }
+        }
+        .navigationTitle("Gym")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() }.accessibilityIdentifier("gymAskDone") }
+        }
+        .sheet(isPresented: $picking) {
+            NavigationStack { AddPlaceView(title: "Your Gym", prompt: "Search for your gym") { item in s.setGym(item) } }
+        }
     }
 }

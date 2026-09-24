@@ -1379,4 +1379,33 @@ final class DemoTourTests: XCTestCase {
         }
         app.terminate()
     }
+
+    /// Turning the Gym habit on asks where your gym is and the latest time you usually go: options A / B / C.
+    func testGymAsk() throws {
+        for v in ["A", "B", "C"] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-gym.ask", v]
+            app.launch(); pause(1.5)
+            tab(app, "Profile"); pause(2)
+            tapID(app, "yourScheduleRow"); pause(2)
+            app.swipeUp(); pause(1)
+            let gym = app.switches["Gym"].firstMatch
+            if gym.exists, (gym.value as? String) == "1" { gym.coordinate(withNormalizedOffset: CGVector(dx: 0.93, dy: 0.5)).tap(); pause(1) }
+            if gym.exists { gym.coordinate(withNormalizedOffset: CGVector(dx: 0.93, dy: 0.5)).tap() }
+            pause(2.5); shot("ga-\(v)-1")
+            if v == "B" { tapID(app, "gymLocation"); pause(2) }
+            if v == "C" { tapID(app, "gymChoose"); pause(2) }
+            let field = app.searchFields.firstMatch
+            if field.waitForExistence(timeout: 4) {
+                field.tap(); field.typeText("Equinox"); pause(4); shot("ga-\(v)-2-search")
+                let cell = app.cells.element(boundBy: 0)
+                if cell.exists { cell.tap(); pause(3.5) }
+            }
+            shot("ga-\(v)-3")
+            let done = app.buttons["gymAskDone"].firstMatch
+            if done.exists { done.tap(); pause(2) }
+            shot("ga-\(v)-4-settings")
+            app.terminate()
+        }
+    }
 }
