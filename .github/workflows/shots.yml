@@ -80,14 +80,15 @@ jobs:
 
       - name: Screenshots
         if: inputs.tests != 'icon'
-        timeout-minutes: 45
+        timeout-minutes: 40
         run: |
           mkdir -p shots /tmp/dayline-shots
           xcrun simctl ui "${{ steps.sim.outputs.udid }}" appearance light
           for TEST in ${{ inputs.tests || 'testChangedScreens' }}; do
             REC=""
             case "$TEST" in *Video) xcrun simctl io "${{ steps.sim.outputs.udid }}" recordVideo --codec h264 --force "shots/$TEST.mp4" & REC=$!; sleep 2;; esac
-            xcodebuild test-without-building \
+            # One stuck test can't eat the whole run: each test gets at most 12 minutes.
+            perl -e 'alarm shift; exec @ARGV' 720 xcodebuild test-without-building \
               -project Dayline.xcodeproj -scheme Dayline \
               -destination "id=${{ steps.sim.outputs.udid }}" \
               -derivedDataPath build -only-testing:DaylineUITests/DemoTourTests/$TEST \
