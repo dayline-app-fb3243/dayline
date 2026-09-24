@@ -904,7 +904,7 @@ final class DemoTourTests: XCTestCase {
 
     /// Splash L with a big hero pin: L (before), M, N.
     func testSplashHeroPin() throws {
-        for v in ["L", "M", "N"] {
+        for v in ["M", "P", "Q", "R"] {
             let app = XCUIApplication()
             app.launchArguments = ["-demo", "-onboarding", "-splash.map", v]
             app.launch(); pause(9); shot("sh-\(v)")

@@ -877,9 +877,33 @@ struct SplashLiveMap: View {
     var style: String
     @State private var route: [CLLocationCoordinate2D] = []
     private struct Stop: Identifiable { let id = UUID(); let name: String; let time: String; let symbol: String; let c: CLLocationCoordinate2D }
-    private var stops: [Stop] { ["J", "K", "L", "M", "N"].contains(style) ? parkStops : cityStops }
+    private var stops: [Stop] {
+        switch style {
+        case "P": gymStops
+        case "Q": workStops
+        case "R": cafeStops
+        case "J", "K", "L", "M", "N": parkStops
+        default: cityStops
+        }
+    }
     /// M/N: L's camera with one big pin on Bryant Park as the focal point (like the big pin on Apple's Maps splash).
-    private var heroSize: CGFloat? { style == "M" ? 104 : style == "N" ? 132 : nil }
+    /// P/Q/R: M's look in other scenes: gym (Chelsea Piers), office (Rockefeller Center), coffee (Washington Square).
+    private var heroSize: CGFloat? { ["M", "P", "Q", "R"].contains(style) ? 104 : style == "N" ? 132 : nil }
+    private var heroName: String {
+        switch style { case "P": "Gym"; case "Q": "Office"; case "R": "Coffee"; default: "Bryant Park" }
+    }
+    private let gymStops: [Stop] = [
+        Stop(name: "Home", time: "6:40", symbol: "house.fill", c: .init(latitude: 40.7448, longitude: -74.0005)),
+        Stop(name: "Gym", time: "7:00", symbol: "dumbbell.fill", c: .init(latitude: 40.7466, longitude: -74.0086)),
+    ]
+    private let workStops: [Stop] = [
+        Stop(name: "Coffee", time: "8:40", symbol: "cup.and.saucer.fill", c: .init(latitude: 40.7560, longitude: -73.9812)),
+        Stop(name: "Office", time: "9:00", symbol: "briefcase.fill", c: .init(latitude: 40.7589, longitude: -73.9790)),
+    ]
+    private let cafeStops: [Stop] = [
+        Stop(name: "Home", time: "8:10", symbol: "house.fill", c: .init(latitude: 40.7335, longitude: -73.9990)),
+        Stop(name: "Coffee", time: "8:25", symbol: "cup.and.saucer.fill", c: .init(latitude: 40.7312, longitude: -73.9972)),
+    ]
     /// J/K/L: a morning through Bryant Park, so trees show up close in 3D.
     private let parkStops: [Stop] = [
         Stop(name: "Home", time: "8:10", symbol: "house.fill", c: .init(latitude: 40.7511, longitude: -73.9873)),
@@ -896,7 +920,7 @@ struct SplashLiveMap: View {
     var body: some View {
         Map(initialPosition: position, interactionModes: []) {
             if route.count > 1 {
-                if ["D", "J", "K", "L", "M", "N"].contains(style) {
+                if ["D", "J", "K", "L", "M", "N", "P", "Q", "R"].contains(style) {
                     // D: thick route with a white edge, close and steep, like Apple Maps directions.
                     MapPolyline(coordinates: route).stroke(.white, style: StrokeStyle(lineWidth: 11, lineCap: .round, lineJoin: .round))
                     MapPolyline(coordinates: route).stroke(Theme.accent, style: StrokeStyle(lineWidth: 7, lineCap: .round, lineJoin: .round))
@@ -911,7 +935,7 @@ struct SplashLiveMap: View {
             }
             ForEach(stops) { s in
                 if let h = heroSize {
-                    if s.name == "Bryant Park" {
+                    if s.name == heroName {
                         Annotation("", coordinate: s.c, anchor: .bottom) {
                             ApplePin(symbol: s.symbol, color: Theme.accent, hero: h)
                         }
@@ -931,7 +955,7 @@ struct SplashLiveMap: View {
             }
         }
         .mapStyle(style == "B" ? .standard(emphasis: .muted, pointsOfInterest: .excludingAll) :
-                  ["C", "D", "G", "H", "I", "J", "K", "L", "M", "N"].contains(style) ? .standard(elevation: .realistic, pointsOfInterest: .excludingAll) :
+                  ["C", "D", "G", "H", "I", "J", "K", "L", "M", "N", "P", "Q", "R"].contains(style) ? .standard(elevation: .realistic, pointsOfInterest: .excludingAll) :
                   style == "E" ? .hybrid(elevation: .realistic, pointsOfInterest: .excludingAll) :
                   style == "F" ? .standard(elevation: .realistic, emphasis: .muted, pointsOfInterest: .excludingAll) :
                   .standard(pointsOfInterest: .excludingAll))
@@ -953,6 +977,9 @@ struct SplashLiveMap: View {
         let park = CLLocationCoordinate2D(latitude: 40.7534, longitude: -73.9836)
         if style == "J" { return .camera(MapCamera(centerCoordinate: park, distance: 1200, heading: 29, pitch: 35)) }
         if style == "K" { return .camera(MapCamera(centerCoordinate: park, distance: 850, heading: 29, pitch: 40)) }
+        if style == "P" { return .camera(MapCamera(centerCoordinate: .init(latitude: 40.7466, longitude: -74.0086), distance: 650, heading: 250, pitch: 45)) }
+        if style == "Q" { return .camera(MapCamera(centerCoordinate: .init(latitude: 40.7589, longitude: -73.9790), distance: 750, heading: 29, pitch: 45)) }
+        if style == "R" { return .camera(MapCamera(centerCoordinate: .init(latitude: 40.7312, longitude: -73.9972), distance: 600, heading: 20, pitch: 45)) }
         if style == "L" || style == "M" || style == "N" { return .camera(MapCamera(centerCoordinate: park, distance: 600, heading: 60, pitch: 45)) }
         if style == "E" { return .camera(MapCamera(centerCoordinate: center, distance: 2400, heading: 29, pitch: 58)) }
         if style == "F" { return .camera(MapCamera(centerCoordinate: center, distance: 2800, heading: 210, pitch: 55)) }
