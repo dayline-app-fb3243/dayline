@@ -4,6 +4,7 @@ import SwiftUI
 /// 1 = big ring on top, centered. 2 = small ring in the header next to the greeting, schedule right away.
 /// 3 = ring card plus small tiles (steps, next up). 4 = an "Up next" card between the ring and the schedule.
 /// 5 = quick-add buttons (photo, voice memo, write) under the ring.
+/// 3a-3d: sample 3's content (steps, next up) in sample 5's Liquid Glass tile style. Sample-only.
 struct TodayPageSample: View {
     var page: String
     var result: ScoreEngine.Result
@@ -17,6 +18,7 @@ struct TodayPageSample: View {
     var body: some View {
         switch page {
         case "1": big
+        case "3a", "3b", "3c", "3d": glassTiles
         case "2": compact
         case "3": tiles
         case "4": upNext
@@ -126,6 +128,85 @@ struct TodayPageSample: View {
                     .buttonStyle(.glass)
                 }
             }
+            schedule
+        }
+    }
+
+    // MARK: 3a-3d: steps / next up as Liquid Glass tiles
+
+    private func glassTile(_ title: String, _ value: String, _ symbol: String, _ sub: String, progress: Double? = nil) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Label(title, systemImage: symbol).font(.caption.weight(.semibold)).foregroundStyle(Theme.accent)
+            Text(value).font(.title3.bold()).monospacedDigit()
+            if let progress {
+                ProgressView(value: progress).tint(Theme.accent).padding(.vertical, 2)
+            }
+            Text(sub).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+        }
+        .padding(14).frame(maxWidth: .infinity, alignment: .leading)
+        .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 22, style: .continuous))
+    }
+
+    private func smallGlassTile(_ symbol: String, _ value: String, _ sub: String) -> some View {
+        VStack(spacing: 4) {
+            Image(systemName: symbol).font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.accent)
+            Text(value).font(.headline).monospacedDigit().lineLimit(1)
+            Text(sub).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+        }
+        .frame(maxWidth: .infinity).frame(height: 78)
+        .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 22, style: .continuous))
+    }
+
+    private func barItem(_ symbol: String, _ value: String, _ sub: String) -> some View {
+        VStack(spacing: 2) {
+            Label(value, systemImage: symbol).font(.subheadline.weight(.semibold)).labelStyle(.titleAndIcon)
+            Text(sub).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    @ViewBuilder private var glassRow: some View {
+        switch page {
+        case "3a":
+            GlassEffectContainer(spacing: 12) {
+                HStack(spacing: 12) {
+                    glassTile("Steps", "5,840", "figure.walk", "of 8,200 on a usual day")
+                    glassTile("Next", "Gym", "dumbbell.fill", "Around 6:00 PM")
+                }
+            }
+        case "3b":
+            GlassEffectContainer(spacing: 10) {
+                HStack(spacing: 10) {
+                    smallGlassTile("figure.walk", "5,840", "steps")
+                    smallGlassTile("dumbbell.fill", "Gym", "around 6 PM")
+                    smallGlassTile("book.closed.fill", "Journal", "before bed")
+                }
+            }
+        case "3c":
+            GlassEffectContainer(spacing: 12) {
+                HStack(spacing: 12) {
+                    glassTile("Steps", "5,840", "figure.walk", "71% of a usual day", progress: 5840.0 / 8200)
+                    glassTile("Next", "Gym", "dumbbell.fill", "Around 6:00 PM · 3 h")
+                }
+            }
+        default:
+            HStack(spacing: 0) {
+                barItem("figure.walk", "5,840", "steps")
+                Divider().frame(height: 28)
+                barItem("dumbbell.fill", "Gym", "around 6 PM")
+                Divider().frame(height: 28)
+                barItem("figure.walk.motion", "20 min", "walk left")
+            }
+            .padding(.vertical, 12)
+            .glassEffect(.regular.interactive(), in: .capsule)
+        }
+    }
+
+    private var glassTiles: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            header
+            score
+            glassRow
             schedule
         }
     }

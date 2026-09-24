@@ -1461,6 +1461,18 @@ final class DemoTourTests: XCTestCase {
         app.swipeUp(); pause(1.2); shot("sd-detail-2")
     }
 
+    /// Today samples 3a-3d: steps / next up as Liquid Glass tiles.
+    func testTodayGlassTiles() throws {
+        for v in ["3a", "3b", "3c", "3d"] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-today.page", v]
+            app.launchEnvironment["TZ"] = Self.zone(localHour: 15)
+            app.launch(); pause(2.5)
+            shot("tg-\(v)")
+            app.terminate()
+        }
+    }
+
     /// Timeline Day page samples 1-5 plus the current page (top and scrolled).
     func testTimelinePages() throws {
         for v in ["", "1", "2", "3", "4", "5"] {
