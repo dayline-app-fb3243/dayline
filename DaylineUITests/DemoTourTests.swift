@@ -498,6 +498,23 @@ final class DemoTourTests: XCTestCase {
         pause(1); shot("h1-home-icon")
     }
 
+    /// Timeline "Most visited" icon options for David: A none, B blue symbol, C round tint. Week, Month, Year each.
+    func testVisitedDemo() throws {
+        for v in ["A", "B", "C"] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-visited.icon", v]
+            app.launchEnvironment["TZ"] = Self.morningZone
+            app.launch(); pause(1.5)
+            tab(app, "Timeline"); pause(2)
+            for seg in ["Week", "Month", "Year"] {
+                tapSegment(app, seg); pause(2.5)
+                app.swipeUp(); pause(1.5); shot("v\(v)-\(seg.lowercased())")
+                app.swipeDown(); pause(1.2)
+            }
+            app.terminate()
+        }
+    }
+
     /// Journal editor demo: camera/photo button options with the keyboard up.
     func testEditorDemo() throws {
         for v in ["B", "C"] {

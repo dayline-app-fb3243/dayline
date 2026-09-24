@@ -330,6 +330,18 @@ let TimelineClock: DateFormatter = { let f = DateFormatter(); f.dateFormat = "h:
 /// Plain "Most visited" list for week / month / year: no card behind it.
 struct MostVisitedList: View {
     var clusters: [TimelineScreen.Cluster]
+    /// Preview flag "visited.icon" (David picks, Sep 24): "tile" = blue tile (default, now);
+    /// A = no icon; B = bold blue symbol, no tile; C = blue symbol in a light round circle (Maps style).
+    @AppStorage("visited.icon") private var iconStyle = "tile"
+    @ViewBuilder private func icon(_ c: TimelineScreen.Cluster) -> some View {
+        switch iconStyle {
+        case "A": EmptyView()
+        case "B": Image(systemName: c.category.symbol).font(.title3.weight(.bold)).foregroundStyle(Theme.accent).frame(width: 30, height: 30)
+        case "C": Image(systemName: c.category.symbol).font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.accent)
+                .frame(width: 34, height: 34).background(Theme.accent.opacity(0.14), in: .circle)
+        default: CategoryIcon(category: c.category, size: 30)
+        }
+    }
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("Most visited").font(.subheadline.weight(.semibold)).helperText()
@@ -339,9 +351,9 @@ struct MostVisitedList: View {
                 Text("No places in this period yet.").font(.subheadline).foregroundStyle(.secondary).padding(4)
             }
             ForEach(Array(top.enumerated()), id: \.element.key) { i, c in
-                if i > 0 { Divider().padding(.leading, 50) }
+                if i > 0 { Divider().padding(.leading, iconStyle == "A" ? 4 : 50) }
                 HStack(spacing: 12) {
-                    CategoryIcon(category: c.category, size: 30)
+                    icon(c)
                     VStack(alignment: .leading, spacing: 1) {
                         Text(c.name).font(.body.weight(.semibold)).lineLimit(1)
                         Text("\(c.visits) visit\(c.visits == 1 ? "" : "s")").font(.caption).foregroundStyle(.secondary)
