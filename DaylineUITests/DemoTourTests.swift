@@ -948,6 +948,19 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Ring and status by pace (ring.pace A/B/C): 9am/20 on pace, then 9am not up, 2pm at 20, 6pm slipped to 45.
+    func testRingPace() throws {
+        var runs: [(String, String, Int, Int)] = [("rp-on", "A", 9, 20)]
+        for v in ["A", "B", "C"] { runs += [("rp-\(v)-9", v, 9, 1), ("rp-\(v)-14", v, 14, 20), ("rp-\(v)-18", v, 18, 45)] }
+        for (name, v, hour, score) in runs {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-ring.pace", v, "-demo.score", "\(score)"]
+            app.launchEnvironment["TZ"] = Self.zone(localHour: hour)
+            app.launch(); pause(3); shot(name)
+            app.terminate()
+        }
+    }
+
     /// Journal search button options (A/B/C) and the search screen with sample questions.
     func testJournalSearchDemo() throws {
         for v in ["A", "B", "C"] {

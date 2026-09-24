@@ -105,7 +105,7 @@ struct ScoreCard: View {
                     ScoreRing(score: result.score, size: 104)
                     VStack(spacing: 3) {
                         Text("DAY SCORE").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-                        Text(result.label).font(.title2.weight(.bold)).foregroundStyle(labelColor)
+                        Text(statusLabel).font(.title2.weight(.bold)).foregroundStyle(labelColor)
                         Text(tipText).font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -117,10 +117,10 @@ struct ScoreCard: View {
                 .padding(.vertical, 4)
             } else if !style.isEmpty {
                 HStack(alignment: .center, spacing: 16) {
-                    ScoreRing(score: result.score, size: style == "B" ? 96 : 84)
+                    ScoreRing(score: result.score, size: style == "B" ? 96 : 84, byPace: true)
                     VStack(alignment: .leading, spacing: 2) {
                         Text("DAY SCORE").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-                        Text(result.label).font(style == "B" ? .title2.weight(.semibold) : .title2.weight(.bold))
+                        Text(statusLabel).font(style == "B" ? .title2.weight(.semibold) : .title2.weight(.bold))
                             .foregroundStyle(style == "B" ? Color.primary : labelColor)
                         Text(tipText).font(.subheadline).foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
@@ -137,7 +137,7 @@ struct ScoreCard: View {
                     ScoreRing(score: result.score, size: 84)
                     VStack(alignment: .leading, spacing: 2) {
                         Text("DAY SCORE").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-                        Text(result.label).font(.title2.bold()).foregroundStyle(labelColor)
+                        Text(statusLabel).font(.title2.bold()).foregroundStyle(labelColor)
                         Text(result.tip ?? result.summary).font(.subheadline).foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -151,8 +151,15 @@ struct ScoreCard: View {
             }
         }
     }
-    /// Status color follows the theme: blue while on track, orange when not (below 55, "Slow day" / "Rest day").
-    private var labelColor: Color { result.score >= 55 ? Theme.accent : .orange }
+    /// Status color follows the theme: blue while on track, orange when not. With "ring.pace" set, on track means
+    /// keeping pace with your schedule (ScorePace); otherwise below 55 ("Slow day" / "Rest day") is orange.
+    @AppStorage("ring.pace") private var paceStyle = ""
+    private var behind: Bool { paceStyle.isEmpty ? result.score < 55 : ScorePace.isBehind(result.score) }
+    private var labelColor: Color { behind ? .orange : Theme.accent }
+    private var statusLabel: String {
+        guard !paceStyle.isEmpty else { return result.label }
+        return behind ? "Falling behind" : (result.score >= 90 ? "Crushing it" : "On track")
+    }
 }
 
 

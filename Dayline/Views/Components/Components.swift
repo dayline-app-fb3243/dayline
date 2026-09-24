@@ -54,27 +54,63 @@ enum Theme {
     /// Days scoring this or more count toward the streak.
 }
 
+/// Where the score should be by now, from your schedule: nothing before your wake time,
+/// the wake-up points half an hour after it, then steady up to 90 an hour before bed.
+enum ScorePace {
+    static func expected(at now: Date = .now, schedule: UserSchedule = .current) -> Int {
+        let cal = Calendar.current
+        let mins = cal.component(.hour, from: now) * 60 + cal.component(.minute, from: now)
+        let start = schedule.wake + 30, end = max(start + 60, schedule.bed - 60)
+        if mins < schedule.wake { return 0 }
+        if mins < start { return Int(15 * Double(mins - schedule.wake) / 30) }
+        let f = min(1, Double(mins - start) / Double(end - start))
+        return Int(15 + 75 * f)
+    }
+    /// Behind pace: more than 10 points under where you should be by now.
+    static func isBehind(_ score: Int, at now: Date = .now) -> Bool { score < expected(at: now) - 10 }
+}
+
 struct ScoreRing: View {
     var score: Int
     /// Preview flag "rings.thick": thick proportions like the Streak ring (~17% of the diameter). Off until David approves.
     var lineWidthOverride: CGFloat? = nil
     var size: CGFloat = 88
+    /// Color by pace (Today card). Preview flag "ring.pace" (none picked yet) sets how "behind" looks:
+    /// A = whole ring orange, B = blue blending into orange along the fill, C = blue fill plus an orange arc up to where you should be.
+    var byPace = false
     @AppStorage("rings.thick") private var thick = false
+    @AppStorage("ring.pace") private var paceStyle = ""
     private var lineWidth: CGFloat { lineWidthOverride ?? (thick ? (size * 0.17).rounded() : (size >= 120 ? 20 : 14)) }  // 14 pt small, 20 pt large
+    private var behind: Bool { byPace && !paceStyle.isEmpty && ScorePace.isBehind(score) }
+    private var colors: [Color] {
+        guard behind else { return [Theme.ringStart, Theme.accent] }
+        switch paceStyle {
+        case "A": return [Color.orange.mix(with: .white, by: 0.35), .orange]
+        case "B": return [Theme.ringStart, Theme.accent, .orange]
+        default: return [Theme.ringStart, Theme.accent]
+        }
+    }
     var body: some View {
         ZStack {
             Circle().stroke(.quaternary, lineWidth: lineWidth)
             let progress = CGFloat(min(max(score, 0), 100)) / 100
+            if behind && paceStyle == "C" {
+                // The gap: from your score up to where you should be by now.
+                let target = CGFloat(min(ScorePace.expected(), 100)) / 100
+                Circle().trim(from: progress, to: target)
+                    .stroke(Color.orange.opacity(0.55), style: StrokeStyle(lineWidth: lineWidth * 0.45, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+            }
             // Gradient covers only the filled part, so the round start cap isn't painted
             // with the dark end color (that made a dark spot at the top).
             Circle()
                 .trim(from: 0, to: progress)
-                .stroke(AngularGradient(colors: [Theme.ringStart, Theme.accent], center: .center,
+                .stroke(AngularGradient(colors: colors, center: .center,
                                         startAngle: .zero, endAngle: .degrees(360 * max(progress, 0.01))),
                         style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
                 .rotationEffect(.degrees(-90))
             if score > 0 {
-                Circle().fill(Theme.ringStart).frame(width: lineWidth, height: lineWidth)
+                Circle().fill(colors[0]).frame(width: lineWidth, height: lineWidth)
                     .offset(y: -size / 2)
             }
             Text("\(score)")
