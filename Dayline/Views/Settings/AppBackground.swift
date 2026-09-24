@@ -67,7 +67,7 @@ struct AppBackgroundView: View {
     @AppStorage("background.style") private var styleRaw = PhotoStyle.blur.rawValue
     @AppStorage("background.version") private var version = 0
     /// Proposed: "White" uses Apple's light gray grouped background so the white cards stand out (like Settings).
-    /// Off until David approves the picture; screenshots turn it on with -background.whiteGrouped YES.
+    /// Sep 24: David picked A (keep the light gray grouped look), so this stays off. Old preview: -background.whiteGrouped YES.
     @AppStorage("background.whiteGrouped") private var whiteGrouped = false
     @Environment(\.colorScheme) private var scheme
 
