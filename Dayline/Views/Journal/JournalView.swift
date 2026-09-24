@@ -163,7 +163,7 @@ struct JournalCard: View {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(spacing: 10) {
                     Image(systemName: group.kind == .voice ? "mic" : group.kind == .photo ? "photo" : "pencil")
-                        .font(.system(size: 14, weight: .semibold)).foregroundStyle(.white)
+                        .font(.scaled(size: 14, weight: .semibold)).foregroundStyle(.white)
                         .frame(width: 29, height: 29).background(Theme.accent, in: .rect(cornerRadius: 7, style: .continuous))
                     VStack(alignment: .leading, spacing: 0) {
                         Text(heading).font(.subheadline.weight(.semibold))

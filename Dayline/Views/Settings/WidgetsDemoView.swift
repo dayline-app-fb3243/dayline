@@ -23,12 +23,12 @@ struct WidgetsDemoView: View {
             Spacer()
             VStack(spacing: 6) {
                 Text("Lock Screen").font(.subheadline.weight(.semibold)).opacity(0.85)
-                Text("9:41").font(.system(size: 72, weight: .bold))
+                Text("9:41").font(.scaled(size: 72, weight: .bold))
                 HStack(spacing: 12) {
                     ZStack {
                         Circle().fill(.white.opacity(0.18))
                         WidgetRing(score: 86, lineWidth: 6, showsNumber: false).frame(width: 56, height: 56)
-                        Text("86").font(.system(size: 18, weight: .bold))
+                        Text("86").font(.scaled(size: 18, weight: .bold))
                     }
                     .frame(width: 66, height: 66)
                     VStack(alignment: .leading, spacing: 2) {

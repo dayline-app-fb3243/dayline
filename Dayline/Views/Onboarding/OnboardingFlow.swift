@@ -422,7 +422,7 @@ struct SetupStep<Content: View>: View {
                 Spacer()
             }
             .frame(height: 44)
-            Image(systemName: symbol).font(.system(size: 60, weight: .light)).foregroundStyle(Theme.accent)
+            Image(systemName: symbol).font(.scaled(size: 60, weight: .light)).foregroundStyle(Theme.accent)
                 .frame(maxWidth: .infinity).padding(.top, 20)
             Text(title).font(.title2.bold()).padding(.top, 26)
             Text(subtitle).font(.title3).foregroundStyle(.secondary).padding(.top, 4)

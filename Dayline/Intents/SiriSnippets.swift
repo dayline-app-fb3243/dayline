@@ -36,7 +36,7 @@ struct SiriScoreRing: View {
             Circle().stroke(.white.opacity(0.14), lineWidth: 9)
             Circle().trim(from: 0, to: CGFloat(min(max(value, 0), 100)) / 100)
                 .stroke(color, style: StrokeStyle(lineWidth: 9, lineCap: .round)).rotationEffect(.degrees(-90))
-            Text(label ?? "\(value)").font(.system(size: size * 0.3, weight: .bold))
+            Text(label ?? "\(value)").font(.scaled(size: size * 0.3, weight: .bold)).minimumScaleFactor(0.5).lineLimit(1)
         }
         .frame(width: size, height: size)
     }
@@ -137,7 +137,7 @@ struct StreakSnippetView: View {
     var body: some View {
         SiriCard {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text("\(days)").font(.system(size: 38, weight: .bold))
+                Text("\(days)").font(.scaled(size: 38, weight: .bold))
                 Text("days in a row · best \(best)").font(.subheadline).foregroundStyle(.white.opacity(0.6))
             }
             VStack(spacing: 0) {

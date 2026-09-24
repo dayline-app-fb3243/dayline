@@ -129,7 +129,7 @@ struct BackgroundPickerView: View {
                                 .fill(Color(.tertiarySystemFill))
                                 .aspectRatio(0.5, contentMode: .fit)
                                 .overlay {
-                                    Image(systemName: "plus").font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.accent)
+                                    Image(systemName: "plus").font(.scaled(size: 17, weight: .semibold)).foregroundStyle(Theme.accent)
                                         .frame(width: 40, height: 40).background(Color(.systemBackground), in: .circle)
                                 }
                             Text("Photo").font(.caption).foregroundStyle(Theme.accent)
@@ -212,7 +212,7 @@ struct BackgroundPickerView: View {
                 .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Color.primary.opacity(0.12), lineWidth: 0.5))
                 .overlay(alignment: .bottomTrailing) {
                     if on {
-                        Image(systemName: "checkmark").font(.system(size: 11, weight: .bold)).foregroundStyle(.white)
+                        Image(systemName: "checkmark").font(.scaled(size: 11, weight: .bold)).foregroundStyle(.white)
                             .frame(width: 22, height: 22).background(Theme.accent, in: .circle).padding(6)
                     }
                 }
@@ -332,7 +332,7 @@ struct ProfileView: View {
                             if auth.isSignedIn {
                                 AccountAvatar(name: auth.displayName, size: 64, photoURL: auth.photoURL)
                             } else {
-                                Image(systemName: "person.crop.circle.fill").font(.system(size: 64)).symbolRenderingMode(.hierarchical)
+                                Image(systemName: "person.crop.circle.fill").font(.scaled(size: 64)).symbolRenderingMode(.hierarchical)
                                     .foregroundStyle(Theme.accent).frame(width: 64, height: 64)
                             }
                             VStack(alignment: .leading, spacing: 3) {
@@ -483,18 +483,18 @@ struct ProfileIcon: View {
     var body: some View {
         switch tile {
         case "B":
-            Image(systemName: symbol).font(.system(size: size * 0.5, weight: .semibold)).foregroundStyle(color)
+            Image(systemName: symbol).font(.scaled(size: size * 0.5, weight: .semibold)).minimumScaleFactor(0.5).lineLimit(1).foregroundStyle(color)
                 .frame(width: size, height: size)
                 .background(color.opacity(0.15), in: .rect(cornerRadius: size * 0.24, style: .continuous))
         case "C", "C2":
-            Image(systemName: symbol).font(.system(size: size * 0.62, weight: .medium)).foregroundStyle(color)
+            Image(systemName: symbol).font(.scaled(size: size * 0.62, weight: .medium)).minimumScaleFactor(0.5).lineLimit(1).foregroundStyle(color)
                 .frame(width: size, height: size)
         case "A3":
-            Image(systemName: symbol).font(.system(size: size * 0.6, weight: .medium)).foregroundStyle(.white)
+            Image(systemName: symbol).font(.scaled(size: size * 0.6, weight: .medium)).minimumScaleFactor(0.5).lineLimit(1).foregroundStyle(.white)
                 .frame(width: size, height: size)
                 .background(color, in: .rect(cornerRadius: size * 0.24, style: .continuous))
         default:
-            Image(systemName: symbol).font(.system(size: size * 0.5, weight: .semibold)).foregroundStyle(.white)
+            Image(systemName: symbol).font(.scaled(size: size * 0.5, weight: .semibold)).minimumScaleFactor(0.5).lineLimit(1).foregroundStyle(.white)
                 .frame(width: size, height: size)
                 // Flat solid fill like iOS Settings (David: no 3D gradient look).
                 .background(color, in: .rect(cornerRadius: size * 0.24, style: .continuous))

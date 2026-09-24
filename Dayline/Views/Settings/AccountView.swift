@@ -16,7 +16,7 @@ struct AccountAvatar: View {
 
     private var placeholder: some View {
         Text(initials)
-            .font(.system(size: size * (initials.count > 1 ? 0.38 : 0.44), weight: .semibold))
+            .font(.scaled(size: size * (initials.count > 1 ? 0.38 : 0.44), weight: .semibold)).minimumScaleFactor(0.5).lineLimit(1)
             .foregroundStyle(.white)
             .frame(width: size, height: size)
             .background(LinearGradient(colors: [Color(red: 0.29, green: 0.64, blue: 1), Color(red: 0.04, green: 0.36, blue: 0.9)],

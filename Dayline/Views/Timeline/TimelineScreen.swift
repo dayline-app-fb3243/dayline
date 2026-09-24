@@ -89,7 +89,7 @@ struct TimelineScreen: View {
             if range == .day {
                 ForEach(rangeVisits.filter { $0.category != .home }) { v in
                     Annotation("", coordinate: v.coordinate) {
-                        Image(systemName: v.category.symbol).font(.system(size: 13, weight: .bold)).foregroundStyle(Theme.accent)
+                        Image(systemName: v.category.symbol).font(.scaled(size: 13, weight: .bold)).foregroundStyle(Theme.accent)
                             .markerBackground(Color.white, size: 32, isMapPin: true).shadow(color: .black.opacity(0.2), radius: 5, y: 2)
                     }
                 }
@@ -137,7 +137,7 @@ struct TimelineScreen: View {
             .onTapGesture { expanded = true }
             .overlay(alignment: .topTrailing) {
                 Button { expanded = true } label: {
-                    Image(systemName: "arrow.up.left.and.arrow.down.right").font(.system(size: 13, weight: .bold))
+                    Image(systemName: "arrow.up.left.and.arrow.down.right").font(.scaled(size: 13, weight: .bold))
                         .foregroundStyle(.primary).frame(width: 34, height: 34)
                 }
                 .buttonStyle(.plain)
@@ -156,7 +156,7 @@ struct TimelineScreen: View {
             .overlay(alignment: .top) {
                 HStack {
                     Button { expanded = false } label: {
-                        Image(systemName: "chevron.left").font(.system(size: 18, weight: .semibold))
+                        Image(systemName: "chevron.left").font(.scaled(size: 18, weight: .semibold))
                             .foregroundStyle(Theme.accent).frame(width: 44, height: 44)
                     }
                     .buttonStyle(.plain)
@@ -183,7 +183,7 @@ struct TimelineScreen: View {
                         .padding(4)
                         .glassEffect(.regular, in: .capsule)
                         Button { withAnimation(.snappy) { camera = .userLocation(fallback: .automatic) } } label: {
-                            Image(systemName: "location.fill").font(.system(size: 20, weight: .semibold))
+                            Image(systemName: "location.fill").font(.scaled(size: 20, weight: .semibold))
                                 .foregroundStyle(Theme.accent).frame(width: 64, height: 64)
                         }
                         .buttonStyle(.plain)
@@ -204,7 +204,7 @@ struct TimelineScreen: View {
 
     private func mapToggle(_ title: String, _ symbol: String, _ on: Binding<Bool>) -> some View {
         Button { withAnimation(.snappy) { on.wrappedValue.toggle() } } label: {
-            Image(systemName: symbol).font(.system(size: 19, weight: .semibold))
+            Image(systemName: symbol).font(.scaled(size: 19, weight: .semibold))
                 .foregroundStyle(on.wrappedValue ? Theme.accent : Color.secondary)
                 .frame(width: 56, height: 56)
                 .contentShape(.circle)

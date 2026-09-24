@@ -213,7 +213,7 @@ struct NewEntryView: View {
                 circleButton("photo.on.rectangle", "Photo and video library") { showLibrary = true }
                 Spacer(minLength: 0)
                 // Touch and hold (handled by VoiceRecorderBar, which sits over this spot).
-                Image(systemName: "mic.fill").font(.system(size: 20, weight: .regular)).foregroundStyle(Theme.accent)
+                Image(systemName: "mic.fill").font(.scaled(size: 20, weight: .regular)).foregroundStyle(Theme.accent)
                     .frame(width: 48, height: 48)
                     .glassEffect(.regular.interactive(), in: .circle)
                     .accessibilityHidden(true)
@@ -223,7 +223,7 @@ struct NewEntryView: View {
 
     private func circleButton(_ symbol: String, _ label: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Image(systemName: symbol).font(.system(size: 19, weight: .regular)).foregroundStyle(Theme.accent)
+            Image(systemName: symbol).font(.scaled(size: 19, weight: .regular)).foregroundStyle(Theme.accent)
                 .frame(width: 48, height: 48).contentShape(.circle)
         }
         .buttonStyle(.plain)

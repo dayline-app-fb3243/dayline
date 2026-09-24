@@ -423,7 +423,7 @@ struct PersonAvatar: View {
     var size: CGFloat = 40
     var body: some View {
         let initials = name.split(separator: " ").prefix(2).compactMap(\.first).map { String($0) }.joined()
-        Text(initials).font(.system(size: size * 0.42, weight: .semibold)).foregroundStyle(.white)
+        Text(initials).font(.scaled(size: size * 0.42, weight: .semibold)).minimumScaleFactor(0.5).lineLimit(1).foregroundStyle(.white)
             .markerBackground(color.map { AnyShapeStyle($0) } ?? AnyShapeStyle(LinearGradient(colors: [Color(white: 0.66), Color(white: 0.53)], startPoint: .top, endPoint: .bottom)), size: size)
     }
 }

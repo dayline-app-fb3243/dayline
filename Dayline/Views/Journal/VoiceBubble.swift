@@ -28,7 +28,7 @@ struct VoiceBubble: View {
             HStack(spacing: 10) {
                 Button(action: toggle) {
                     Image(systemName: isPlaying ? "pause.fill" : "play.fill")
-                        .font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.accent)
+                        .font(.scaled(size: 12, weight: .bold)).foregroundStyle(Theme.accent)
                         .frame(width: 30, height: 30).background(.white, in: .circle)
                 }
                 .buttonStyle(.plain)

@@ -67,7 +67,7 @@ struct ScoreDetailView: View {
                 VStack(spacing: 1) {
                     HStack(spacing: 5) {
                         Text(title(back)).font(.headline)
-                        Image(systemName: "arrowtriangle.down.fill").font(.system(size: 8)).foregroundStyle(Theme.accent)
+                        Image(systemName: "arrowtriangle.down.fill").font(.scaled(size: 8)).foregroundStyle(Theme.accent)
                     }
                     Text(subtitle(back)).font(.caption).foregroundStyle(.secondary)
                 }
@@ -82,7 +82,7 @@ struct ScoreDetailView: View {
 
     private func roundButton(_ symbol: String, id: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Image(systemName: symbol).font(.system(size: 14, weight: .semibold)).foregroundStyle(.primary)
+            Image(systemName: symbol).font(.scaled(size: 14, weight: .semibold)).foregroundStyle(.primary)
                 .frame(width: 36, height: 36)
                 .glassEffect(.regular.interactive(), in: .circle)
         }
@@ -304,15 +304,20 @@ struct DayActivityList: View {
 
 struct FactorRow: View {
     var factor: ScoreFactor
-    /// icons.tile A2/A3/C2 preview: each kind gets its own color, like iOS Settings.
-    @AppStorage("icons.tile") private var tile = "A"
+    /// Sep 24: David picked "blue" = bold blue symbol, no tile (demo-24). Old previews: icons.tile A/A2/A3/C/C2.
+    @AppStorage("icons.tile") private var tile = "blue"
     var body: some View {
         let st = Self.style(factor.title)
         let symbol = st.0
         let bad = factor.effect == .pending || factor.points <= 0
         let color = ["A2", "A3", "C2"].contains(tile) ? st.1 : (bad ? Theme.bad : Theme.accent)
         HStack(spacing: 12) {
-            ProfileIcon(symbol: symbol, size: 30, color: color)
+            if tile == "blue" {
+                Image(systemName: symbol).font(.title3.weight(.bold)).foregroundStyle(Theme.accent)
+                    .frame(width: 30, height: 30)
+            } else {
+                ProfileIcon(symbol: symbol, size: 30, color: color)
+            }
             VStack(alignment: .leading, spacing: 1) {
                 Text(factor.title).font(.body.weight(.semibold))
                 Text(factor.detail ?? (bad ? "No points yet" : factor.effect == .up ? "Counted" : "Small boost"))

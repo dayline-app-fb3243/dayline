@@ -75,7 +75,7 @@ private struct VoiceCaptureSheet: View {
                 Circle()
                     .fill(Theme.accent.opacity(0.15))
                     .frame(width: 120 + CGFloat(voice.level) * 60, height: 120 + CGFloat(voice.level) * 60)
-                    .overlay { Image(systemName: "mic.fill").font(.system(size: 40)).foregroundStyle(Theme.accent) }
+                    .overlay { Image(systemName: "mic.fill").font(.scaled(size: 40)).foregroundStyle(Theme.accent) }
                     .animation(.easeOut(duration: 0.1), value: voice.level)
                 Button {
                     Task {

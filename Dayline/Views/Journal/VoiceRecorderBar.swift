@@ -53,7 +53,7 @@ struct VoiceRecorderBar<Tools: View>: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.leading, 18).frame(height: 48)
                     .glassEffect(.regular, in: .capsule)
-                Image(systemName: "mic.fill").font(.system(size: 20, weight: .regular)).foregroundStyle(Theme.accent)
+                Image(systemName: "mic.fill").font(.scaled(size: 20, weight: .regular)).foregroundStyle(Theme.accent)
                     .frame(width: 48, height: 48)
                     .glassEffect(.regular.interactive(), in: .circle)
             }
@@ -65,8 +65,8 @@ struct VoiceRecorderBar<Tools: View>: View {
 
     private var lockHint: some View {
         VStack(spacing: 10) {
-            Image(systemName: "lock").font(.system(size: 15, weight: .medium))
-            Image(systemName: "chevron.up").font(.system(size: 11, weight: .semibold)).foregroundStyle(.tertiary)
+            Image(systemName: "lock").font(.scaled(size: 15, weight: .medium))
+            Image(systemName: "chevron.up").font(.scaled(size: 11, weight: .semibold)).foregroundStyle(.tertiary)
         }
         .foregroundStyle(.secondary)
         .frame(width: 40, height: 76)
@@ -77,7 +77,7 @@ struct VoiceRecorderBar<Tools: View>: View {
     private var recorder: some View {
         HStack(spacing: 10) {
             Button { player?.stop(); voice.cancel(); locked = false } label: {
-                Image(systemName: "xmark").font(.system(size: 17, weight: .medium)).foregroundStyle(.primary)
+                Image(systemName: "xmark").font(.scaled(size: 17, weight: .medium)).foregroundStyle(.primary)
                     .frame(width: 48, height: 48)
             }
             .buttonStyle(.plain)
@@ -87,7 +87,7 @@ struct VoiceRecorderBar<Tools: View>: View {
             HStack(spacing: 10) {
                 if voice.isReviewing {
                     Button(action: play) {
-                        Image(systemName: "play.fill").font(.system(size: 13)).foregroundStyle(.secondary)
+                        Image(systemName: "play.fill").font(.scaled(size: 13)).foregroundStyle(.secondary)
                             .frame(width: 30, height: 30).background(Color(.tertiarySystemFill), in: .circle)
                     }
                     .buttonStyle(.plain).accessibilityLabel("Play recording")
@@ -102,14 +102,14 @@ struct VoiceRecorderBar<Tools: View>: View {
                     }
                     .buttonStyle(.plain).accessibilityLabel("Keep recording")
                     Button { player?.stop(); locked = false; Task { await onSend() } } label: {
-                        Image(systemName: "arrow.up").font(.system(size: 16, weight: .bold)).foregroundStyle(.white)
+                        Image(systemName: "arrow.up").font(.scaled(size: 16, weight: .bold)).foregroundStyle(.white)
                             .frame(width: 34, height: 34).background(Theme.accent, in: .circle)
                     }
                     .buttonStyle(.plain).accessibilityLabel("Add voice note").accessibilityIdentifier("voiceSend")
                 } else {
                     Text(time).font(.subheadline).monospacedDigit().foregroundStyle(.secondary)
                     Button { voice.pause(); locked = false } label: {
-                        Image(systemName: "stop.fill").font(.system(size: 13)).foregroundStyle(.red)
+                        Image(systemName: "stop.fill").font(.scaled(size: 13)).foregroundStyle(.red)
                             .frame(width: 34, height: 34).background(.red.opacity(0.18), in: .circle)
                     }
                     .buttonStyle(.plain).accessibilityLabel("Stop recording")

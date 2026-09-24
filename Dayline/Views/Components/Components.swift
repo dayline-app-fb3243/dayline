@@ -78,7 +78,7 @@ struct ScoreRing: View {
                     .offset(y: -size / 2)
             }
             Text("\(score)")
-                .font(.system(size: size * 0.3, weight: .bold))
+                .font(.scaled(size: size * 0.3, weight: .bold)).minimumScaleFactor(0.5).lineLimit(1)
                 .contentTransition(.numericText())
         }
         .frame(width: size, height: size)
@@ -212,4 +212,12 @@ struct TabTitle<Trailing: View>: View {
 extension View {
     /// Root tab screens draw their own TabTitle, so the empty navigation bar row is hidden.
     func tabRoot() -> some View { toolbar(.hidden, for: .navigationBar) }
+}
+
+
+extension Font {
+    /// SF at a set size that still follows the iPhone's text size and Bold Text settings (Dynamic Type).
+    static func scaled(size: CGFloat, weight: Font.Weight = .regular, design: Font.Design? = nil, relativeTo style: UIFont.TextStyle = .body) -> Font {
+        .system(size: UIFontMetrics(forTextStyle: style).scaledValue(for: size), weight: weight, design: design)
+    }
 }
