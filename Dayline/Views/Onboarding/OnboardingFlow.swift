@@ -877,7 +877,15 @@ struct SplashLiveMap: View {
     var style: String
     @State private var route: [CLLocationCoordinate2D] = []
     private struct Stop: Identifiable { let id = UUID(); let name: String; let time: String; let symbol: String; let c: CLLocationCoordinate2D }
-    private let stops: [Stop] = [
+    private var stops: [Stop] { ["J", "K", "L"].contains(style) ? parkStops : cityStops }
+    /// J/K/L: a morning through Bryant Park, so trees show up close in 3D.
+    private let parkStops: [Stop] = [
+        Stop(name: "Home", time: "8:10", symbol: "house.fill", c: .init(latitude: 40.7511, longitude: -73.9873)),
+        Stop(name: "Bryant Park", time: "8:20", symbol: "tree.fill", c: .init(latitude: 40.7536, longitude: -73.9838)),
+        Stop(name: "Blue Door Coffee", time: "8:32", symbol: "cup.and.saucer.fill", c: .init(latitude: 40.7549, longitude: -73.9806)),
+        Stop(name: "Office", time: "9:02", symbol: "briefcase.fill", c: .init(latitude: 40.7572, longitude: -73.9790)),
+    ]
+    private let cityStops: [Stop] = [
         Stop(name: "Home", time: "8:10", symbol: "house.fill", c: .init(latitude: 40.7489, longitude: -73.9857)),
         Stop(name: "Blue Door Coffee", time: "8:32", symbol: "cup.and.saucer.fill", c: .init(latitude: 40.7527, longitude: -73.9772)),
         Stop(name: "Office", time: "9:02", symbol: "briefcase.fill", c: .init(latitude: 40.7580, longitude: -73.9712)),
@@ -933,12 +941,11 @@ struct SplashLiveMap: View {
         if style == "H" { return .camera(MapCamera(centerCoordinate: center, distance: 1600, heading: 29, pitch: 30)) }
         if style == "I" { return .camera(MapCamera(centerCoordinate: center, distance: 2000, heading: 0, pitch: 18)) }
         // J/K/L: H, zoomed right in like Apple Maps up close (trees, detailed 3D), route in view.
-        let coffee = CLLocationCoordinate2D(latitude: 40.7520, longitude: -73.9785)
-        // Pulled back a little from the first try so the blue route and a few stops read clearly.
-        let mid = CLLocationCoordinate2D(latitude: 40.7512, longitude: -73.9805)
-        if style == "J" { return .camera(MapCamera(centerCoordinate: mid, distance: 1300, heading: 29, pitch: 45)) }
-        if style == "K" { return .camera(MapCamera(centerCoordinate: coffee, distance: 1000, heading: 29, pitch: 50)) }
-        if style == "L" { return .camera(MapCamera(centerCoordinate: coffee, distance: 750, heading: 20, pitch: 55)) }
+        // Lower pitch than before so buildings don't hide the route on the street.
+        let park = CLLocationCoordinate2D(latitude: 40.7534, longitude: -73.9836)
+        if style == "J" { return .camera(MapCamera(centerCoordinate: park, distance: 1200, heading: 29, pitch: 35)) }
+        if style == "K" { return .camera(MapCamera(centerCoordinate: park, distance: 850, heading: 29, pitch: 40)) }
+        if style == "L" { return .camera(MapCamera(centerCoordinate: park, distance: 600, heading: 60, pitch: 45)) }
         if style == "E" { return .camera(MapCamera(centerCoordinate: center, distance: 2400, heading: 29, pitch: 58)) }
         if style == "F" { return .camera(MapCamera(centerCoordinate: center, distance: 2800, heading: 210, pitch: 55)) }
         return .region(MKCoordinateRegion(center: center, span: .init(latitudeDelta: 0.021, longitudeDelta: 0.021)))

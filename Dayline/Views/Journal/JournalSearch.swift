@@ -32,6 +32,9 @@ enum JournalSearch {
         var out: [String] = []
         if let data = entry.thumbnail, let img = UIImage(data: data)?.cgImage {
             let req = VNClassifyImageRequest()
+            #if targetEnvironment(simulator)
+            req.usesCPUOnly = true   // the simulator has no Neural Engine
+            #endif
             try? VNImageRequestHandler(cgImage: img).perform([req])
             out = (req.results ?? []).filter { $0.confidence > 0.25 }.prefix(6)
                 .map { $0.identifier.replacingOccurrences(of: "_", with: " ") }

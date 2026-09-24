@@ -332,7 +332,7 @@ struct TimelineScreen: View {
                     }
                 }
                 // Clear space above the range bar / the taller Find My style panel.
-                .padding(.trailing, 16).padding(.bottom, mapSheet == "G" ? 112 : 72)
+                .padding(.trailing, 16).padding(.bottom, mapSheet == "G" ? 112 : 92)
             }
             .overlay(alignment: .bottom) {
                 if mapSheet.isEmpty {
