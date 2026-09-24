@@ -56,10 +56,11 @@ enum Theme {
 
 struct ScoreRing: View {
     var score: Int
-    /// Same thick proportions as the Streak ring (about 17% of the diameter).
+    /// Preview flag "rings.thick": thick proportions like the Streak ring (~17% of the diameter). Off until David approves.
     var lineWidthOverride: CGFloat? = nil
     var size: CGFloat = 88
-    private var lineWidth: CGFloat { lineWidthOverride ?? (size * 0.17).rounded() }
+    @AppStorage("rings.thick") private var thick = false
+    private var lineWidth: CGFloat { lineWidthOverride ?? (thick ? (size * 0.17).rounded() : (size >= 120 ? 14 : 10)) }
     var body: some View {
         ZStack {
             Circle().stroke(.quaternary, lineWidth: lineWidth)

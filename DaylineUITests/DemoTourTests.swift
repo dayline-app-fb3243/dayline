@@ -180,6 +180,17 @@ final class DemoTourTests: XCTestCase {
             tab(app, "Insights"); pause(1.5); app.buttons["Day"].firstMatch.tap(); pause(1.5); shot("c14-insights-day-proposed")
             app.terminate()
         }
+        do {
+            app = XCUIApplication()
+            app.launchArguments = ["-demo", "-rings.thick", "YES"]
+            app.launchEnvironment["TZ"] = Self.morningZone
+            app.launch()
+            tab(app, "Today"); pause(2); shot("c18a-today-thick")
+            tapID(app, "scoreCard"); pause(2); shot("c18b-dayscore-thick"); goBack(app)
+            tab(app, "Insights"); pause(1.5); app.buttons["Month"].firstMatch.tap(); pause(1.2)
+            app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Streak'")).firstMatch.tap(); pause(2); shot("c18c-streak-thick")
+            app.terminate()
+        }
         for (style, letter) in [("circle", "A"), ("square", "B"), ("outlined", "C")] {
             app = XCUIApplication()
             app.launchArguments = ["-demo", "-icons.markerStyle", style]
@@ -188,6 +199,7 @@ final class DemoTourTests: XCTestCase {
             tab(app, "Timeline"); pause(3); shot("c16\(letter)-pins-\(style)")
             tab(app, "Insights"); pause(1.5); app.buttons["Month"].firstMatch.tap(); pause(1.2)
             app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Streak'")).firstMatch.tap(); pause(2)
+            if style == "circle" { shot("c17-streak-now") }
             app.swipeUp(); pause(0.8); app.swipeUp(); pause(1.2); shot("c17\(letter)-people-\(style)")
             app.terminate()
         }
