@@ -124,17 +124,22 @@ struct SplashView: View {
 
     // B: full color map, no fade, text on a glass card.
     private var splashB: some View {
-        ZStack(alignment: .bottom) {
-            Image("SplashMap").resizable().scaledToFill()
-                .frame(maxWidth: .infinity, maxHeight: .infinity).clipped().ignoresSafeArea()
+        VStack(spacing: 0) {
+            Spacer()
             VStack(alignment: .leading, spacing: 18) {
                 title
                 continueButton
             }
             .padding(22)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .glassEffect(.regular, in: .rect(cornerRadius: 34, style: .continuous))
             .padding(.horizontal, 14).padding(.bottom, 10)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background {
+            Image("SplashMap").resizable().scaledToFill().ignoresSafeArea()
+        }
+        .clipped()
     }
 
     // C: soft blue gradient, big icon centered.
