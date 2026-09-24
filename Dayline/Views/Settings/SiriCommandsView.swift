@@ -47,11 +47,13 @@ struct SiriCommandsView: View {
 }
 
 
-/// Icon next to "Ask Siri". Preview options until David picks one (-siri.iconStyle orb|circle).
+/// Icon next to "Ask Siri". David picked the mark on its own (demo-20 A), Sep 24. Old previews: -siri.iconStyle orb|circle|waveform.
 struct SiriRowIcon: View {
-    @AppStorage("siri.iconStyle") private var style = "waveform"
+    @AppStorage("siri.iconStyle") private var style = "mark"
     var body: some View {
         switch style {
+        case "mark":
+            SiriMark().frame(width: 28, height: 28)
         case "orb":
             // Apple's official Siri artwork; only bundled in preview builds, never committed.
             if let img = UIImage(named: "SiriOrb") {
@@ -64,5 +66,26 @@ struct SiriRowIcon: View {
         default:
             Image(systemName: "waveform")
         }
+    }
+}
+
+
+/// Our own simple mark (a ring with a wave through it) in the app's blue. Not Apple's artwork.
+struct SiriMark: View {
+    var color: Color = Theme.accent
+    var body: some View {
+        Canvas { ctx, size in
+            let n = min(size.width, size.height); let w = n * 0.12
+            let r = n / 2 - w / 2 - 0.5; let c = CGPoint(x: size.width / 2, y: size.height / 2)
+            ctx.stroke(Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: 2 * r, height: 2 * r)), with: .color(color), lineWidth: w)
+            var wave = Path()
+            for i in 0...60 {
+                let t = Double(i) / 60
+                let p = CGPoint(x: c.x - r + 2 * r * t, y: c.y - n * 0.09 * sin(.pi * (2 * t - 1)))
+                if i == 0 { wave.move(to: p) } else { wave.addLine(to: p) }
+            }
+            ctx.stroke(wave, with: .color(color), style: StrokeStyle(lineWidth: w, lineCap: .round, lineJoin: .round))
+        }
+        .accessibilityHidden(true)
     }
 }
