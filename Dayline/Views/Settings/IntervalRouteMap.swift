@@ -6,6 +6,8 @@ import MapKit
 struct IntervalRouteMap: View {
     var minutes: Int
     var interactive = false
+    /// Show a dot at every location check, so you can see how precise each rate is (David 2:18).
+    var dots = false
     @State private var route: [CLLocationCoordinate2D] = []
     private static let stops: [CLLocationCoordinate2D] = [
         .init(latitude: 40.7489, longitude: -73.9857), .init(latitude: 40.7527, longitude: -73.9772),
@@ -27,6 +29,14 @@ struct IntervalRouteMap: View {
             if sampled.count > 1 {
                 MapPolyline(coordinates: sampled)
                     .stroke(Theme.accent, style: StrokeStyle(lineWidth: interactive ? 5 : 3, lineCap: .round, lineJoin: .round))
+            }
+            if dots {
+                ForEach(Array(sampled.enumerated()), id: \.offset) { _, c in
+                    Annotation("", coordinate: c) {
+                        Circle().fill(Theme.accent).frame(width: 8, height: 8).padding(2).background(Circle().fill(.white))
+                            .shadow(color: .black.opacity(0.2), radius: 1.5, y: 0.5)
+                    }
+                }
             }
             ForEach(Array(Self.stops.enumerated()), id: \.offset) { _, c in
                 Annotation("", coordinate: c, anchor: .bottom) {
@@ -73,6 +83,42 @@ struct IntervalRouteMap: View {
     }
 }
 
+/// Preview flag "check.big" (David 2:18): tapping a mini iPhone opens it big but not full screen, with a dot at each check.
+/// A = floating card, B = half-height sheet, C = the mini iPhone zoomed up big.
+struct IntervalRouteCard: View {
+    var minutes: Int
+    var style: String
+    var close: () -> Void
+    private var checks: String { minutes == 1 ? "A dot for every check, once a minute" : "A dot for every check, every \(minutes) minutes" }
+    var body: some View {
+        if style == "C" {
+            VStack(spacing: 18) {
+                MiniPhoneRoute(minutes: minutes, width: 250, dots: true)
+                Text(checks).font(.subheadline.weight(.medium)).foregroundStyle(.white)
+            }
+        } else {
+            VStack(spacing: 0) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Every \(minutes) min").font(.title3.weight(.bold))
+                        Text(checks).font(.subheadline).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Button(action: close) {
+                        Image(systemName: "xmark").font(.system(size: 15, weight: .bold)).foregroundStyle(.secondary)
+                            .frame(width: 32, height: 32).background(Color.primary.opacity(0.08), in: .circle)
+                    }
+                    .buttonStyle(.plain).accessibilityLabel("Close")
+                }
+                .padding(.horizontal, 20).padding(.top, style == "B" ? 24 : 18).padding(.bottom, 14)
+                IntervalRouteMap(minutes: minutes, interactive: true, dots: true)
+                    .clipShape(.rect(cornerRadius: style == "A" ? 22 : 26))
+                    .padding(.horizontal, 12).padding(.bottom, 12)
+            }
+        }
+    }
+}
+
 /// Tap-to-enlarge sheet for a Check Location preview.
 struct IntervalRouteSheet: View {
     var minutes: Int
@@ -95,11 +141,12 @@ struct IntervalRouteSheet: View {
 struct MiniPhoneRoute: View {
     var minutes: Int
     var width: CGFloat
+    var dots = false
     private let base: CGFloat = 200
     var body: some View {
         let h = base * 2.17
         ZStack(alignment: .top) {
-            IntervalRouteMap(minutes: minutes)
+            IntervalRouteMap(minutes: minutes, dots: dots)
                 .frame(width: base - 12, height: h - 12)
                 .clipShape(.rect(cornerRadius: 30))
             // Status bar

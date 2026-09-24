@@ -758,12 +758,14 @@ struct CheckLocationView: View {
     @AppStorage(LocationService.intervalKey) private var minutes = 5
     /// Preview flag "check.preview" (awaiting David's pick): map thumbnails of the day route at each rate.
     /// A = thumbnail at the left of each row, B = three big previews on top (like wallpapers), C = thumbnail at the right.
-    @AppStorage("check.preview") private var preview = ""
+    /// David chose C (2:18, relayed): phone on the right of each row. Now the default.
+    @AppStorage("check.preview") private var preview = "C"
+    @AppStorage("check.big") private var bigStyle = ""
     @State private var enlarged: Int?
     /// Each preview is a mini iPhone screen (David: like Apple's Tips app examples), tap to enlarge.
     private func thumb(_ m: Int, w: CGFloat, h: CGFloat) -> some View {
         MiniPhoneRoute(minutes: m, width: w)
-            .contentShape(.rect).onTapGesture { enlarged = m }
+            .contentShape(.rect).onTapGesture { withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) { enlarged = m } }
             .accessibilityIdentifier("thumb-\(m)")
     }
     private let options: [(Int, String, String, String)] = [
@@ -826,7 +828,35 @@ struct CheckLocationView: View {
         }
         .buttonStyle(.plain)
         .background(AppBackgroundView())
-        .sheet(item: Binding(get: { enlarged.map { IntervalID(id: $0) } }, set: { enlarged = $0?.id })) { IntervalRouteSheet(minutes: $0.id) }
+        .sheet(item: Binding(get: { (bigStyle.isEmpty || bigStyle == "B") ? enlarged.map { IntervalID(id: $0) } : nil }, set: { enlarged = $0?.id })) { item in
+            if bigStyle == "B" {
+                IntervalRouteCard(minutes: item.id, style: "B") { enlarged = nil }
+                    .presentationDetents([.fraction(0.62)])
+                    .presentationDragIndicator(.visible)
+            } else {
+                IntervalRouteSheet(minutes: item.id)
+            }
+        }
+        .overlay {
+            if let m = enlarged, bigStyle == "A" || bigStyle == "C" {
+                ZStack {
+                    Color.black.opacity(bigStyle == "C" ? 0.55 : 0.3).ignoresSafeArea()
+                        .onTapGesture { withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) { enlarged = nil } }
+                    if bigStyle == "A" {
+                        IntervalRouteCard(minutes: m, style: "A") { withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) { enlarged = nil } }
+                            .frame(height: 520)
+                            .background(Color(.systemBackground), in: .rect(cornerRadius: 34))
+                            .shadow(color: .black.opacity(0.2), radius: 30, y: 10)
+                            .padding(.horizontal, 20)
+                    } else {
+                        IntervalRouteCard(minutes: m, style: "C") { enlarged = nil }
+                            .onTapGesture { withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) { enlarged = nil } }
+                    }
+                }
+                .transition(.opacity.combined(with: .scale(scale: 0.92)))
+                .accessibilityIdentifier("bigCard")
+            }
+        }
         .navigationTitle("Check Location")
         .backgroundNavBar()
         .navigationBarTitleDisplayMode(.inline)

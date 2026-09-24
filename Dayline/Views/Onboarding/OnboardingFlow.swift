@@ -900,8 +900,8 @@ struct SplashLiveMap: View {
                 }
             }
             ForEach(stops) { s in
-                if ["G", "H", "I"].contains(style) {
-                    // G/H/I: C's 3D look with the new Apple-style pin (small, theme blue, dot on the spot).
+                if ["G", "H", "I", "J", "K", "L"].contains(style) {
+                    // G-L: C's 3D look with the new Apple-style pin (small, theme blue, dot on the spot).
                     Annotation("", coordinate: s.c, anchor: .bottom) {
                         ApplePin(symbol: s.symbol, color: Theme.accent, big: false, dot: true)
                     }
@@ -915,7 +915,7 @@ struct SplashLiveMap: View {
             }
         }
         .mapStyle(style == "B" ? .standard(emphasis: .muted, pointsOfInterest: .excludingAll) :
-                  ["C", "D", "G", "H", "I"].contains(style) ? .standard(elevation: .realistic, pointsOfInterest: .excludingAll) :
+                  ["C", "D", "G", "H", "I", "J", "K", "L"].contains(style) ? .standard(elevation: .realistic, pointsOfInterest: .excludingAll) :
                   style == "E" ? .hybrid(elevation: .realistic, pointsOfInterest: .excludingAll) :
                   style == "F" ? .standard(elevation: .realistic, emphasis: .muted, pointsOfInterest: .excludingAll) :
                   .standard(pointsOfInterest: .excludingAll))
@@ -932,6 +932,11 @@ struct SplashLiveMap: View {
         if style == "G" { return .camera(MapCamera(centerCoordinate: center, distance: 1900, heading: 29, pitch: 40)) }
         if style == "H" { return .camera(MapCamera(centerCoordinate: center, distance: 1600, heading: 29, pitch: 30)) }
         if style == "I" { return .camera(MapCamera(centerCoordinate: center, distance: 2000, heading: 0, pitch: 18)) }
+        // J/K/L (David 2:17): H, zoomed right in like Apple Maps up close (trees, detailed 3D), route in view.
+        let coffee = CLLocationCoordinate2D(latitude: 40.7520, longitude: -73.9785)
+        if style == "J" { return .camera(MapCamera(centerCoordinate: coffee, distance: 900, heading: 29, pitch: 40)) }
+        if style == "K" { return .camera(MapCamera(centerCoordinate: coffee, distance: 600, heading: 29, pitch: 50)) }
+        if style == "L" { return .camera(MapCamera(centerCoordinate: coffee, distance: 400, heading: 29, pitch: 58)) }
         if style == "E" { return .camera(MapCamera(centerCoordinate: center, distance: 2400, heading: 29, pitch: 58)) }
         if style == "F" { return .camera(MapCamera(centerCoordinate: center, distance: 2800, heading: 210, pitch: 55)) }
         return .region(MKCoordinateRegion(center: center, span: .init(latitudeDelta: 0.021, longitudeDelta: 0.021)))

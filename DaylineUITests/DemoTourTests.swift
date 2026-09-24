@@ -780,6 +780,43 @@ final class DemoTourTests: XCTestCase {
         app.terminate()
     }
 
+    /// Splash J/K/L: H zoomed right in (David 2:17). Plus route.blue off/on on the Year map.
+    func testSplashCloseDemo() throws {
+        for v in ["J", "K", "L"] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-onboarding", "-splash.map", v]
+            app.launchEnvironment["TZ"] = Self.morningZone
+            app.launch(); pause(9); shot("sc-\(v)")
+            app.terminate()
+        }
+        for v in ["NO", "YES"] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-route.blue", v]
+            app.launchEnvironment["TZ"] = Self.morningZone
+            app.launch(); pause(1.5)
+            tab(app, "Timeline"); pause(2)
+            tapSegment(app, "Year"); pause(5); shot("rb-\(v)")
+            app.terminate()
+        }
+    }
+
+    /// Check Location C (default now): tap the 5-min mini iPhone, big view A card / B half sheet / C zoomed phone, dots at each check.
+    func testCheckBigDemo() throws {
+        for v in ["A", "B", "C"] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-check.big", v]
+            app.launchEnvironment["TZ"] = Self.morningZone
+            app.launch(); pause(1.5)
+            tab(app, "Profile"); pause(1.5)
+            let row = app.staticTexts["Check Location"].firstMatch
+            if !row.isHittable { app.swipeUp(); pause(0.8) }
+            row.tap(); pause(4)
+            if v == "A" { shot("cb-rows") }
+            tapID(app, "thumb-5"); pause(6); shot("cb-\(v)")
+            app.terminate()
+        }
+    }
+
     /// Splash G/H/I: C's 3D look, new pins, closer and more top-down.
     func testSplashPinDemo() throws {
         for v in ["G", "H", "I"] {

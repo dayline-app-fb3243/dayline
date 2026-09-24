@@ -104,7 +104,8 @@ struct TimelineScreen: View {
                 } else {
                     // Full route for the whole range, thinned so a year stays fast.
                     MapPolyline(coordinates: thinnedRoute)
-                        .stroke(Theme.accent.opacity(0.45), style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
+                        // Preview flag "route.blue" (David 2:17): every route line the same solid theme blue.
+                        .stroke(UserDefaults.standard.bool(forKey: "route.blue") ? Theme.accent : Theme.accent.opacity(0.45), style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
                 }
             }
             if range == .day {
