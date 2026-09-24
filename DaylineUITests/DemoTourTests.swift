@@ -57,6 +57,7 @@ final class DemoTourTests: XCTestCase {
         codeField.typeText("13"); tapID(app, "setupPrimary"); pause(1.5); shot("06-permissions")
         tapID(app, "permissionsContinue"); pause(1.2); shot("06b-permissions-photos")
         tapID(app, "permissionsContinue"); pause(1.2); shot("06c-permissions-mic")
+        tapID(app, "permissionsContinue"); pause(1.2); shot("06c2-permissions-motion")
         tapID(app, "permissionsContinue"); pause(1.2); shot("06d-permissions-notifications")
         tapID(app, "permissionsContinue"); pause(3); shot("07-today-after-sign-in")
     }

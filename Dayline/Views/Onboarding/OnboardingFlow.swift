@@ -1,4 +1,5 @@
 import SwiftUI
+import CoreMotion
 import AVFoundation
 import Photos
 import AuthenticationServices
@@ -320,6 +321,9 @@ struct PermissionsView: View {
         Page(kind: "mic", title: "Turning on the Microphone lets Dayline:",
              rows: [("mic", "Record voice notes for your journal"), ("text.bubble", "Turn them into text on your iPhone")],
              note: "Dayline only listens while you record. You can change this later in Settings."),
+        Page(kind: "motion", title: "Turning on Motion & Fitness lets Dayline:",
+             rows: [("moon", "Tell when you fell asleep, so late nights count toward the right day"), ("sun.max", "Know when you woke up"), ("figure.walk", "Count steps and walks in your day")],
+             note: "Motion stays on your iPhone. You can change this later in Settings."),
         Page(kind: "notifications", title: "Turning on Notifications lets Dayline:",
              rows: [("person.badge.plus", "Tell you when someone asks to follow you"), ("star", "Tell you when you hit 80")],
              note: "That\u{2019}s it, only those 2. You can change this later in Settings."),
@@ -366,6 +370,11 @@ struct PermissionsView: View {
             }
         case "photos": _ = await PHPhotoLibrary.requestAuthorization(for: .readWrite)
         case "mic": _ = await AVAudioApplication.requestRecordPermission()
+        case "motion":
+            DayBoundary.shared.requestMotion()
+            for _ in 0..<120 where DayBoundary.motionAvailable && CMMotionActivityManager.authorizationStatus() == .notDetermined {
+                try? await Task.sleep(for: .milliseconds(500))
+            }
         default: await Notifications.requestPermission()
         }
     }

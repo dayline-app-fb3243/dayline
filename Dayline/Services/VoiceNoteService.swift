@@ -118,10 +118,14 @@ final class VoiceNoteService: NSObject, ObservableObject {
         context.insert(entry)
         try? context.save()
 
-        if let text = await Transcriber.transcribe(file) {
-            entry.text = text
-            entry.isTranscribed = true
-            try? context.save()
+        // Transcribe in the background so the note shows up in the entry right away
+        // (and Save links it), instead of waiting for speech-to-text to finish.
+        Task { @MainActor in
+            if let text = await Transcriber.transcribe(file) {
+                entry.text = text
+                entry.isTranscribed = true
+                try? context.save()
+            }
         }
     }
 }
