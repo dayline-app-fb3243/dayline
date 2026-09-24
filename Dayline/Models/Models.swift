@@ -107,6 +107,10 @@ final class JournalEntry {
     /// File name of a video in Documents/Video (the thumbnail is its poster frame).
     var videoFileName: String? = nil
     var videoDuration: Double = 0
+    /// Place shown when the entry was written, so the card matches the editor.
+    var placeName: String? = nil
+    /// Links the text, photos, videos and voice notes saved from one New entry.
+    var groupID: String? = nil
     var latitude: Double?
     var longitude: Double?
     var isTranscribed: Bool

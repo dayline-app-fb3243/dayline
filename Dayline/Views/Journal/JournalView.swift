@@ -16,7 +16,7 @@ struct JournalView: View {
     private var days: [(Date, [JournalGroup])] {
         Dictionary(grouping: filtered) { Calendar.current.startOfDay(for: $0.date) }
             .sorted { $0.key > $1.key }
-            .map { day, items in (day, JournalGroup.make(items.sorted { $0.date < $1.date }, visits: visits)) }
+            .map { day, items in (day, JournalGroup.make(items.sorted { $0.date > $1.date }, visits: visits)) }
     }
 
     @State private var composing = false
@@ -55,13 +55,15 @@ struct JournalGroup: Identifiable {
     var entries: [JournalEntry]
     var place: String?
     var id: PersistentIdentifier { entries[0].persistentModelID }
-    var date: Date { entries[0].date }
+    var date: Date { entries.map(\.date).min() ?? entries[0].date }
+    var videos: Set<Int> { Set(entries.filter { $0.thumbnail != nil }.enumerated().compactMap { $0.element.videoFileName != nil ? $0.offset : nil }) }
     var photos: [Data] { entries.compactMap(\.thumbnail) }
     var text: String? { entries.first { !$0.text.isEmpty && $0.kind != .voice }?.text }
     var voice: JournalEntry? { entries.first { $0.kind == .voice } }
     var kind: JournalKind { voice != nil ? .voice : (photos.isEmpty ? .text : .photo) }
 
     static func placeName(for entry: JournalEntry, visits: [Visit]) -> String? {
+        if let saved = entry.placeName { return saved }
         if let v = visits.first(where: { $0.arrival <= entry.date && entry.date <= ($0.departure ?? .distantFuture) && $0.category != .home }) {
             return v.placeName
         }
@@ -77,8 +79,10 @@ struct JournalGroup: Identifiable {
         var out: [JournalGroup] = []
         for e in sorted {
             let name = placeName(for: e, visits: visits)
-            if var last = out.last, last.place == name, name != nil,
-               e.date.timeIntervalSince(last.entries.last!.date) < 1800, e.kind != .voice, last.voice == nil {
+            if var last = out.last, let g = e.groupID, last.entries.contains(where: { $0.groupID == g }) {
+                last.entries.append(e); out[out.count - 1] = last
+            } else if var last = out.last, last.place == name, name != nil, e.groupID == nil,
+               abs(e.date.timeIntervalSince(last.entries.last!.date)) < 1800, e.kind != .voice, last.voice == nil {
                 last.entries.append(e); out[out.count - 1] = last
             } else {
                 out.append(JournalGroup(entries: [e], place: name))
@@ -107,13 +111,22 @@ struct JournalCard: View {
                 }
                 if !group.photos.isEmpty {
                     HStack(spacing: 8) {
-                        ForEach(Array(group.photos.prefix(3).enumerated()), id: \.offset) { _, data in
+                        ForEach(Array(group.photos.prefix(3).enumerated()), id: \.offset) { i, data in
                             if let image = UIImage(data: data) {
                                 Image(uiImage: image).resizable().scaledToFill()
                                     .frame(width: 96, height: 96).clipShape(.rect(cornerRadius: 14))
+                                    .overlay {
+                                        if group.videos.contains(i) {
+                                            Image(systemName: "play.fill").font(.caption).foregroundStyle(.white)
+                                                .frame(width: 30, height: 30).background(.black.opacity(0.35), in: .circle)
+                                        }
+                                    }
                             }
                         }
                     }
+                }
+                if group.voice != nil, let text = group.text {
+                    Text(text).font(.subheadline)
                 }
                 if let voice = group.voice {
                     if !voice.text.isEmpty {

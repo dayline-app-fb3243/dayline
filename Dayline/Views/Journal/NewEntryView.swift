@@ -71,6 +71,7 @@ struct NewEntryView: View {
     @FocusState private var focus: UUID?
     @FocusState private var titleFocused: Bool
     private let startedAt = Date.now
+    private let groupID = UUID().uuidString
 
     enum CameraMode: Identifiable { case photo, video; var id: Self { self } }
 
@@ -280,8 +281,10 @@ struct NewEntryView: View {
         let head = title.trimmingCharacters(in: .whitespacesAndNewlines)
         let text = [head, bodyText].filter { !$0.isEmpty }.joined(separator: "\n")
         let media = allMedia
+        let place = placeName
+        var saved: [JournalEntry] = []
         if media.isEmpty, !text.isEmpty {
-            context.insert(JournalEntry(date: startedAt, kind: .text, text: text, latitude: lat, longitude: lon))
+            saved.append(JournalEntry(date: startedAt, kind: .text, text: text, latitude: lat, longitude: lon))
         }
         for (i, m) in media.enumerated() {
             let img = m.image
@@ -290,7 +293,16 @@ struct NewEntryView: View {
                                      text: i == 0 ? text : "",
                                      thumbnail: thumb?.jpegData(compressionQuality: 0.7), latitude: lat, longitude: lon)
             if let url = m.videoURL { entry.videoFileName = url.lastPathComponent; entry.videoDuration = m.duration }
-            context.insert(entry)
+            saved.append(entry)
+        }
+        for e in saved { e.placeName = place; e.groupID = groupID; context.insert(e) }
+        // Voice notes recorded in this entry were saved when recording stopped; link them to this entry.
+        let start = startedAt
+        if hasVoice, let voices = try? context.fetch(FetchDescriptor<JournalEntry>(predicate: #Predicate { $0.date >= start })) {
+            for v in voices where v.kind == .voice && v.groupID == nil {
+                v.groupID = groupID; v.placeName = place
+                v.date = startedAt.addingTimeInterval(-1)
+            }
         }
         try? context.save()
         onDone()

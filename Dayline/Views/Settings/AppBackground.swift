@@ -1,32 +1,40 @@
 import SwiftUI
+import SwiftData
 import PhotosUI
 import UIKit
 
 /// Built-in backgrounds plus "your own photo". Content cards stay solid on top of any of these.
 enum BackgroundPreset: String, CaseIterable, Identifiable {
-    case system, sky, sunset, lavender, mint, night, photo
+    case system, white, black, gray, sky, ocean, mint, forest, lavender, rose, sunset, sand, night, graphite, aurora, photo
     var id: String { rawValue }
 
     var title: String {
         switch self {
         case .system: "Default"
-        case .sky: "Sky"
-        case .sunset: "Sunset"
-        case .lavender: "Lavender"
-        case .mint: "Mint"
-        case .night: "Night"
         case .photo: "Your photo"
+        default: rawValue.capitalized
         }
     }
 
+    private static func c(_ r: Double, _ g: Double, _ b: Double) -> Color { Color(red: r, green: g, blue: b) }
     var colors: [Color] {
+        let c = Self.c
         switch self {
-        case .system, .photo: []
-        case .sky: [Color(red: 0.61, green: 0.77, blue: 1.0), Color(red: 0.91, green: 0.94, blue: 1.0)]
-        case .sunset: [Color(red: 1.0, green: 0.70, blue: 0.54), Color(red: 1.0, green: 0.85, blue: 0.78), Color(red: 0.79, green: 0.71, blue: 1.0)]
-        case .lavender: [Color(red: 0.80, green: 0.72, blue: 1.0), Color(red: 0.95, green: 0.93, blue: 1.0)]
-        case .mint: [Color(red: 0.66, green: 0.93, blue: 0.83), Color(red: 0.93, green: 0.98, blue: 0.96)]
-        case .night: [Color(red: 0.11, green: 0.14, blue: 0.28), Color(red: 0.23, green: 0.25, blue: 0.44)]
+        case .system, .photo: return []
+        case .white: return [.white, .white]
+        case .black: return [.black, .black]
+        case .gray: return [c(0.82, 0.82, 0.84), c(0.90, 0.90, 0.92)]
+        case .sky: return [c(0.61, 0.77, 1.0), c(0.91, 0.94, 1.0)]
+        case .ocean: return [c(0.18, 0.48, 1.0), c(0.04, 0.25, 0.69)]
+        case .mint: return [c(0.66, 0.93, 0.83), c(0.93, 0.98, 0.96)]
+        case .forest: return [c(0.18, 0.49, 0.36), c(0.07, 0.31, 0.23)]
+        case .lavender: return [c(0.80, 0.72, 1.0), c(0.95, 0.93, 1.0)]
+        case .rose: return [c(1.0, 0.70, 0.78), c(1.0, 0.91, 0.93)]
+        case .sunset: return [c(1.0, 0.70, 0.54), c(1.0, 0.85, 0.78), c(0.79, 0.71, 1.0)]
+        case .sand: return [c(0.91, 0.85, 0.72), c(0.97, 0.95, 0.89)]
+        case .night: return [c(0.11, 0.14, 0.28), c(0.23, 0.25, 0.44)]
+        case .graphite: return [c(0.28, 0.28, 0.29), c(0.11, 0.11, 0.12)]
+        case .aurora: return [c(0.35, 0.78, 0.98), c(0.69, 0.32, 0.87)]
         }
     }
 }
@@ -101,66 +109,61 @@ struct BackgroundPickerView: View {
     @AppStorage("background.style") private var styleRaw = PhotoStyle.blur.rawValue
     @AppStorage("background.version") private var version = 0
     @State private var pick: PhotosPickerItem?
-    private let columns = Array(repeating: GridItem(.flexible(), spacing: 12), count: 3)
+    private let columns = Array(repeating: GridItem(.flexible(), spacing: 4), count: 5)
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                LazyVGrid(columns: columns, spacing: 14) {
-                    ForEach(BackgroundPreset.allCases.filter { $0 != .photo }) { preset in
-                        Button { presetRaw = preset.rawValue } label: {
-                            VStack(spacing: 6) {
-                                RoundedRectangle(cornerRadius: 22, style: .continuous)
-                                    .fill(preset == .system
-                                          ? AnyShapeStyle(Color(.secondarySystemGroupedBackground))
-                                          : AnyShapeStyle(LinearGradient(colors: preset.colors, startPoint: .topLeading, endPoint: .bottomTrailing)))
-                                    .frame(height: 118)
-                                    .overlay(alignment: .topTrailing) {
-                                        if presetRaw == preset.rawValue {
-                                            Image(systemName: "checkmark.circle.fill").font(.title3)
-                                                .foregroundStyle(.white, .blue).padding(8)
-                                        }
-                                    }
-                                    .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous)
-                                        .strokeBorder(presetRaw == preset.rawValue ? Color.blue : Color.primary.opacity(0.08),
-                                                      lineWidth: presetRaw == preset.rawValue ? 3 : 1))
-                                Text(preset.title).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                SectionHeader("Color")
+                Card(padding: 14) {
+                    LazyVGrid(columns: columns, spacing: 16) {
+                        ForEach(BackgroundPreset.allCases.filter { $0 != .photo }) { preset in
+                            let on = presetRaw == preset.rawValue
+                            Button { presetRaw = preset.rawValue } label: {
+                                VStack(spacing: 7) {
+                                    Circle()
+                                        .fill(preset == .system
+                                              ? AnyShapeStyle(LinearGradient(colors: [Color(red: 0.71, green: 0.81, blue: 0.99), Color(.systemGroupedBackground)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                                              : AnyShapeStyle(LinearGradient(colors: preset.colors, startPoint: .topLeading, endPoint: .bottomTrailing)))
+                                        .overlay(Circle().strokeBorder(Color.primary.opacity(0.15), lineWidth: 0.5))
+                                        .frame(width: 50, height: 50)
+                                        .padding(4)
+                                        .overlay(Circle().strokeBorder(on ? Color.blue : .clear, lineWidth: 2.5))
+                                    Text(preset.title).font(.caption).foregroundStyle(on ? .primary : .secondary)
+                                }
                             }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel(preset.title)
+                            .accessibilityAddTraits(on ? .isSelected : [])
                         }
-                        .buttonStyle(.plain)
                     }
                 }
 
-                SectionHeader("Your photo")
-                PhotosPicker(selection: $pick, matching: .images) {
-                    Card {
-                        HStack(spacing: 12) {
-                            Group {
-                                if let image = BackgroundStore.load() {
-                                    Image(uiImage: image).resizable().scaledToFill()
-                                } else {
-                                    Image(systemName: "photo.on.rectangle").font(.title2).foregroundStyle(.blue)
-                                }
-                            }
-                            .frame(width: 60, height: 60).background(Color.blue.opacity(0.1))
-                            .clipShape(.rect(cornerRadius: 16, style: .continuous))
-                            .id(version)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Choose from Photos").font(.body.weight(.semibold)).foregroundStyle(.primary)
-                                Text("Cards stay solid so text is easy to read").font(.caption).foregroundStyle(.secondary)
-                            }
+                SectionHeader("Photo")
+                Card(padding: 0) {
+                    PhotosPicker(selection: $pick, matching: .images) {
+                        HStack(spacing: 13) {
+                            Image(systemName: "photo.fill").font(.system(size: 15, weight: .semibold)).foregroundStyle(.white)
+                                .frame(width: 32, height: 32).background(Color.blue, in: .rect(cornerRadius: 8, style: .continuous))
+                            Text("Choose Photo…").foregroundStyle(.blue)
                             Spacer()
                             if presetRaw == BackgroundPreset.photo.rawValue {
-                                Image(systemName: "checkmark.circle.fill").foregroundStyle(.blue)
+                                Image(systemName: "checkmark").font(.body.weight(.semibold)).foregroundStyle(.blue)
                             }
                         }
+                        .padding(.horizontal, 14).frame(minHeight: 52).contentShape(.rect)
                     }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
+                Text("Use any photo from your library. Cards stay solid so text is easy to read.")
+                    .font(.footnote).foregroundStyle(.secondary).padding(.horizontal, 4)
 
                 if presetRaw == BackgroundPreset.photo.rawValue {
                     SectionHeader("Photo style")
-                    CapsuleSegmented(selection: $styleRaw, options: PhotoStyle.allCases.map { ($0.rawValue, $0.title) })
+                    Picker("Photo style", selection: $styleRaw) {
+                        ForEach(PhotoStyle.allCases) { Text($0.title).tag($0.rawValue) }
+                    }
+                    .pickerStyle(.segmented)
                 }
             }
             .padding(.horizontal, 18).padding(.bottom, 30)
@@ -381,6 +384,9 @@ struct ProfileRow: View {
 
 struct PrivacyView: View {
     @ObservedObject private var auth = AuthService.shared
+    @Environment(\.modelContext) private var context
+    @Environment(\.dismiss) private var dismiss
+    @State private var confirmDelete = false
     var body: some View {
         ScrollView {
           VStack(spacing: 12) {
@@ -391,11 +397,26 @@ struct PrivacyView: View {
                         .font(.subheadline).foregroundStyle(.secondary)
                 }
             }
+            Card(padding: 0) {
+                Button(role: .destructive) { confirmDelete = true } label: {
+                    Text("Delete Account & Backup").foregroundStyle(.red).frame(maxWidth: .infinity).frame(minHeight: 52)
+                }
+                .accessibilityIdentifier("deleteAccount")
+            }
+            .padding(.top, 10)
+            Text("Deletes your account, your backup and everything Dayline saved on this iPhone. This can't be undone.")
+                .font(.footnote).foregroundStyle(.secondary).padding(.horizontal, 4)
           }
           .padding(18)
         }
         .background(AppBackgroundView())
         .navigationTitle("Your data")
+        .alert("Delete Account & Backup?", isPresented: $confirmDelete) {
+            Button("Delete", role: .destructive) { Task { await deleteEverything() } }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Your account, backup, timeline, journal and photos saved in Dayline will be deleted. This can't be undone.")
+        }
         .toolbarVisibility(.hidden, for: .tabBar)
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -487,5 +508,25 @@ struct PrivacyPolicyView: View {
                 }
             }
         }
+    }
+}
+
+
+extension PrivacyView {
+    @MainActor
+    func deleteEverything() async {
+        await AuthService.shared.deleteAccount()
+        try? context.delete(model: LocationSample.self)
+        try? context.delete(model: Visit.self)
+        try? context.delete(model: JournalEntry.self)
+        try? context.delete(model: PlanItem.self)
+        try? context.delete(model: DayScore.self)
+        try? context.save()
+        for folder in ["Voice", "Video"] {
+            try? FileManager.default.removeItem(at: URL.documentsDirectory.appending(path: folder))
+        }
+        try? FileManager.default.removeItem(at: BackgroundStore.photoURL)
+        if let id = Bundle.main.bundleIdentifier { UserDefaults.standard.removePersistentDomain(forName: id) }
+        dismiss()
     }
 }

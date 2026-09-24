@@ -94,4 +94,16 @@ final class AuthService: ObservableObject {
     func signOut() {
         userID = ""; name = ""; email = ""; provider = ""
     }
+
+    /// Deletes the account on the server (when a backend is set up) and signs out.
+    /// Apple requires in-app account deletion for apps with sign-in.
+    func deleteAccount() async {
+        if let apiBase, !userID.isEmpty, userID != "demo" {
+            var request = URLRequest(url: apiBase.appending(path: "v1/account"))
+            request.httpMethod = "DELETE"
+            request.setValue(userID, forHTTPHeaderField: "X-User-ID")
+            _ = try? await URLSession.shared.data(for: request)
+        }
+        signOut()
+    }
 }

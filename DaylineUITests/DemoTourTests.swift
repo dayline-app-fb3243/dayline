@@ -175,7 +175,11 @@ final class DemoTourTests: XCTestCase {
         if sunset.waitForExistence(timeout: 3) { sunset.tap() }
         pause(1.5); shot("62-background-sunset")
         goBack(app)
-        tapID(app, "yourDataRow"); pause(2); shot("65-your-data"); goBack(app)
+        tapID(app, "yourDataRow"); pause(2); shot("65-your-data")
+        tapID(app, "deleteAccount"); pause(1.2); shot("65b-delete-confirm")
+        let cancel = app.alerts.buttons["Cancel"].firstMatch
+        if cancel.waitForExistence(timeout: 2) { cancel.tap() }
+        pause(0.8); goBack(app)
         tab(app, "Today"); pause(1.5); shot("63-today-sunset")
     }
 
