@@ -961,6 +961,81 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Pace from real habits (gym by 8 PM): 9am not up (orange), 2pm up + gym still possible (blue),
+    /// 9pm gym missed (orange), 11pm gym + journal missed (more orange). Each ring style A/B/C.
+    func testRingPaceHabits() throws {
+        let cases: [(String, Int)] = [("notup", 9), ("gym", 14), ("nogym", 21), ("late", 23)]
+        for v in ["A", "B", "C"] {
+            for (scenario, hour) in cases {
+                let app = XCUIApplication()
+                app.launchArguments = ["-demo", "-ring.pace", v, "-demo.pace", scenario, "-status.phrase", "1"]
+                app.launchEnvironment["TZ"] = Self.zone(localHour: hour)
+                app.launch(); pause(3); shot("rh-\(v)-\(scenario)")
+                app.terminate()
+            }
+        }
+        // Gym "Go By" time in Your Schedule.
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo"]
+        app.launch(); pause(1.5)
+        tab(app, "Profile"); pause(2)
+        tapID(app, "yourScheduleRow"); pause(2)
+        app.swipeUp(); pause(1)
+        let gym = app.switches["Gym"]
+        if gym.exists, (gym.value as? String) == "0" { gym.switches.firstMatch.exists ? gym.switches.firstMatch.tap() : gym.tap() }
+        pause(1.5); shot("rh-settings")
+        app.terminate()
+    }
+
+    /// Rotating status words: every blue phrase (2pm, on track) and every orange phrase (9pm, gym missed), ring B.
+    func testStatusPhrases() throws {
+        for (scenario, hour, count, tag) in [("gym", 14, 5, "blue"), ("nogym", 21, 4, "orange")] {
+            for n in 1...count {
+                let app = XCUIApplication()
+                app.launchArguments = ["-demo", "-ring.pace", "B", "-demo.pace", scenario, "-status.phrase", "\(n)"]
+                app.launchEnvironment["TZ"] = Self.zone(localHour: hour)
+                app.launch(); pause(2.5); shot("ph-\(tag)-\(n)")
+                app.terminate()
+            }
+        }
+    }
+
+    /// Map panel subtitles A/B/C in Month (the case David flagged) and Day.
+    func testMapSubtitles() throws {
+        for v in ["A", "B", "C"] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-route.style", "snap", "-pin.style", "D", "-map.3d", "YES", "-map.sheet", "G", "-map.subtitles", v]
+            app.launchEnvironment["TZ"] = Self.morningZone
+            app.launch(); pause(1.5)
+            tab(app, "Timeline"); pause(3)
+            tapID(app, "mapCard"); pause(4)
+            for r in ["Month", "Day"] {
+                let b = app.buttons[r].firstMatch
+                if b.exists { b.tap() }; pause(2.5)
+                tapID(app, "mapGrabber"); pause(3); shot("st-\(v)-\(r.lowercased())")
+                tapID(app, "mapGrabber"); pause(2)
+            }
+            app.terminate()
+        }
+    }
+
+    /// Splash loop M -> P -> Q -> R with slow camera moves and crossfades; keeps going under the sign-in sheet.
+    func testSplashLoopVideo() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo", "-onboarding", "-splash.map", "loop"]
+        app.launchEnvironment["TZ"] = Self.morningZone
+        app.launch()
+        pause(4); shot("sl-1-park")
+        pause(3.2); shot("sl-2-fade")
+        pause(4); shot("sl-3-gym")
+        pause(8); shot("sl-4-office")
+        pause(8); shot("sl-5-coffee")
+        tapID(app, "splashContinue"); pause(4); shot("sl-6-sheet")
+        pause(10); shot("sl-7-sheet-later")
+        pause(6)
+        app.terminate()
+    }
+
     /// Journal search button options (A/B/C) and the search screen with sample questions.
     func testJournalSearchDemo() throws {
         for v in ["A", "B", "C"] {

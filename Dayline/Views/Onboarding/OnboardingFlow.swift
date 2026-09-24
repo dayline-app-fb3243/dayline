@@ -292,6 +292,7 @@ struct SplashView: View {
             Color.clear.frame(maxWidth: .infinity).frame(height: 560)
                 .overlay(alignment: .top) {
                     if liveMap.isEmpty { Image("SplashMap").resizable().scaledToFill() }
+                    else if liveMap == "loop" { SplashLoop().frame(height: 560).allowsHitTesting(false) }
                     else { SplashLiveMap(style: liveMap).frame(height: 560).allowsHitTesting(false) }
                 }
                 .clipped()
@@ -873,8 +874,39 @@ struct EmailCodeView: View {
 
 /// Real Apple Maps behind the splash, with a walking route that follows the streets (MapKit directions),
 /// like a precise GPS track, plus the day's stops. A = standard, B = muted with time labels, C = 3D.
+/// Preview "splash.map" = loop: M (park) -> P (gym) -> Q (office) -> R (coffee), round and round like a background video.
+/// Each scene slowly turns and tilts over the 3D buildings, then crossfades into the next. Two map layers take turns,
+/// so the next scene has loaded before it fades in. It keeps going under the sign-in sheet until you're through.
+struct SplashLoop: View {
+    static let scenes = ["M", "P", "Q", "R"]
+    @State private var slots = ["M", "P"]
+    @State private var front = 0
+    @State private var step = 0
+    var body: some View {
+        ZStack {
+            ForEach(0..<2, id: \.self) { k in
+                SplashLiveMap(style: slots[k], drifting: true)
+                    .id("\(k)-\(slots[k])")
+                    .opacity(front == k ? 1 : 0.001)
+            }
+        }
+        .task {
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(6.5))
+                withAnimation(.easeInOut(duration: 1.6)) { front = 1 - front }
+                try? await Task.sleep(for: .seconds(1.8))
+                step += 1
+                slots[1 - front] = Self.scenes[(step + 1) % Self.scenes.count]
+            }
+        }
+    }
+}
+
 struct SplashLiveMap: View {
     var style: String
+    /// Slow camera move (turn, tilt, push in) for the splash loop.
+    var drifting = false
+    @State private var drift = false
     @State private var route: [CLLocationCoordinate2D] = []
     private struct Stop: Identifiable { let id = UUID(); let name: String; let time: String; let symbol: String; let c: CLLocationCoordinate2D }
     private var stops: [Stop] {
@@ -960,7 +992,15 @@ struct SplashLiveMap: View {
                   style == "F" ? .standard(elevation: .realistic, emphasis: .muted, pointsOfInterest: .excludingAll) :
                   .standard(pointsOfInterest: .excludingAll))
         .mapControlVisibility(.hidden)
-        .task { await loadRoute() }
+        .mapCameraKeyframeAnimator(trigger: drift) { cam in
+            KeyframeTrack(\MapCamera.heading) { LinearKeyframe(cam.heading + 26, duration: 15) }
+            KeyframeTrack(\MapCamera.pitch) { CubicKeyframe(min(cam.pitch + 12, 62), duration: 15) }
+            KeyframeTrack(\MapCamera.distance) { CubicKeyframe(cam.distance * 0.8, duration: 15) }
+        }
+        .task {
+            if drifting { try? await Task.sleep(for: .milliseconds(400)); drift = true }
+            await loadRoute()
+        }
     }
     private var position: MapCameraPosition {
         let center = CLLocationCoordinate2D(latitude: 40.7552, longitude: -73.9790)

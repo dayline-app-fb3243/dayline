@@ -20,23 +20,66 @@ enum DemoData {
     static let isDemo = SampleMode.on
 
     /// Today's score in demo mode, matching the approved design.
+    /// "-demo.pace" (screenshots only) shows David's own example with a gym by 8 PM:
+    /// "notup" = past the wake-up goal and not up; "gym" = up, gym still possible (on track);
+    /// "nogym" = the gym's time ran out; "late" = gym and journal both ran out.
     static var todayScore: ScoreEngine.Result {
         let weekday = Date.now.formatted(.dateTime.weekday(.wide))
+        let scenario = UserDefaults.standard.string(forKey: "demo.pace") ?? ""
+        if !scenario.isEmpty { return paceScore(scenario) }
         // "-demo.score N" (screenshots only) shows a different score, e.g. a not-on-track day.
         let forced = UserDefaults.standard.integer(forKey: "demo.score")
         let score = forced > 0 ? forced : 74
+        let factors = [
+            ScoreFactor(part: .wake, title: "Woke up on time", effect: .up, points: 14, detail: "Up at 6:50 · goal 7:00", chip: "Up at 6:50"),
+            ScoreFactor(part: .moving, title: "Gym", effect: .up, points: 18, detail: "Done · 52 min", chip: "Gym done"),
+            ScoreFactor(part: .plans, title: "Plans", effect: .neutral, points: 16, detail: "3 of 4 done so far", chip: "At work"),
+            ScoreFactor(part: .moving, title: "Moving", effect: .up, points: 10, detail: "6,240 steps · 4.1 km"),
+            ScoreFactor(part: .bed, title: "Late night", effect: .up, points: -6, detail: "Phone until 1:10 AM"),
+            ScoreFactor(part: .journal, title: "Journal", effect: .pending, points: 0, detail: "No note yet"),
+        ]
         return ScoreEngine.Result(
             score: score, label: forced > 0 ? ScoreEngine.label(for: score, finished: false) : "On track",
             summary: "Better than your \(weekday) average (68). A 30-min walk tonight gets you to 85+.",
             tip: "Keep going. A walk tonight gets you to 85+.",
-            factors: [
-                ScoreFactor(title: "Woke up on time", effect: .up, points: 14, detail: "Up at 6:50 · goal 7:00", chip: "Up at 6:50"),
-                ScoreFactor(title: "Gym", effect: .up, points: 18, detail: "Done · 52 min", chip: "Gym done"),
-                ScoreFactor(title: "Plans", effect: .neutral, points: 16, detail: "3 of 4 done so far", chip: "At work"),
-                ScoreFactor(title: "Moving", effect: .up, points: 10, detail: "6,240 steps · 4.1 km"),
-                ScoreFactor(title: "Late night", effect: .up, points: -6, detail: "Phone until 1:10 AM"),
-                ScoreFactor(title: "Journal", effect: .pending, points: 0, detail: "No note yet"),
-            ])
+            factors: factors,
+            pace: ScoreEngine.pace(factors: factors, schedule: UserSchedule.current))
+    }
+
+    /// Settings used for the pace examples: up by 7, gym by 8 PM, bed at 11.
+    static var paceSchedule: UserSchedule {
+        var s = UserSchedule(); s.gym = true; s.walk = false; s.outside = false; s.gymBy = 20 * 60; return s
+    }
+
+    static func paceScore(_ scenario: String) -> ScoreEngine.Result {
+        var f = [ScoreFactor(part: .bed, title: "Bed on time", effect: .up, points: 10, detail: "Asleep by 11:05 PM")]
+        switch scenario {
+        case "notup":
+            f += [ScoreFactor(part: .wake, title: "Wake-up", effect: .pending, points: 0, detail: "Not up yet · goal 7:00"),
+                  ScoreFactor(part: .moving, title: "Gym", effect: .pending, points: 0, detail: "Open until 8 PM")]
+        case "gym":
+            f += [ScoreFactor(part: .wake, title: "Woke up on time", effect: .up, points: 20, detail: "Up at 6:50 · goal 7:00"),
+                  ScoreFactor(part: .work, title: "Work", effect: .up, points: 9, detail: "At the office since 9:00"),
+                  ScoreFactor(part: .plans, title: "Plans", effect: .up, points: 11, detail: "2 of 4 done so far"),
+                  ScoreFactor(part: .moving, title: "Gym", effect: .pending, points: 0, detail: "Still time · open until 8 PM")]
+        default:
+            f += [ScoreFactor(part: .wake, title: "Woke up on time", effect: .up, points: 20, detail: "Up at 6:50 · goal 7:00"),
+                  ScoreFactor(part: .work, title: "Work", effect: .up, points: 15, detail: "9:00 to 5:10"),
+                  ScoreFactor(part: .plans, title: "Plans", effect: .up, points: 16, detail: "3 of 4 done"),
+                  ScoreFactor(part: .moving, title: "Gym", effect: .pending, points: 0, detail: "Missed · closed at 8 PM"),
+                  ScoreFactor(part: .gotOut, title: "1 place", effect: .up, points: 4, detail: "Blue Door Coffee")]
+        }
+        let score = f.reduce(0) { $0 + $1.points }
+        let pace = ScoreEngine.pace(factors: f, schedule: paceSchedule)
+        let tip: String
+        switch scenario {
+        case "notup": tip = "Up now still gets you most of the wake-up points."
+        case "gym": tip = "Gym before 8 PM gets you to \(min(100, score + 20))."
+        case "nogym": tip = "A journal tonight gets you to \(min(100, score + 5))."
+        default: tip = "Tomorrow: gym before 8 PM keeps you on track."
+        }
+        return ScoreEngine.Result(score: score, label: ScoreEngine.label(for: score, finished: false),
+                                  summary: tip, tip: tip, factors: f, pace: pace)
     }
 
     static func seed(_ context: ModelContext, calendar: Calendar = .current) {

@@ -46,6 +46,13 @@ struct YourScheduleView: View {
             }
             Section {
                 Toggle("Gym", isOn: $s.gym)
+                if s.gym {
+                    // The day score only counts the gym as missed after this time (e.g. when your gym closes).
+                    DatePicker("Go By", selection: Binding(
+                        get: { UserSchedule.date(s.gymDeadline, on: .now) },
+                        set: { s.gymBy = UserSchedule.minutes(of: $0) }), displayedComponents: .hourAndMinute)
+                        .accessibilityIdentifier("gymBy")
+                }
                 Toggle(isOn: $s.walk) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Walk")
@@ -56,7 +63,7 @@ struct YourScheduleView: View {
                 Toggle("Get Out of the House", isOn: $s.getOut)
                 Toggle("Journal", isOn: $s.journal)
             } header: { Text("My Habits") } footer: {
-                Text("Your day score only counts what\u{2019}s on. Points are shared between them, so a full day of your own routine is 100.")
+                Text("Your day score only counts what\u{2019}s on. Points are shared between them, so a full day of your own routine is 100. A habit only counts as missed once its time is up.")
             }
         }
         .scrollContentBackground(.hidden)

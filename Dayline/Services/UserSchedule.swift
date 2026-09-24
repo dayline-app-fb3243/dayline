@@ -47,6 +47,9 @@ struct UserSchedule: Codable, Equatable, Sendable {
     var workBlocks: [WorkBlock] = [WorkBlock(days: [2, 3, 4, 5], start: 9 * 60, end: 17 * 60),
                                    WorkBlock(days: [6], start: 9 * 60, end: 15 * 60)]
     var gym = false
+    /// Latest time you can still go to the gym (e.g. when it closes). Optional so older saved settings still load.
+    var gymBy: Int? = nil
+    var gymDeadline: Int { gymBy ?? 20 * 60 }
     var walk = true
     var outside = false
     var getOut = true

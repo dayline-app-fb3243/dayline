@@ -196,6 +196,8 @@ struct ScoreFactor: Codable, Hashable, Identifiable, Sendable {
     var detail: String? = nil
     /// Optional short text for the chip on the Today card, e.g. "Gym done".
     var chip: String? = nil
+    /// Which habit this counts toward (ScoreEngine.Part raw value), used for pace.
+    var part: String? = nil
 }
 
 enum ModelStore {

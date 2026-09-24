@@ -54,20 +54,20 @@ enum Theme {
     /// Days scoring this or more count toward the streak.
 }
 
-/// Where the score should be by now, from your schedule: nothing before your wake time,
-/// the wake-up points half an hour after it, then steady up to 90 an hour before bed.
-enum ScorePace {
-    static func expected(at now: Date = .now, schedule: UserSchedule = .current) -> Int {
+/// Short status words for the Today card. 1-3 words, always one line. The phrase changes through the day
+/// (every 4 hours) so it doesn't feel canned, but never flickers while you look. "status.phrase" N (screenshots) forces one.
+enum StatusPhrase {
+    static let onTrack = ["On track", "Good work", "Keep it up", "Nice pace", "Looking good"]
+    static let behind = ["Falling behind", "Pick it up", "Catch up", "Behind pace"]
+    static func text(behind isBehind: Bool, score: Int, now: Date = .now) -> String {
+        if !isBehind && score >= 90 { return "Crushing it" }
+        let list = isBehind ? behind : onTrack
+        let forced = UserDefaults.standard.integer(forKey: "status.phrase")
+        if forced > 0 { return list[(forced - 1) % list.count] }
         let cal = Calendar.current
-        let mins = cal.component(.hour, from: now) * 60 + cal.component(.minute, from: now)
-        let start = schedule.wake + 30, end = max(start + 60, schedule.bed - 60)
-        if mins < schedule.wake { return 0 }
-        if mins < start { return Int(15 * Double(mins - schedule.wake) / 30) }
-        let f = min(1, Double(mins - start) / Double(end - start))
-        return Int(15 + 75 * f)
+        let slot = (cal.ordinality(of: .day, in: .year, for: now) ?? 0) * 6 + cal.component(.hour, from: now) / 4
+        return list[slot % list.count]
     }
-    /// Behind pace: more than 10 points under where you should be by now.
-    static func isBehind(_ score: Int, at now: Date = .now) -> Bool { score < expected(at: now) - 10 }
 }
 
 struct ScoreRing: View {
@@ -77,16 +77,19 @@ struct ScoreRing: View {
     var size: CGFloat = 88
     /// Color by pace (Today card). Preview flag "ring.pace" (none picked yet) sets how "behind" looks:
     /// A = whole ring orange, B = blue blending into orange along the fill, C = blue fill plus an orange arc up to where you should be.
-    var byPace = false
+    /// Points already out of reach today (ScoreEngine.Pace.lost). nil = not colored by pace.
+    var lost: Int? = nil
     @AppStorage("rings.thick") private var thick = false
     @AppStorage("ring.pace") private var paceStyle = ""
     private var lineWidth: CGFloat { lineWidthOverride ?? (thick ? (size * 0.17).rounded() : (size >= 120 ? 20 : 14)) }  // 14 pt small, 20 pt large
-    private var behind: Bool { byPace && !paceStyle.isEmpty && ScorePace.isBehind(score) }
+    private var behind: Bool { !paceStyle.isEmpty && (lost ?? 0) >= 5 }
+    /// How far the day has slipped, 0...1: the more points are out of reach, the more orange.
+    private var slip: Double { min(1, Double(lost ?? 0) / 30) }
     private var colors: [Color] {
         guard behind else { return [Theme.ringStart, Theme.accent] }
         switch paceStyle {
         case "A": return [Color.orange.mix(with: .white, by: 0.35), .orange]
-        case "B": return [Theme.ringStart, Theme.accent, .orange]
+        case "B": return [Theme.ringStart, Theme.accent.mix(with: .orange, by: 0.3 + 0.7 * slip), .orange]
         default: return [Theme.ringStart, Theme.accent]
         }
     }
@@ -95,8 +98,8 @@ struct ScoreRing: View {
             Circle().stroke(.quaternary, lineWidth: lineWidth)
             let progress = CGFloat(min(max(score, 0), 100)) / 100
             if behind && paceStyle == "C" {
-                // The gap: from your score up to where you should be by now.
-                let target = CGFloat(min(ScorePace.expected(), 100)) / 100
+                // The points you can no longer get today, right after your score.
+                let target = min(1, progress + CGFloat(lost ?? 0) / 100)
                 Circle().trim(from: progress, to: target)
                     .stroke(Color.orange.opacity(0.55), style: StrokeStyle(lineWidth: lineWidth * 0.45, lineCap: .round))
                     .rotationEffect(.degrees(-90))

@@ -96,7 +96,8 @@ struct ScoreCard: View {
     /// B = label in black, bigger ring. C = ring on top, text centered below. "" = the old card with chips.
     @AppStorage("today.card") private var style = "A"
     private var tipText: String {
-        style.isEmpty ? (result.tip ?? result.summary) : (result.tip == nil ? result.summary : ScoreEngine.dynamicTip(score: result.score, factors: result.factors))
+        if DemoData.isDemo, !(UserDefaults.standard.string(forKey: "demo.pace") ?? "").isEmpty { return result.tip ?? result.summary }
+        return style.isEmpty ? (result.tip ?? result.summary) : (result.tip == nil ? result.summary : ScoreEngine.dynamicTip(score: result.score, factors: result.factors))
     }
     var body: some View {
         Card {
@@ -105,7 +106,7 @@ struct ScoreCard: View {
                     ScoreRing(score: result.score, size: 104)
                     VStack(spacing: 3) {
                         Text("DAY SCORE").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-                        Text(statusLabel).font(.title2.weight(.bold)).foregroundStyle(labelColor)
+                        Text(statusLabel).font(.title2.weight(.bold)).foregroundStyle(labelColor).lineLimit(1).minimumScaleFactor(0.8)
                         Text(tipText).font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -117,11 +118,11 @@ struct ScoreCard: View {
                 .padding(.vertical, 4)
             } else if !style.isEmpty {
                 HStack(alignment: .center, spacing: 16) {
-                    ScoreRing(score: result.score, size: style == "B" ? 96 : 84, byPace: true)
+                    ScoreRing(score: result.score, size: style == "B" ? 96 : 84, lost: result.pace?.lost)
                     VStack(alignment: .leading, spacing: 2) {
                         Text("DAY SCORE").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
                         Text(statusLabel).font(style == "B" ? .title2.weight(.semibold) : .title2.weight(.bold))
-                            .foregroundStyle(style == "B" ? Color.primary : labelColor)
+                            .foregroundStyle(style == "B" ? Color.primary : labelColor).lineLimit(1).minimumScaleFactor(0.8)
                         Text(tipText).font(.subheadline).foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -137,7 +138,7 @@ struct ScoreCard: View {
                     ScoreRing(score: result.score, size: 84)
                     VStack(alignment: .leading, spacing: 2) {
                         Text("DAY SCORE").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-                        Text(statusLabel).font(.title2.bold()).foregroundStyle(labelColor)
+                        Text(statusLabel).font(.title2.bold()).foregroundStyle(labelColor).lineLimit(1).minimumScaleFactor(0.8)
                         Text(result.tip ?? result.summary).font(.subheadline).foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -152,13 +153,13 @@ struct ScoreCard: View {
         }
     }
     /// Status color follows the theme: blue while on track, orange when not. With "ring.pace" set, on track means
-    /// keeping pace with your schedule (ScorePace); otherwise below 55 ("Slow day" / "Rest day") is orange.
+    /// keeping pace with your own habits (ScoreEngine.Pace); otherwise below 55 ("Slow day" / "Rest day") is orange.
     @AppStorage("ring.pace") private var paceStyle = ""
-    private var behind: Bool { paceStyle.isEmpty ? result.score < 55 : ScorePace.isBehind(result.score) }
+    private var behind: Bool { paceStyle.isEmpty ? result.score < 55 : (result.pace?.behind ?? false) }
     private var labelColor: Color { behind ? .orange : Theme.accent }
     private var statusLabel: String {
         guard !paceStyle.isEmpty else { return result.label }
-        return behind ? "Falling behind" : (result.score >= 90 ? "Crushing it" : "On track")
+        return StatusPhrase.text(behind: behind, score: result.score)
     }
 }
 

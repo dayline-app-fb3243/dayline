@@ -405,18 +405,18 @@ struct TimelineScreen: View {
                     // Preview flag "map.sheetRows" inside panel G: D = one card, E = separate cards with a line, F = one card with a line.
                     if sheetRows == "E" {
                         VStack(spacing: 10) {
-                            findMyRow("Journal", "Notes you wrote today", $showJournal).findMyCard(glass: true)
-                            findMyRow("Photos", "Photos you took today", $showPhotos).findMyCard(glass: true)
-                            findMyRow("Route", "The way you went", $showRoute).findMyCard(glass: true)
+                            findMyRow("Journal", rowSubtitle(.notes), $showJournal).findMyCard(glass: true)
+                            findMyRow("Photos", rowSubtitle(.photos), $showPhotos).findMyCard(glass: true)
+                            findMyRow("Route", rowSubtitle(.route), $showRoute).findMyCard(glass: true)
                         }
                         .padding(.horizontal, 12)
                     } else {
                         VStack(spacing: 0) {
-                            findMyRow("Journal", sheetRows == "F" ? "Notes you wrote today" : nil, $showJournal)
+                            findMyRow("Journal", sheetRows == "F" ? rowSubtitle(.notes) : nil, $showJournal)
                             Divider().padding(.leading, 20)
-                            findMyRow("Photos", sheetRows == "F" ? "Photos you took today" : nil, $showPhotos)
+                            findMyRow("Photos", sheetRows == "F" ? rowSubtitle(.photos) : nil, $showPhotos)
                             Divider().padding(.leading, 20)
-                            findMyRow("Route", sheetRows == "F" ? "The way you went" : nil, $showRoute)
+                            findMyRow("Route", sheetRows == "F" ? rowSubtitle(.route) : nil, $showRoute)
                         }
                         .findMyCard(glass: true)
                         .padding(.horizontal, 12)
@@ -475,18 +475,18 @@ struct TimelineScreen: View {
                     .padding(.horizontal, 24)
                     if mapSheet == "E" {
                         VStack(spacing: 12) {
-                            findMyRow("Journal", "Notes you wrote today", $showJournal).findMyCard()
-                            findMyRow("Photos", "Photos you took today", $showPhotos).findMyCard()
-                            findMyRow("Route", "The way you went", $showRoute).findMyCard()
+                            findMyRow("Journal", rowSubtitle(.notes), $showJournal).findMyCard()
+                            findMyRow("Photos", rowSubtitle(.photos), $showPhotos).findMyCard()
+                            findMyRow("Route", rowSubtitle(.route), $showRoute).findMyCard()
                         }
                         .padding(.horizontal, 16)
                     } else {
                         VStack(spacing: 0) {
-                            findMyRow("Journal", mapSheet == "F" ? "Notes you wrote today" : nil, $showJournal)
+                            findMyRow("Journal", mapSheet == "F" ? rowSubtitle(.notes) : nil, $showJournal)
                             Divider().padding(.leading, 20)
-                            findMyRow("Photos", mapSheet == "F" ? "Photos you took today" : nil, $showPhotos)
+                            findMyRow("Photos", mapSheet == "F" ? rowSubtitle(.photos) : nil, $showPhotos)
                             Divider().padding(.leading, 20)
-                            findMyRow("Route", mapSheet == "F" ? "The way you went" : nil, $showRoute)
+                            findMyRow("Route", mapSheet == "F" ? rowSubtitle(.route) : nil, $showRoute)
                         }
                         .findMyCard()
                         .padding(.horizontal, 16)
@@ -616,6 +616,29 @@ struct TimelineScreen: View {
                 .distance(from: CLLocation(latitude: pair.1.latitude, longitude: pair.1.longitude))
         }
     }
+    /// Preview flag "map.subtitles" (gray line under Journal / Photos / Route), awaiting David's pick:
+    /// A = follows the range ("Notes you wrote this month"), B = the same words for every range ("Shows your notes on the map"),
+    /// C = what's in the range ("4 notes this month"). "" = the old words that always said "today".
+    @AppStorage("map.subtitles") private var subtitleStyle = ""
+    private enum RowKind { case notes, photos, route }
+    private func rowSubtitle(_ kind: RowKind) -> String {
+        let when = switch range { case .day: "today"; case .week: "this week"; case .month: "this month"; case .year: "this year" }
+        switch (subtitleStyle, kind) {
+        case ("A", .notes): return "Notes you wrote \(when)"
+        case ("A", .photos): return "Photos you took \(when)"
+        case ("A", .route): return "The way you went \(when)"
+        case ("B", .notes): return "Shows your notes on the map"
+        case ("B", .photos): return "Shows your photos on the map"
+        case ("B", .route): return "Shows the way you went"
+        case ("C", .notes): let n = rangeNotes.count; return "\(n) note\(n == 1 ? "" : "s") \(when)"
+        case ("C", .photos): let n = rangePhotos.count; return "\(n) photo\(n == 1 ? "" : "s") \(when)"
+        case ("C", .route): return "\(distanceText) \(when)"
+        case (_, .notes): return "Notes you wrote today"
+        case (_, .photos): return "Photos you took today"
+        case (_, .route): return "The way you went"
+        }
+    }
+
     private var distanceText: String {
         Measurement(value: meters, unit: UnitLength.meters)
             .formatted(.measurement(width: .abbreviated, usage: .road, numberFormatStyle: .number.precision(.fractionLength(0...1))))

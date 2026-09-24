@@ -3,6 +3,12 @@ import SwiftData
 
 /// Turns a day into a 0-100 score, a one-word label and an encouraging summary.
 /// Style is inspired by readiness-type scores: one number, one label, and the factors that drove it.
+extension ScoreFactor {
+    init(part: ScoreEngine.Part, title: String, effect: Effect, points: Int, detail: String? = nil, chip: String? = nil) {
+        self.init(title: title, effect: effect, points: points, detail: detail, chip: chip, part: part.rawValue)
+    }
+}
+
 enum ScoreEngine {
     struct Result: Equatable {
         var score: Int
@@ -10,6 +16,50 @@ enum ScoreEngine {
         var summary: String
         var tip: String?
         var factors: [ScoreFactor]
+        var pace: Pace? = nil
+    }
+
+    /// Pace from your own habits: a habit only counts against you once its time is up
+    /// (wake-up goal, work start, a plan's end, the gym's "go by" time, bedtime for the journal).
+    struct Pace: Equatable {
+        /// Points you can no longer get today.
+        var lost: Int
+        /// The habits whose time ran out.
+        var missed: [String]
+        /// Small misses (under 5 points) don't count as behind.
+        var behind: Bool { lost >= 5 }
+    }
+
+    static func pace(factors: [ScoreFactor], schedule s: UserSchedule, day: Date = .now, plan: [PlanItem] = [],
+                     remindersTotal: Int = 0, now: Date = .now, calendar: Calendar = .current) -> Pace {
+        let input = DayInput(firstActivity: nil, plan: [], visits: [], journal: [], isFinished: false, day: day, schedule: s)
+        let w = weights(input, calendar: calendar)
+        let mins = UserSchedule.minutes(of: now, calendar: calendar)
+        func earned(_ p: Part) -> Double { Double(max(0, factors.filter { $0.part == p.rawValue }.reduce(0) { $0 + $1.points })) }
+        var lost = 0.0, missed: [String] = []
+        func miss(_ p: Part, _ name: String, deadline: Int, share: Double = 1) {
+            guard let full = w[p], mins >= deadline else { return }
+            let gone = max(0, full * share - earned(p))
+            if gone >= 1 { lost += gone; missed.append(name) }
+        }
+        miss(.wake, "Wake-up", deadline: s.wake + 10)
+        if let block = s.work(on: day, calendar: calendar), w[.work] != nil {
+            // Not at work half an hour after it starts; after it ends, whatever wasn't done.
+            if mins >= block.end { miss(.work, "Work", deadline: block.end) }
+            else if earned(.work) == 0 { miss(.work, "Work", deadline: block.start + 30) }
+        }
+        let total = plan.count + remindersTotal
+        if total > 0, let full = w[.plans] {
+            let overdue = plan.filter { !$0.isDone && $0.end <= now }.count
+            if overdue > 0 { lost += full * Double(overdue) / Double(total); missed.append("Plans") }
+        }
+        var moveBy = 0
+        if s.gym { moveBy = max(moveBy, s.gymDeadline) }
+        if s.walk || s.outside { moveBy = max(moveBy, s.bed - 60) }
+        if moveBy > 0 { miss(.moving, s.gym && !(s.walk || s.outside) ? "Gym" : "Moving", deadline: moveBy) }
+        miss(.gotOut, "Getting out", deadline: s.bed - 60)
+        miss(.journal, "Journal", deadline: s.bed)
+        return Pace(lost: Int(lost.rounded()), missed: missed)
     }
 
     struct DayInput {
@@ -71,15 +121,15 @@ enum ScoreEngine {
             let late = UserSchedule.minutes(of: first, calendar: calendar) - s.wake
             let time = first.formatted(date: .omitted, time: .shortened)
             if late <= 10 {
-                factors.append(.init(title: "Up at \(time)", effect: .up, points: pts(.wake, 1))); summaryBits.append("woke up on time")
+                factors.append(.init(part: .wake, title: "Up at \(time)", effect: .up, points: pts(.wake, 1))); summaryBits.append("woke up on time")
             } else if late <= 60 {
-                factors.append(.init(title: "Up at \(time)", effect: .up, points: pts(.wake, 0.6)))
+                factors.append(.init(part: .wake, title: "Up at \(time)", effect: .up, points: pts(.wake, 0.6)))
             } else {
                 let minus = -min(8, 2 + ((late - 61) / 30))
-                factors.append(.init(title: "Late start", effect: .neutral, points: minus))
+                factors.append(.init(part: .wake, title: "Late start", effect: .neutral, points: minus))
             }
         } else if !input.isFinished {
-            factors.append(.init(title: "Wake-up", effect: .pending, points: 0))
+            factors.append(.init(part: .wake, title: "Wake-up", effect: .pending, points: 0))
         }
 
         // 2. Bedtime vs goal
@@ -88,14 +138,14 @@ enum ScoreEngine {
             if m < 12 * 60 { m += 24 * 60 }; if goal < 12 * 60 { goal += 24 * 60 }
             let late = m - goal
             let time = bed.formatted(date: .omitted, time: .shortened)
-            if late <= 10 { factors.append(.init(title: "Bed at \(time)", effect: .up, points: pts(.bed, 1))) }
-            else if late <= 30 { factors.append(.init(title: "Bed at \(time)", effect: .up, points: pts(.bed, 0.5))) }
+            if late <= 10 { factors.append(.init(part: .bed, title: "Bed at \(time)", effect: .up, points: pts(.bed, 1))) }
+            else if late <= 30 { factors.append(.init(part: .bed, title: "Bed at \(time)", effect: .up, points: pts(.bed, 0.5))) }
             else {
                 let minus = late <= 60 ? 0 : -min(10, 2 * ((late - 31) / 30))
-                factors.append(.init(title: "Late night", effect: .neutral, points: minus))
+                factors.append(.init(part: .bed, title: "Late night", effect: .neutral, points: minus))
             }
         } else {
-            factors.append(.init(title: "Bedtime", effect: .pending, points: 0))
+            factors.append(.init(part: .bed, title: "Bedtime", effect: .pending, points: 0))
         }
 
         // 3. Work (only on work days)
@@ -108,9 +158,9 @@ enum ScoreEngine {
                 return sum + max(0, b.timeIntervalSince(a))
             }
             if atWork > 0 {
-                factors.append(.init(title: "Work", effect: .up, points: pts(.work, min(1, atWork / planned / 0.8)))); summaryBits.append("worked")
+                factors.append(.init(part: .work, title: "Work", effect: .up, points: pts(.work, min(1, atWork / planned / 0.8)))); summaryBits.append("worked")
             } else {
-                factors.append(.init(title: "Work", effect: .pending, points: 0))
+                factors.append(.init(part: .work, title: "Work", effect: .pending, points: 0))
             }
         }
 
@@ -119,9 +169,9 @@ enum ScoreEngine {
         let total = plan.count + input.remindersTotal
         let done = plan.filter(\.isDone).count + input.remindersDone
         if total == 0 {
-            factors.append(.init(title: "Plans & reminders", effect: .up, points: pts(.plans, 1)))
+            factors.append(.init(part: .plans, title: "Plans & reminders", effect: .up, points: pts(.plans, 1)))
         } else {
-            factors.append(.init(title: "\(done)/\(total) done", effect: done > 0 ? .up : .pending, points: pts(.plans, Double(done) / Double(total))))
+            factors.append(.init(part: .plans, title: "\(done)/\(total) done", effect: done > 0 ? .up : .pending, points: pts(.plans, Double(done) / Double(total))))
         }
 
         // 5. Moving: any one of gym, the personal step goal, or time outside. Half-way counts half.
@@ -138,25 +188,27 @@ enum ScoreEngine {
                 if f > best { best = f; title = "Time outside"; if f >= 1 { bit = "got outside" } }
             }
             if let bit { summaryBits.append(bit) }
-            factors.append(.init(title: best > 0 ? title : "Move later", effect: best > 0 ? .up : .pending, points: pts(.moving, best)))
+            factors.append(.init(part: .moving, title: best > 0 ? title : "Move later", effect: best > 0 ? .up : .pending, points: pts(.moving, best)))
         }
 
         // 6. Got out: 3 places (coffee and restaurants count) = full
         if w[.gotOut] != nil {
             let places = Set(outside.filter { $0.category != .work }.map(\.placeKey)).count
-            if places > 0 { factors.append(.init(title: "\(places) place\(places == 1 ? "" : "s")", effect: .up, points: pts(.gotOut, Double(places) / 3))) }
+            if places > 0 { factors.append(.init(part: .gotOut, title: "\(places) place\(places == 1 ? "" : "s")", effect: .up, points: pts(.gotOut, Double(places) / 3))) }
             if outside.contains(where: { $0.category == .food || $0.category == .coffee }) { summaryBits.append("went out") }
         }
 
         // 7. Journal
         if w[.journal] != nil, !input.journal.isEmpty {
-            factors.append(.init(title: "Journaled", effect: .up, points: pts(.journal, Double(input.journal.count) * 0.4)))
+            factors.append(.init(part: .journal, title: "Journaled", effect: .up, points: pts(.journal, Double(input.journal.count) * 0.4)))
         }
 
         let score = max(0, min(100, factors.reduce(0) { $0 + $1.points }))
         let label = label(for: score, finished: input.isFinished)
         return Result(score: score, label: label, summary: summary(score: score, bits: summaryBits, finished: input.isFinished),
-                      tip: tip(factors: factors, plan: plan, finished: input.isFinished, score: score), factors: factors)
+                      tip: tip(factors: factors, plan: plan, finished: input.isFinished, score: score), factors: factors,
+                      pace: input.isFinished ? nil : pace(factors: factors, schedule: s, day: input.day, plan: plan,
+                                                          remindersTotal: input.remindersTotal, calendar: calendar))
     }
 
     static func label(for score: Int, finished: Bool) -> String {
