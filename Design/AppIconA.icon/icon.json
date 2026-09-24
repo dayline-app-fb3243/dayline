@@ -20,6 +20,58 @@
   ],
   "groups": [
     {
+      "name": "Tracks",
+      "layers": [
+        {
+          "name": "Outer track",
+          "image-name": "outer-track.png",
+          "glass": true,
+          "opacity": 0.35,
+          "fill-specializations": [
+            {
+              "value": {
+                "solid": "extended-srgb:1,1,1,1"
+              }
+            },
+            {
+              "appearance": "dark",
+              "value": {
+                "solid": "extended-srgb:0.25098,0.61176,1.00000,1.00000"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Inner track",
+          "image-name": "inner-track.png",
+          "glass": true,
+          "opacity": 0.3,
+          "fill-specializations": [
+            {
+              "value": {
+                "solid": "extended-srgb:1,1,1,1"
+              }
+            },
+            {
+              "appearance": "dark",
+              "value": {
+                "solid": "extended-srgb:0.25098,0.61176,1.00000,1.00000"
+              }
+            }
+          ]
+        }
+      ],
+      "shadow": {
+        "kind": "none",
+        "opacity": 0.0
+      },
+      "specular": true,
+      "translucency": {
+        "enabled": true,
+        "value": 0.4
+      }
+    },
+    {
       "name": "Rings",
       "layers": [
         {

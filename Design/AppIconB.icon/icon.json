@@ -26,6 +26,7 @@
           "name": "Outer track",
           "image-name": "outer-track.png",
           "glass": true,
+          "opacity": 0.35,
           "fill-specializations": [
             {
               "value": {
@@ -38,13 +39,13 @@
                 "solid": "extended-srgb:0.25098,0.61176,1.00000,1.00000"
               }
             }
-          ],
-          "opacity": 0.35
+          ]
         },
         {
           "name": "Inner track",
           "image-name": "inner-track.png",
           "glass": true,
+          "opacity": 0.3,
           "fill-specializations": [
             {
               "value": {
@@ -57,8 +58,7 @@
                 "solid": "extended-srgb:0.25098,0.61176,1.00000,1.00000"
               }
             }
-          ],
-          "opacity": 0.3
+          ]
         }
       ],
       "shadow": {
@@ -68,7 +68,7 @@
       "specular": true,
       "translucency": {
         "enabled": true,
-        "value": 0.4
+        "value": 0.6
       }
     },
     {
@@ -90,7 +90,8 @@
                 "solid": "extended-srgb:0.47059,0.70588,1.00000,1.00000"
               }
             }
-          ]
+          ],
+          "opacity": 0.9
         },
         {
           "name": "Outer ring",
@@ -108,18 +109,19 @@
                 "solid": "extended-srgb:0.25098,0.61176,1.00000,1.00000"
               }
             }
-          ]
+          ],
+          "opacity": 0.9
         }
       ],
       "lighting": "individual",
       "shadow": {
-        "kind": "neutral",
-        "opacity": 0.45
+        "kind": "layer-color",
+        "opacity": 0.5
       },
       "specular": true,
       "translucency": {
         "enabled": true,
-        "value": 0.2
+        "value": 0.5
       }
     }
   ],
