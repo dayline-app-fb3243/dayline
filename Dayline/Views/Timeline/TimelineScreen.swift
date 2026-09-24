@@ -130,8 +130,8 @@ struct TimelineScreen: View {
     private func mapCard(height: CGFloat, hint: Bool) -> some View {
         mapView(interactive: false, showsControls: false)
             .frame(height: height)
-            .clipShape(.rect(cornerRadius: hint ? 24 : 30, style: .continuous))
-            .contentShape(.rect(cornerRadius: 24))
+            .clipShape(.rect(cornerRadius: Theme.cardRadius, style: .continuous))
+            .contentShape(.rect(cornerRadius: Theme.cardRadius))
             .onTapGesture { expanded = true }
             .overlay(alignment: .topTrailing) {
                 Button { expanded = true } label: {
@@ -142,14 +142,6 @@ struct TimelineScreen: View {
                 .glassEffect(.regular.interactive(), in: .circle)
                 .accessibilityLabel("Open map")
                 .padding(10)
-            }
-            .overlay(alignment: .bottomLeading) {
-                if hint {
-                    Text("Tap to open map").font(.caption.weight(.semibold))
-                        .padding(.horizontal, 10).padding(.vertical, 5)
-                        .glassEffect(.regular, in: .capsule)
-                        .padding(10)
-                }
             }
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier("mapCard")
