@@ -63,8 +63,8 @@ struct TodayView: View {
     private var scheduleSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 0) {
-                Text("SCHEDULE").font(.footnote.weight(.semibold))
-                Text(" · built from your day").font(.footnote)
+                Text("Schedule").font(.subheadline.weight(.semibold))
+                Text(" · built from your day").font(.subheadline)
             }
             .foregroundStyle(.secondary)
                 .padding(.leading, 4).padding(.top, 6)

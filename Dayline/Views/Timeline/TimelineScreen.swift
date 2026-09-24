@@ -293,7 +293,7 @@ struct TimelineScreen: View {
             Label(title, systemImage: symbol).font(.footnote.weight(.semibold)).labelStyle(.titleOnly)
                 .padding(.horizontal, 11).padding(.vertical, 7)
                 .foregroundStyle(on.wrappedValue ? .white : .primary)
-                .background(on.wrappedValue ? AnyShapeStyle(color.gradient) : AnyShapeStyle(.clear), in: .capsule)
+                .background(on.wrappedValue ? AnyShapeStyle(color) : AnyShapeStyle(.clear), in: .capsule)
         }
         .buttonStyle(.plain)
         .glassEffect(on.wrappedValue ? .identity : .regular.interactive(), in: .capsule)
@@ -332,7 +332,7 @@ struct MostVisitedList: View {
     var clusters: [TimelineScreen.Cluster]
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Most visited").font(.footnote).helperText().textCase(.uppercase)
+            Text("Most visited").font(.subheadline.weight(.semibold)).helperText()
                 .padding(.horizontal, 4).padding(.top, 8).padding(.bottom, 2)
             let top = Array(clusters.sorted { $0.hours > $1.hours }.prefix(6))
             if top.isEmpty {

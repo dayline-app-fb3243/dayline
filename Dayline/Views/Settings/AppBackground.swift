@@ -120,8 +120,8 @@ struct BackgroundPickerView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 8) {
-                Text("Backgrounds").font(.footnote).helperText()
-                    .textCase(.uppercase).padding(.leading, 16).padding(.top, 8)
+                Text("Backgrounds").font(.subheadline.weight(.semibold)).helperText()
+                   .padding(.leading, 16).padding(.top, 8)
                 LazyVGrid(columns: columns, spacing: 14) {
                     PhotosPicker(selection: $pick, matching: .images) {
                         VStack(spacing: 6) {
@@ -157,8 +157,8 @@ struct BackgroundPickerView: View {
                 .padding(.horizontal, 2)
 
                 if presetRaw == BackgroundPreset.photo.rawValue {
-                    Text("Photo style").font(.footnote).helperText()
-                        .textCase(.uppercase).padding(.leading, 16).padding(.top, 14)
+                    Text("Photo style").font(.subheadline.weight(.semibold)).helperText()
+                       .padding(.leading, 16).padding(.top, 14)
                     Picker("Photo style", selection: $styleRaw) {
                         ForEach(PhotoStyle.allCases) { Text($0.title).tag($0.rawValue) }
                     }
@@ -227,7 +227,7 @@ struct SectionHeader: View {
     var title: String
     init(_ title: String) { self.title = title }
     var body: some View {
-        Text(title).font(.footnote).helperText().textCase(.uppercase)
+        Text(title).font(.subheadline.weight(.semibold)).helperText()
             .padding(.leading, 4).padding(.top, 6)
     }
 }
@@ -470,7 +470,8 @@ struct ProfileIcon: View {
     var body: some View {
         Image(systemName: symbol).font(.system(size: size * 0.5, weight: .semibold)).foregroundStyle(.white)
             .frame(width: size, height: size)
-            .background(color.gradient, in: .rect(cornerRadius: size * 0.24, style: .continuous))
+            // Flat solid fill like iOS Settings (David: no 3D gradient look).
+            .background(color, in: .rect(cornerRadius: size * 0.24, style: .continuous))
     }
 }
 

@@ -55,7 +55,7 @@ struct InsightsView: View {
                 }
             }
             VStack(alignment: .leading, spacing: 6) {
-                Text("Points today").font(.footnote).helperText().textCase(.uppercase).padding(.leading, 16)
+                Text("Points today").font(.subheadline.weight(.semibold)).helperText().padding(.leading, 16)
                 VStack(spacing: 0) {
                     ForEach(Array(r.factors.enumerated()), id: \.element.id) { i, f in
                         if i > 0 { Divider().padding(.leading, 58) }

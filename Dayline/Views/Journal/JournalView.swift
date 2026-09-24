@@ -41,7 +41,7 @@ struct JournalView: View {
                     }
                     ForEach(days, id: \.0) { day, groups in
                         Text(Calendar.current.isDateInToday(day) ? "Today" : day.formatted(.dateTime.weekday(.wide).month(.abbreviated).day()))
-                            .font(.footnote).helperText().textCase(.uppercase)
+                            .font(.subheadline.weight(.semibold)).helperText()
                             .padding(.leading, 4).padding(.top, 6)
                         ForEach(groups) { g in
                             Button { editingGroup = g } label: { JournalCard(group: g) }.buttonStyle(.plain)
@@ -126,7 +126,7 @@ struct JournalCard: View {
                 HStack(spacing: 10) {
                     Image(systemName: group.kind == .voice ? "mic" : group.kind == .photo ? "photo" : "pencil")
                         .font(.system(size: 14, weight: .semibold)).foregroundStyle(.white)
-                        .frame(width: 29, height: 29).background(Theme.accent.gradient, in: .rect(cornerRadius: 7, style: .continuous))
+                        .frame(width: 29, height: 29).background(Theme.accent, in: .rect(cornerRadius: 7, style: .continuous))
                     VStack(alignment: .leading, spacing: 0) {
                         Text(heading).font(.subheadline.weight(.semibold))
                         if group.title != nil, let place = group.place { Text(place).font(.caption).foregroundStyle(.secondary) }
