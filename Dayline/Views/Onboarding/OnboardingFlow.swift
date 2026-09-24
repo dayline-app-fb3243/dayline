@@ -34,9 +34,9 @@ struct OnboardingFlow: View {
 struct AppMark: View {
     var size: CGFloat = 96
     var shadow = true
-    /// Preview flag "mark.rings" (awaiting David's pick): just the two rings, no square.
+    /// "mark.rings" (David approved app blue 9/24; set "" for the old square icon): just the two rings, no square.
     /// blue = app blue, ink = black/white, sky = light-to-deep blue, duo = blue + teal.
-    @AppStorage("mark.rings") private var rings = ""
+    @AppStorage("mark.rings") private var rings = "blue"
     var body: some View {
         if rings.isEmpty { iconBody } else { RingMark(size: size, palette: rings) }
     }
@@ -318,7 +318,7 @@ struct SplashView: View {
 
 /// Sign-in sheet in the style of Apple's own "Sign in with Apple" sheet: pick one, then the blue button.
 struct SignInSheet: View {
-    @AppStorage("signin.small") private var smallButton = false
+    @AppStorage("signin.small") private var smallButton = true
     @AppStorage("signin.pinned") private var pinned = true // Sep 24: David approved (fitted sheet, full-width button)
     @State private var fitHeight: CGFloat = 0
     var next: () -> Void
@@ -359,7 +359,7 @@ struct SignInSheet: View {
             }
             // Preview flag "signin.pinned" (awaiting David's OK): full-width button pinned to the bottom.
             if pinned && smallButton {
-                // Preview flag "signin.small" (awaiting David's OK): fitted sheet, small centered "Continue" pill.
+                // "signin.small" (David approved 9/24): fitted sheet, small centered "Continue" pill.
                 Button(action: go) { Text("Continue").font(.headline).padding(.horizontal, 30) }
                     .buttonStyle(.glassProminent).tint(Theme.accent).controlSize(.large)
                     .frame(maxWidth: .infinity).padding(.top, 18)
@@ -459,7 +459,7 @@ final class AppleSignInRunner: NSObject, ASAuthorizationControllerDelegate, ASAu
 /// Demo stand-in for Apple's own Sign in with Apple sheet (the real one needs a paid developer account).
 /// Laid out like the real iOS 26 sheet.
 struct AppleSignInDemoSheet: View {
-    @AppStorage("signin.small") private var smallButton = false
+    @AppStorage("signin.small") private var smallButton = true
     @AppStorage("signin.pinned") private var pinned = true // Sep 24: David approved (fitted sheet, full-width button)
     @State private var fitHeight: CGFloat = 0
     var onContinue: () -> Void
