@@ -1,4 +1,6 @@
 import SwiftUI
+import AVFoundation
+import Photos
 import AuthenticationServices
 
 /// First launch: splash -> 3 intro pages -> sign in -> permissions -> app.
@@ -259,51 +261,72 @@ struct GoogleG: View {
     }
 }
 
+/// One page per permission, Apple's pattern: left title, blue symbols, a note, Continue.
+/// Continue shows iPhone's own system prompt (never a drawn one), then moves on.
 struct PermissionsView: View {
     var next: () -> Void
     private let isDemo = ProcessInfo.processInfo.arguments.contains("-demo")
+    @State private var index = 0
+
+    private struct Page { var kind: String; var title: String; var rows: [(String, String)]; var note: String }
+    private let pages: [Page] = [
+        Page(kind: "location", title: "Turning on Location lets Dayline:",
+             rows: [("list.bullet", "Build your timeline for you"), ("map", "Show where you were on a map"), ("clock.arrow.circlepath", "Find a place again with Siri")],
+             note: "It\u{2019}s low-power, so it\u{2019}s easy on your battery. You can change this later in Settings."),
+        Page(kind: "photos", title: "Turning on Photos lets Dayline:",
+             rows: [("photo.on.rectangle", "Put your photos on the places you took them"), ("calendar", "Show them on your day")],
+             note: "Your photos stay on your iPhone. You can change this later in Settings."),
+        Page(kind: "mic", title: "Turning on the Microphone lets Dayline:",
+             rows: [("mic", "Record voice notes for your journal"), ("text.bubble", "Turn them into text on your iPhone")],
+             note: "Dayline only listens while you record. You can change this later in Settings."),
+        Page(kind: "notifications", title: "Turning on Notifications lets Dayline:",
+             rows: [("person.badge.plus", "Tell you when someone asks to follow you"), ("star", "Tell you when you hit 80")],
+             note: "That\u{2019}s it, only those 2. You can change this later in Settings."),
+    ]
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("A few permissions").font(.largeTitle.bold()).padding(.top, 40)
-            Text("Dayline works best with these. You can change them any time in Settings.")
-                .foregroundStyle(.secondary)
-            Card(padding: 0) {
-                VStack(spacing: 0) {
-                    row("location.fill", .blue, "Location", "Builds your timeline and learns your routine")
-                    Divider().padding(.leading, 62)
-                    row("photo.fill", Theme.accent, "Photos", "Puts your photos where you took them")
-                    Divider().padding(.leading, 62)
-                    row("mic.fill", Theme.accent, "Microphone", "Voice notes, turned into text on your iPhone")
-                    Divider().padding(.leading, 62)
-                    row("bell.fill", Theme.accent, "Notifications", "When someone asks to follow you, or you hit 80")
+        let page = pages[index]
+        VStack(alignment: .leading, spacing: 0) {
+            Text(page.title).font(.title.bold()).padding(.top, 60).padding(.bottom, 30)
+            ForEach(page.rows, id: \.1) { r in
+                HStack(spacing: 16) {
+                    Image(systemName: r.0).font(.title2).foregroundStyle(.blue).frame(width: 36)
+                    Text(r.1).font(.body)
                 }
+                .padding(.bottom, 24)
             }
+            Text(page.note).font(.body).padding(.top, 4)
             Spacer()
-            Button {
-                if !isDemo {
-                    LocationService.shared.requestPermission()
-                    Task { await Notifications.requestPermission() }
-                }
-                next()
-            } label: { Text("Allow and Continue").font(.headline).frame(maxWidth: .infinity) }
+            Button { Task { await request(page.kind); advance() } } label: {
+                Text("Continue").font(.headline).frame(maxWidth: .infinity)
+            }
             .buttonStyle(.glassProminent).controlSize(.extraLarge)
             .accessibilityIdentifier("permissionsContinue")
         }
-        .padding(.horizontal, 22).padding(.bottom, 16)
-        .background(Color(.systemGroupedBackground))
+        .padding(.horizontal, 28).padding(.bottom, 16)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background(Color(.systemBackground))
+        .id(index)
+        .transition(.push(from: .trailing))
     }
 
-    private func row(_ symbol: String, _ color: Color, _ title: String, _ detail: String) -> some View {
-        HStack(spacing: 14) {
-            Image(systemName: symbol).foregroundStyle(.white).frame(width: 34, height: 34)
-                .background(color.gradient, in: .rect(cornerRadius: 9))
-            VStack(alignment: .leading, spacing: 1) {
-                Text(title).font(.body.weight(.semibold))
-                Text(detail).font(.caption).foregroundStyle(.secondary)
+    private func advance() {
+        if index < pages.count - 1 { withAnimation(.smooth) { index += 1 } } else { next() }
+    }
+
+    @MainActor private func request(_ kind: String) async {
+        guard !isDemo else { return }
+        switch kind {
+        case "location":
+            LocationService.shared.requestPermission()
+            // Wait for the answer to iPhone's prompt (up to a minute).
+            for _ in 0..<120 where LocationService.shared.authorization == .notDetermined {
+                try? await Task.sleep(for: .milliseconds(500))
             }
-            Spacer()
+        case "photos": _ = await PHPhotoLibrary.requestAuthorization(for: .readWrite)
+        case "mic": _ = await AVAudioApplication.requestRecordPermission()
+        default: await Notifications.requestPermission()
         }
-        .padding(.horizontal, 14).padding(.vertical, 11)
     }
 }
 

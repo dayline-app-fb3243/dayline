@@ -38,6 +38,9 @@ final class DemoTourTests: XCTestCase {
         tapID(app, "setupPrimary"); pause(1.5)
         let codeField = app.textFields["codeField"]; _ = codeField.waitForExistence(timeout: 5); codeField.tap(); codeField.typeText("4829"); pause(1); shot("06b-code")
         codeField.typeText("13"); tapID(app, "setupPrimary"); pause(1.5); shot("06-permissions")
+        tapID(app, "permissionsContinue"); pause(1.2); shot("06b-permissions-photos")
+        tapID(app, "permissionsContinue"); pause(1.2); shot("06c-permissions-mic")
+        tapID(app, "permissionsContinue"); pause(1.2); shot("06d-permissions-notifications")
         tapID(app, "permissionsContinue"); pause(3); shot("07-today-after-sign-in")
     }
 
