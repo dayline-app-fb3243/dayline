@@ -103,7 +103,7 @@ struct ScoreCard: View {
                     ScoreRing(score: result.score, size: 84)
                     VStack(alignment: .leading, spacing: 2) {
                         Text("DAY SCORE").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-                        Text(result.label).font(.title2.weight(.heavy)).foregroundStyle(labelColor)
+                        Text(result.label).font(.title2.bold()).foregroundStyle(labelColor)
                         Text(result.tip ?? result.summary).font(.subheadline).foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }

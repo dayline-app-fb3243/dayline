@@ -36,7 +36,7 @@ struct TimelineScreen: View {
                     if range == .day {
                         // Day: small map on top (tap for full screen), then one photo card per stop.
                         mapCard(height: 150, hint: true)
-                        Text(title).font(.title.bold()).padding(.horizontal, 2).padding(.top, 4)
+                        Text(title).font(.title2.bold()).padding(.horizontal, 2).padding(.top, 4)
                         HStack(spacing: 6) {
                             infoChip("\(placeCount)", "places")
                             infoChip(distanceText, "moved")
@@ -62,7 +62,9 @@ struct TimelineScreen: View {
                 .padding(.horizontal, 16).padding(.bottom, 24)
             }
             .background(AppBackgroundView())
-            .toolbarVisibility(.hidden, for: .navigationBar)
+            .navigationTitle("Timeline")
+            .navigationBarTitleDisplayMode(.large)
+            .backgroundNavBar()
             .fullScreenCover(isPresented: $expanded) { fullMap }
             .onChange(of: range) { camera = .automatic }
             .onChange(of: anchor) { camera = .automatic }
@@ -253,7 +255,10 @@ struct TimelineScreen: View {
 
     private var rangeControls: some View {
         VStack(spacing: 8) {
-            CapsuleSegmented(selection: $range, options: MapRange.allCases.map { ($0, $0.rawValue) })
+            Picker("Range", selection: $range) {
+                ForEach(MapRange.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+            }
+            .pickerStyle(.segmented)
             if range != .day {
                 HStack {
                     Button("Previous", systemImage: "chevron.left") { step(-1) }.labelStyle(.iconOnly)
@@ -264,7 +269,6 @@ struct TimelineScreen: View {
                 .buttonStyle(.glass)
             }
         }
-        .padding(.top, 8)
     }
 
     private var layerToggles: some View {

@@ -65,14 +65,14 @@ struct StreakRing: View {
             ForEach(sorted.filter { $0.showsBadge && $0.value > 0 }) { a in
                 let angle = -Double.pi / 2 + 2 * Double.pi * min(0.999, Double(a.value) / full)
                 Text("\(a.value)")
-                    .font(.system(size: 12, weight: .heavy)).foregroundStyle(a.color)
+                    .font(.caption.bold()).foregroundStyle(a.color)
                     .frame(width: 24, height: 24)
                     .background(.white, in: .circle)
                     .offset(x: r * cos(angle), y: r * sin(angle))
             }
             VStack(spacing: 0) {
-                Text("\(center)").font(.system(size: 54, weight: .heavy)).contentTransition(.numericText())
-                Text(center == 1 ? "day in a row" : "days in a row").font(.system(size: 12.5, weight: .semibold)).foregroundStyle(.secondary)
+                Text("\(center)").font(.largeTitle.bold()).contentTransition(.numericText())
+                Text(center == 1 ? "day in a row" : "days in a row").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
             }
         }
         .frame(width: size, height: size)
@@ -166,14 +166,14 @@ private struct FriendRow: View {
     var current: Int
     var body: some View {
         HStack(spacing: 12) {
-            Text(initials).font(.system(size: 12.5, weight: .bold)).foregroundStyle(.white)
+            Text(initials).font(.caption.bold()).foregroundStyle(.white)
                 .frame(width: 30, height: 30).background(color, in: .circle)
             VStack(alignment: .leading, spacing: 1) {
                 Text(name).font(.subheadline.weight(.semibold))
                 Text("Best \(best) days").font(.caption).foregroundStyle(.secondary)
             }
             Spacer()
-            Text("\(current)").font(.system(size: 17, weight: .heavy)).foregroundStyle(color)
+            Text("\(current)").font(.headline).foregroundStyle(color)
         }
         .padding(.horizontal, 14).padding(.vertical, 11)
         .contentShape(.rect)
@@ -359,7 +359,7 @@ private struct PeopleHeader: View {
     var title: String
     init(_ t: String) { title = t }
     var body: some View {
-        Text(title).font(.title2.weight(.heavy)).padding(.leading, 14).padding(.top, 18).padding(.bottom, 8)
+        Text(title).font(.title2.bold()).padding(.leading, 14).padding(.top, 18).padding(.bottom, 8)
     }
 }
 
@@ -564,7 +564,7 @@ struct PersonView: View {
             VStack(alignment: .leading, spacing: 0) {
                 VStack(spacing: 4) {
                     PersonAvatar(name: friend.name, color: friend.color, size: 96)
-                    Text(friend.fullName).font(.title.weight(.heavy)).padding(.top, 6)
+                    Text(friend.fullName).font(.title.bold()).padding(.top, 6)
                     Text("Sharing since \(friend.since)").font(.subheadline.weight(.medium)).foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity).padding(.top, 8).padding(.bottom, 6)

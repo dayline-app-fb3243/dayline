@@ -15,7 +15,7 @@ struct InsightsView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
-                    CapsuleSegmented(selection: $range, options: InsightRange.allCases.map { ($0, $0.rawValue) })
+                    Picker("Range", selection: $range) { ForEach(InsightRange.allCases, id: \.self) { Text($0.rawValue).tag($0) } }.pickerStyle(.segmented)
                     switch range {
                     case .day: dayView
                     case .month: monthView
@@ -26,6 +26,7 @@ struct InsightsView: View {
             }
             .background(AppBackgroundView())
             .navigationTitle("Insights")
+            .navigationBarTitleDisplayMode(.large)
             .backgroundNavBar()
             .navigationDestination(isPresented: $showStreak) { StreakView() }
             .navigationBarTitleDisplayMode(.large)
@@ -75,7 +76,7 @@ struct InsightsView: View {
                         VStack(alignment: .leading) {
                             Text("\(Date.now.formatted(.dateTime.month(.wide))) average").font(.subheadline).foregroundStyle(.secondary)
                             HStack(alignment: .firstTextBaseline, spacing: 2) {
-                                Text("\(avg)").font(.system(size: 44, weight: .heavy))
+                                Text("\(avg)").font(.largeTitle.bold())
                                 Text("/100").font(.title3.weight(.semibold)).foregroundStyle(.secondary)
                             }
                         }
@@ -158,7 +159,7 @@ struct InsightsView: View {
             Spacer()
             HStack(spacing: 4) {
                 if up { Image(systemName: "arrowtriangle.up.fill").font(.caption) }
-                Text("\(score)").font(.system(size: 28, weight: .bold))
+                Text("\(score)").font(.title.bold())
             }
             .foregroundStyle(score < 45 ? Theme.bad : Theme.accent)
             Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(.tertiary)

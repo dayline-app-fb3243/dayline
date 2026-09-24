@@ -71,7 +71,7 @@ private struct VoiceCaptureSheet: View {
             VStack(spacing: 28) {
                 Spacer()
                 Text(Duration.seconds(voice.elapsed).formatted(.time(pattern: .minuteSecond)))
-                    .font(.system(size: 48, weight: .semibold)).monospacedDigit()
+                    .font(.largeTitle.weight(.semibold)).monospacedDigit()
                 Circle()
                     .fill(Theme.accent.opacity(0.15))
                     .frame(width: 120 + CGFloat(voice.level) * 60, height: 120 + CGFloat(voice.level) * 60)

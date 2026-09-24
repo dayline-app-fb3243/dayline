@@ -75,7 +75,7 @@ struct ScoreRing: View {
                     .offset(y: -size / 2)
             }
             Text("\(score)")
-                .font(.system(size: size * 0.3, weight: .heavy))
+                .font(.system(size: size * 0.3, weight: .bold))
                 .contentTransition(.numericText())
         }
         .frame(width: size, height: size)

@@ -40,6 +40,7 @@ struct JournalView: View {
             }
             .background(AppBackgroundView())
             .navigationTitle("Journal")
+            .navigationBarTitleDisplayMode(.large)
             .backgroundNavBar()
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
