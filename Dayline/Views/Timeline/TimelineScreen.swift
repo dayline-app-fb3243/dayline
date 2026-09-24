@@ -25,7 +25,7 @@ struct TimelineScreen: View {
     @State private var streetRoute: [CLLocationCoordinate2D] = []
     /// Preview flag "map.3d" (awaiting David's pick): the full-screen map opens tilted in 3D with real buildings,
     /// and gets a 2D/3D button. The route is drawn into the map, so it tilts with it.
-    @AppStorage("map.3d") private var map3DFlag = false
+    @AppStorage("map.3d") private var map3DFlag = true
     @State private var is3D = false
     /// The map is centered on your current location (filled arrow). Cleared when you pan away.
     @State private var onMyLocation = false
