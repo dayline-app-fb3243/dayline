@@ -39,6 +39,7 @@ targets:
         NSMotionUsageDescription: Dayline uses motion to tell when you fell asleep and woke up, so late nights count toward the right day. It stays on your iPhone.
         NSHealthShareUsageDescription: Dayline adds your runs, walks and workouts to your timeline and ticks off gym time on your schedule. It only reads workouts.
         NSHealthUpdateUsageDescription: Dayline never writes to Apple Health.
+        NSRemindersFullAccessUsageDescription: Dayline counts reminders due today toward your day score. It only reads them and never changes them.
         NSMicrophoneUsageDescription: Dayline records voice notes for your journal.
         NSSpeechRecognitionUsageDescription: Dayline turns your voice notes into text on your device.
         UIBackgroundModes: [fetch, processing, location]

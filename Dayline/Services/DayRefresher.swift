@@ -16,6 +16,11 @@ enum DayRefresher {
         if !DemoData.isDemo {
             await HealthService.shared.importWorkouts(context: context, since: DayBoundary.shared.window(for: today).start)
             await CheckInService.evaluate(context: context)
+            let w = DayBoundary.shared.window(for: today)
+            DayCache.setSteps(await StepGoal.steps(from: w.start, to: min(w.end, .now)), for: today)
+            let r = await RemindersService.shared.counts(for: today)
+            DayCache.setReminders(done: r.done, total: r.total, for: today)
+            await StepGoal.refresh()
         }
         await PhotoService.shared.importPhotos(on: today, context: context)
         RoutineLearner.fillToday(context: context)
