@@ -987,6 +987,19 @@ final class DemoTourTests: XCTestCase {
         app.terminate()
     }
 
+    /// Ring B blend options 1/2/3 on a slipping day (9pm gym missed) and a worse one (11pm gym + journal missed).
+    func testRingBlend() throws {
+        for n in ["1", "2", "3"] {
+            for (scenario, hour) in [("nogym", 21), ("late", 23)] {
+                let app = XCUIApplication()
+                app.launchArguments = ["-demo", "-ring.pace", "B", "-ring.blend", n, "-demo.pace", scenario, "-status.phrase", "1"]
+                app.launchEnvironment["TZ"] = Self.zone(localHour: hour)
+                app.launch(); pause(3); shot("rb-\(n)-\(scenario)")
+                app.terminate()
+            }
+        }
+    }
+
     /// Rotating status words: every blue phrase (2pm, on track) and every orange phrase (9pm, gym missed), ring B.
     func testStatusPhrases() throws {
         for (scenario, hour, count, tag) in [("gym", 14, 5, "blue"), ("nogym", 21, 4, "orange")] {

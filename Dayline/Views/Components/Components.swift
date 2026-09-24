@@ -93,15 +93,31 @@ struct ScoreRing: View {
         default: return [Theme.ringStart, Theme.accent]
         }
     }
-    /// B behind: light blue -> darker blue -> orange -> darker orange, spread evenly so there's no hard seam.
+    /// B behind: light blue -> darker blue -> orange -> darker orange, one smooth blend with no hard seam.
     /// The more points slip away, the earlier along the fill the orange starts.
+    /// Preview flag "ring.blend" (awaiting David's pick): 1 = even spread, 2 = mostly blue with a short orange tail,
+    /// 3 = deeper shades with a long soft middle.
+    @AppStorage("ring.blend") private var blend = "1"
     private var gradient: Gradient {
         guard behind, paceStyle == "B" else { return Gradient(colors: colors) }
         let c = colors
-        return Gradient(stops: [.init(color: c[0], location: 0),
-                                .init(color: c[1], location: 0.45 - 0.2 * slip),
-                                .init(color: c[2], location: 0.8 - 0.15 * slip),
-                                .init(color: c[3], location: 1)])
+        switch blend {
+        case "2":
+            return Gradient(stops: [.init(color: c[0], location: 0),
+                                    .init(color: c[1], location: 0.6 - 0.15 * slip),
+                                    .init(color: c[2], location: 0.88 - 0.1 * slip),
+                                    .init(color: c[3], location: 1)])
+        case "3":
+            return Gradient(stops: [.init(color: Color(red: 0.55, green: 0.78, blue: 1), location: 0),
+                                    .init(color: Color(red: 0.0, green: 0.36, blue: 0.85), location: 0.3 - 0.1 * slip),
+                                    .init(color: Color(red: 1, green: 0.6, blue: 0.2), location: 0.72 - 0.12 * slip),
+                                    .init(color: Color(red: 0.8, green: 0.28, blue: 0.0), location: 1)])
+        default:
+            return Gradient(stops: [.init(color: c[0], location: 0),
+                                    .init(color: c[1], location: 0.45 - 0.2 * slip),
+                                    .init(color: c[2], location: 0.8 - 0.15 * slip),
+                                    .init(color: c[3], location: 1)])
+        }
     }
     var body: some View {
         ZStack {
