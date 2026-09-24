@@ -367,10 +367,10 @@ struct DayActivityList: View {
         }
     }
 
-    /// C: the opened row. From arrival to leaving (or now), the photos taken there, and a small map.
+    /// C: the opened row (wake and journal rows show no photos). From arrival to leaving (or now), the photos taken there, and a small map.
     @ViewBuilder private func detail(_ r: Row) -> some View {
         let end = r.end ?? .now
-        let pics = journal.filter { $0.kind == .photo && $0.date >= r.time && $0.date <= end }.compactMap { $0.thumbnail.flatMap(UIImage.init(data:)) }
+        let pics = (r.kind == .wake || r.kind == .journal) ? [] : journal.filter { $0.kind == .photo && $0.date >= r.time && $0.date <= end }.compactMap { $0.thumbnail.flatMap(UIImage.init(data:)) }
         let texts = r.kind == .visit ? journal.filter { $0.kind != .photo && !$0.text.isEmpty && $0.date >= r.time && $0.date <= end }.map(\.text) : []
         VStack(alignment: .leading, spacing: 10) {
             if r.kind == .visit || r.kind == .plan {
