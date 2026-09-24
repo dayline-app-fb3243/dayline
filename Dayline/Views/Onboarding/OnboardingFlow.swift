@@ -886,7 +886,7 @@ struct SplashLiveMap: View {
     var body: some View {
         Map(initialPosition: position, interactionModes: []) {
             if route.count > 1 {
-                if style == "D" {
+                if ["D", "J", "K", "L"].contains(style) {
                     // D: thick route with a white edge, close and steep, like Apple Maps directions.
                     MapPolyline(coordinates: route).stroke(.white, style: StrokeStyle(lineWidth: 11, lineCap: .round, lineJoin: .round))
                     MapPolyline(coordinates: route).stroke(Theme.accent, style: StrokeStyle(lineWidth: 7, lineCap: .round, lineJoin: .round))
@@ -934,9 +934,11 @@ struct SplashLiveMap: View {
         if style == "I" { return .camera(MapCamera(centerCoordinate: center, distance: 2000, heading: 0, pitch: 18)) }
         // J/K/L: H, zoomed right in like Apple Maps up close (trees, detailed 3D), route in view.
         let coffee = CLLocationCoordinate2D(latitude: 40.7520, longitude: -73.9785)
-        if style == "J" { return .camera(MapCamera(centerCoordinate: coffee, distance: 900, heading: 29, pitch: 40)) }
-        if style == "K" { return .camera(MapCamera(centerCoordinate: coffee, distance: 600, heading: 29, pitch: 50)) }
-        if style == "L" { return .camera(MapCamera(centerCoordinate: coffee, distance: 400, heading: 29, pitch: 58)) }
+        // Pulled back a little from the first try so the blue route and a few stops read clearly.
+        let mid = CLLocationCoordinate2D(latitude: 40.7512, longitude: -73.9805)
+        if style == "J" { return .camera(MapCamera(centerCoordinate: mid, distance: 1300, heading: 29, pitch: 45)) }
+        if style == "K" { return .camera(MapCamera(centerCoordinate: coffee, distance: 1000, heading: 29, pitch: 50)) }
+        if style == "L" { return .camera(MapCamera(centerCoordinate: coffee, distance: 750, heading: 20, pitch: 55)) }
         if style == "E" { return .camera(MapCamera(centerCoordinate: center, distance: 2400, heading: 29, pitch: 58)) }
         if style == "F" { return .camera(MapCamera(centerCoordinate: center, distance: 2800, heading: 210, pitch: 55)) }
         return .region(MKCoordinateRegion(center: center, span: .init(latitudeDelta: 0.021, longitudeDelta: 0.021)))
