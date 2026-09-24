@@ -68,8 +68,12 @@ enum ScoreEngine {
             if overdue > 0 { lost += full * Double(overdue) / Double(total); missed.append("Plans") }
         }
         var moveBy = 0
-        // Gym deadline: when your gym closes. Real hours (Google) when known, otherwise the closing time you entered.
-        if s.gym { moveBy = max(moveBy, GymHours.closing(on: day, calendar: calendar) ?? s.gymDeadline) }
+        // Gym deadline: when your gym closes (real hours from Google). Hours unknown: the gym only counts as
+        // missed at the end of the day (bedtime), never mid-day. With "gym.hours" off: the old Go By setting.
+        if s.gym {
+            let deadline = GymHours.enabled ? (GymHours.closing(on: day, calendar: calendar) ?? bed) : s.gymDeadline
+            moveBy = max(moveBy, deadline)
+        }
         if s.walk || s.outside { moveBy = max(moveBy, bed - 60) }
         if moveBy > 0 { miss(.moving, s.gym && !(s.walk || s.outside) ? "Gym" : "Moving", deadline: moveBy) }
         miss(.gotOut, "Getting out", deadline: bed - 60)

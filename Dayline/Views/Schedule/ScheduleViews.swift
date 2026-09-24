@@ -94,8 +94,8 @@ struct YourScheduleView: View {
                         }
                     }
                     .accessibilityIdentifier("gymBy")
-                } else if s.gym {
-                    // The day score only counts the gym as missed after this time (e.g. when your gym closes).
+                } else if s.gym && !GymHours.enabled {
+                    // Old Go By picker, only with "gym.hours" off. With it on and hours unknown, no time is shown.
                     DatePicker("Go By", selection: Binding(
                         get: { UserSchedule.date(s.gymDeadline, on: .now) },
                         set: { s.gymBy = UserSchedule.minutes(of: $0) }), displayedComponents: .hourAndMinute)
