@@ -284,6 +284,13 @@ struct ProfileView: View {
                         Button { openSettings() } label: { ProfileRow(symbol: "bell.fill", title: "Notifications", value: "Follows · 80 score") }
                     }
                 }
+                SectionHeader("Siri")
+                Card(padding: 0) {
+                    NavigationLink { SiriCommandsView() } label: {
+                        ProfileRow(symbol: "waveform", title: "Use with Siri", value: "\(SiriCommands.all.count) commands")
+                    }
+                    .accessibilityIdentifier("useWithSiriRow")
+                }
                 SectionHeader("Privacy")
                 Card(padding: 0) {
                     NavigationLink { PrivacyView() } label: { ProfileRow(symbol: "lock.fill", title: "Your data", value: "On this iPhone") }

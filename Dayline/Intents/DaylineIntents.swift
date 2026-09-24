@@ -119,11 +119,29 @@ extension Notification.Name { static let openVoiceCapture = Notification.Name("o
 struct DaylineShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
         AppShortcut(intent: FindPlaceIntent(), phrases: [
-            "Take me to the \(\.$kind) I went to in \(.applicationName)",
+            "Take me back with \(.applicationName)",
+            "Take me back in \(.applicationName)",
+            "\(.applicationName), take me back",
+            "\(.applicationName), take me back to the \(\.$kind)",
+            "Take me back to the \(\.$kind) with \(.applicationName)",
+            "Take me back to the \(\.$kind) in \(.applicationName)",
             "Take me back to that \(\.$kind) with \(.applicationName)",
-            "Find the \(\.$kind) I went to in \(.applicationName)",
+            "Take me to the \(\.$kind) I went to in \(.applicationName)",
+            "Take me back to a place with \(.applicationName)",
+            "Take me back to where I ate with \(.applicationName)",
             "Take me to where I ate in \(.applicationName)",
-            "Where did I eat in \(.applicationName)"
+            "Take me to the place I ate with \(.applicationName)",
+            "Where did I eat in \(.applicationName)",
+            "Where did I go in \(.applicationName)",
+            "Where was that \(\.$kind) in \(.applicationName)",
+            "Find the \(\.$kind) I went to in \(.applicationName)",
+            "Find a place I went in \(.applicationName)",
+            "Find a place with \(.applicationName)",
+            "Help me find the \(\.$kind) I went to in \(.applicationName)",
+            "Show me the \(\.$kind) I went to in \(.applicationName)",
+            "Get me back to the \(\.$kind) with \(.applicationName)",
+            "Go back to the \(\.$kind) with \(.applicationName)",
+            "Directions to the \(\.$kind) I went to with \(.applicationName)"
         ], shortTitle: "Take Me Back", systemImageName: "arrow.triangle.turn.up.right.diamond.fill")
         AppShortcut(intent: JournalByVoiceIntent(), phrases: [
             "Journal in \(.applicationName)",
