@@ -70,7 +70,7 @@ struct SiriRowIcon: View {
 }
 
 
-/// Our own simple mark (a ring with a wave through it) in the app's blue. Not Apple's artwork.
+/// Our own drawing of a ring with a wave, in the app blue. LAUNCH TODO: it copies the look of Apple's Siri mark (trademark) - App Store review risk; check or replace before release.
 struct SiriMark: View {
     var color: Color = Theme.accent
     var body: some View {
