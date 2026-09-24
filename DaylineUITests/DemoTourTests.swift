@@ -1436,6 +1436,18 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Today page samples 1-5 plus the current page, at 3 PM.
+    func testTodayPages() throws {
+        for v in ["", "1", "2", "3", "4", "5"] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-today.page", v]
+            app.launchEnvironment["TZ"] = Self.zone(localHour: 15)
+            app.launch(); pause(2.5)
+            shot("tp-\(v.isEmpty ? "now" : v)")
+            app.terminate()
+        }
+    }
+
     /// Ring join preview: how blue meets orange, with a lighter orange capped short of dark. "" = now.
     func testRingJoin() throws {
         for v in ["", "A", "B", "C"] {

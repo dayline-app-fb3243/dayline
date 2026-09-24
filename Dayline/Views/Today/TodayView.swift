@@ -19,12 +19,15 @@ struct TodayView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
-                    header
-                    LocationOffCard()
-                    NavigationLink { ScoreDetailView(result: result) } label: { ScoreCard(result: result, showsChevron: true) }
-                        .buttonStyle(.plain)
-                        .accessibilityIdentifier("scoreCard")
-                    scheduleSection
+                    if page.isEmpty {
+                        header
+                        LocationOffCard()
+                        scoreLink
+                        scheduleSection
+                    } else {
+                        TodayPageSample(page: page, result: result, header: AnyView(header),
+                                        score: AnyView(scoreLink), schedule: AnyView(scheduleSection))
+                    }
                 }
                 .padding(.horizontal, 18)
                 .padding(.bottom, 24)
@@ -33,6 +36,14 @@ struct TodayView: View {
             .tabRoot()
             .sheet(item: $capture) { mode in CaptureSheet(mode: mode) }
         }
+    }
+
+    /// Preview "today.page" 1-5: whole-page layouts for Today ("" = the current page). Sample-only until one is picked.
+    @AppStorage("today.page") private var page = ""
+    private var scoreLink: some View {
+        NavigationLink { ScoreDetailView(result: result) } label: { ScoreCard(result: result, showsChevron: true) }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("scoreCard")
     }
 
     private var header: some View {
