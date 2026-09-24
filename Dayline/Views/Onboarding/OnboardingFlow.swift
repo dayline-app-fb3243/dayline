@@ -104,6 +104,7 @@ struct SplashView: View {
 
 /// Sign-in sheet in the style of Apple's own "Sign in with Apple" sheet: pick one, then the blue button.
 struct SignInSheet: View {
+    @AppStorage("signin.pinned") private var pinned = false
     var next: () -> Void
     var email: () -> Void
     enum Option: String, CaseIterable { case apple = "Apple", google = "Google", email = "Email" }
@@ -140,13 +141,21 @@ struct SignInSheet: View {
             if let error = auth.errorMessage {
                 Text(error).font(.footnote).foregroundStyle(.red).frame(maxWidth: .infinity).padding(.top, 8)
             }
-            Spacer(minLength: 16)
-            // Bug fix (Sep 24): full-width button pinned to the bottom, like Apple's own sign-in sheets.
-            Button(action: go) { Text("Continue with \(choice.rawValue)").font(.headline).frame(maxWidth: .infinity) }
-                .buttonStyle(.glassProminent).tint(Theme.accent).controlSize(.extraLarge)
-                .accessibilityIdentifier("signInContinue")
+            // Preview flag "signin.pinned" (awaiting David's OK): full-width button pinned to the bottom.
+            if pinned {
+                Spacer(minLength: 16)
+                Button(action: go) { Text("Continue with \(choice.rawValue)").font(.headline).frame(maxWidth: .infinity) }
+                    .buttonStyle(.glassProminent).tint(Theme.accent).controlSize(.extraLarge)
+                    .accessibilityIdentifier("signInContinue")
+            } else {
+                Button(action: go) { Text("Continue with \(choice.rawValue)").font(.headline).padding(.horizontal, 10) }
+                    .buttonStyle(.glassProminent).tint(Theme.accent).controlSize(.large)
+                    .frame(maxWidth: .infinity).padding(.top, 18)
+                    .accessibilityIdentifier("signInContinue")
+                Spacer(minLength: 0)
+            }
         }
-        .padding(.horizontal, 20).padding(.top, 20).padding(.bottom, 8)
+        .padding(.horizontal, 20).padding(.top, 20).padding(.bottom, pinned ? 8 : 0)
         .background(Color(.systemGroupedBackground))
         .sheet(isPresented: $showAppleDemo, onDismiss: {
             // Only move on once the Apple sheet is fully gone, so the sign-in sheet can close too.
@@ -224,6 +233,7 @@ final class AppleSignInRunner: NSObject, ASAuthorizationControllerDelegate, ASAu
 /// Demo stand-in for Apple's own Sign in with Apple sheet (the real one needs a paid developer account).
 /// Laid out like the real iOS 26 sheet.
 struct AppleSignInDemoSheet: View {
+    @AppStorage("signin.pinned") private var pinned = false
     var onContinue: () -> Void
     @State private var hideEmail = true
     @Environment(\.dismiss) private var dismiss
@@ -257,14 +267,18 @@ struct AppleSignInDemoSheet: View {
             }
             .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 24, style: .continuous))
             .padding(.top, 10)
-            Spacer(minLength: 16)
-            Button(action: onContinue) { Text("Continue").font(.headline).frame(maxWidth: .infinity) }
-                .buttonStyle(.glassProminent).tint(Theme.accent).controlSize(.extraLarge)
+            if pinned { Spacer(minLength: 16) }
+            Button(action: onContinue) {
+                if pinned { Text("Continue").font(.headline).frame(maxWidth: .infinity) } else { Text("Continue").font(.headline).padding(.horizontal, 30) }
+            }
+                .buttonStyle(.glassProminent).tint(Theme.accent).controlSize(pinned ? .extraLarge : .large)
+                .frame(maxWidth: .infinity).padding(.top, pinned ? 0 : 18)
                 .accessibilityIdentifier("appleDemoContinue")
             Text("Use a different Apple Account").font(.subheadline).foregroundStyle(Theme.accent)
                 .frame(maxWidth: .infinity).padding(.top, 12)
+            if !pinned { Spacer(minLength: 0) }
         }
-        .padding(.horizontal, 20).padding(.top, 20).padding(.bottom, 8)
+        .padding(.horizontal, 20).padding(.top, 20).padding(.bottom, pinned ? 8 : 0)
         .background(Color(.systemGroupedBackground))
     }
 

@@ -253,7 +253,7 @@ struct CapsuleSegmented<Value: Hashable>: View {
                                 .background {
                                     if selection == value {
                                         Color.clear
-                                            .glassEffect(.regular.tint(Color.primary.opacity(0.08)).interactive(), in: .capsule) // neutral gray pill, only the text is blue (David, like Photos)
+                                            .glassEffect(.regular.tint(UserDefaults.standard.string(forKey: "pill.style") == "gray" ? Color.primary.opacity(0.08) : Theme.accent.opacity(0.12)).interactive(), in: .capsule) // preview flag pill.style: "gray" = neutral pill (awaiting David OK)
                                             .glassEffectID("pill", in: ns)
                                     }
                                 }
