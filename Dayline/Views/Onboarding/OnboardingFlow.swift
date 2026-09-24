@@ -137,16 +137,16 @@ struct SignInSheet: View {
             }
             .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 24, style: .continuous))
             .padding(.top, 16)
-            Button(action: go) { Text("Continue with \(choice.rawValue)").font(.headline).padding(.horizontal, 10) }
-                .buttonStyle(.glassProminent).tint(Theme.accent).controlSize(.large)
-                .frame(maxWidth: .infinity).padding(.top, 18)
-                .accessibilityIdentifier("signInContinue")
             if let error = auth.errorMessage {
                 Text(error).font(.footnote).foregroundStyle(.red).frame(maxWidth: .infinity).padding(.top, 8)
             }
-            Spacer(minLength: 0)
+            Spacer(minLength: 16)
+            // Bug fix (Sep 24): full-width button pinned to the bottom, like Apple's own sign-in sheets.
+            Button(action: go) { Text("Continue with \(choice.rawValue)").font(.headline).frame(maxWidth: .infinity) }
+                .buttonStyle(.glassProminent).tint(Theme.accent).controlSize(.extraLarge)
+                .accessibilityIdentifier("signInContinue")
         }
-        .padding(.horizontal, 20).padding(.top, 20)
+        .padding(.horizontal, 20).padding(.top, 20).padding(.bottom, 8)
         .background(Color(.systemGroupedBackground))
         .sheet(isPresented: $showAppleDemo, onDismiss: {
             // Only move on once the Apple sheet is fully gone, so the sign-in sheet can close too.
@@ -257,15 +257,14 @@ struct AppleSignInDemoSheet: View {
             }
             .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 24, style: .continuous))
             .padding(.top, 10)
-            Button(action: onContinue) { Text("Continue").font(.headline).padding(.horizontal, 30) }
-                .buttonStyle(.glassProminent).tint(Theme.accent).controlSize(.large)
-                .frame(maxWidth: .infinity).padding(.top, 18)
+            Spacer(minLength: 16)
+            Button(action: onContinue) { Text("Continue").font(.headline).frame(maxWidth: .infinity) }
+                .buttonStyle(.glassProminent).tint(Theme.accent).controlSize(.extraLarge)
                 .accessibilityIdentifier("appleDemoContinue")
             Text("Use a different Apple Account").font(.subheadline).foregroundStyle(Theme.accent)
                 .frame(maxWidth: .infinity).padding(.top, 12)
-            Spacer(minLength: 0)
         }
-        .padding(.horizontal, 20).padding(.top, 20)
+        .padding(.horizontal, 20).padding(.top, 20).padding(.bottom, 8)
         .background(Color(.systemGroupedBackground))
     }
 
