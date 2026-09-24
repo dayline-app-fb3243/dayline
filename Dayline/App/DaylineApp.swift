@@ -5,7 +5,7 @@ import SwiftData
 struct DaylineApp: App {
     @AppStorage("appearance") private var appearanceRaw = Appearance.system.rawValue
     @Environment(\.scenePhase) private var scenePhase
-    private let isDemo = ProcessInfo.processInfo.arguments.contains("-demo")
+    private let isDemo = SampleMode.on
     @AppStorage("onboarding.done") private var onboardingDone = false
 
     init() {

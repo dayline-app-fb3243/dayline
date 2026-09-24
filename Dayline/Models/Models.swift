@@ -201,7 +201,7 @@ enum ModelStore {
 
     @MainActor
     static let container: ModelContainer = {
-        let inMemory = ProcessInfo.processInfo.arguments.contains("-demo")
+        let inMemory = SampleMode.on
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: inMemory)
         do {
             return try ModelContainer(for: schema, configurations: config)

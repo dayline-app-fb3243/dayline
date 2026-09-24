@@ -251,6 +251,7 @@ enum DayData {
 }
 
 /// Values read asynchronously (steps, reminders) and kept per day so scoring stays synchronous.
+@MainActor
 enum DayCache {
     private static func k(_ p: String, _ day: Date) -> String { "daycache.\(p).\(DayBoundary.key(day))" }
     static func steps(for day: Date) -> Int { UserDefaults.standard.integer(forKey: k("steps", day)) }

@@ -2,11 +2,22 @@ import Foundation
 import SwiftData
 import UIKit
 
+/// Sample data is on for `-demo` runs and always in the simulator, so the full experience shows right away.
+enum SampleMode {
+    static let on: Bool = {
+        #if targetEnvironment(simulator)
+        return true
+        #else
+        return ProcessInfo.processInfo.arguments.contains("-demo")
+        #endif
+    }()
+}
+
 /// Sample data for previews and the screen-recording demo (launch with `-demo`).
 @MainActor
 enum DemoData {
     static let base = (lat: 40.7359, lon: -73.9911)
-    static let isDemo = ProcessInfo.processInfo.arguments.contains("-demo")
+    static let isDemo = SampleMode.on
 
     /// Today's score in demo mode, matching the approved design.
     static var todayScore: ScoreEngine.Result {
