@@ -75,12 +75,12 @@ struct ScoreRing: View {
     /// Preview flag "rings.thick": thick proportions like the Streak ring (~17% of the diameter). Off until David approves.
     var lineWidthOverride: CGFloat? = nil
     var size: CGFloat = 88
-    /// Color by pace (Today card). Preview flag "ring.pace" (none picked yet) sets how "behind" looks:
+    /// Color by pace (Today card). "ring.pace" sets how "behind" looks (default B, picked by David):
     /// A = whole ring orange, B = blue blending into orange along the fill, C = blue fill plus an orange arc up to where you should be.
     /// Points already out of reach today (ScoreEngine.Pace.lost). nil = not colored by pace.
     var lost: Int? = nil
     @AppStorage("rings.thick") private var thick = false
-    @AppStorage("ring.pace") private var paceStyle = ""
+    @AppStorage("ring.pace") private var paceStyle = "B"
     private var lineWidth: CGFloat { lineWidthOverride ?? (thick ? (size * 0.17).rounded() : (size >= 120 ? 20 : 14)) }  // 14 pt small, 20 pt large
     private var behind: Bool { !paceStyle.isEmpty && (lost ?? 0) >= 5 }
     /// How far the day has slipped, 0...1: the more points are out of reach, the more orange.

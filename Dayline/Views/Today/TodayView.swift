@@ -154,7 +154,7 @@ struct ScoreCard: View {
     }
     /// Status color follows the theme: blue while on track, orange when not. With "ring.pace" set, on track means
     /// keeping pace with your own habits (ScoreEngine.Pace); otherwise below 55 ("Slow day" / "Rest day") is orange.
-    @AppStorage("ring.pace") private var paceStyle = ""
+    @AppStorage("ring.pace") private var paceStyle = "B"
     private var behind: Bool { paceStyle.isEmpty ? result.score < 55 : (result.pace?.behind ?? false) }
     private var labelColor: Color { behind ? .orange : Theme.accent }
     private var statusLabel: String {
