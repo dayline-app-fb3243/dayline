@@ -34,7 +34,7 @@ enum DayRefresher {
                                             return .init(initial: String(f.name.prefix(1)), red: r, green: g, blue: b)
                                         }))
         WidgetCenter.shared.reloadAllTimelines()
-        await Notifications.scoreReached(result.score)
+        await Notifications.scoreReached(result.score, day: today)
     }
 }
 
@@ -45,11 +45,11 @@ enum Notifications {
 
     /// Only two notifications exist: someone asks to follow you, and today hits 80.
     /// Also clears the old morning recap / 9 PM check-in from earlier installs.
-    static func scoreReached(_ score: Int, calendar: Calendar = .current) async {
+    static func scoreReached(_ score: Int, day today: Date) async {
         let center = UNUserNotificationCenter.current()
         center.removePendingNotificationRequests(withIdentifiers: ["morning-recap", "evening-checkin"])
         guard score >= 80, !DemoData.isDemo else { return }
-        let day = DayBoundary.shared.today.formatted(.iso8601.year().month().day())
+        let day = today.formatted(.iso8601.year().month().day())
         let key = "notified80-\(day)"
         guard !UserDefaults.standard.bool(forKey: key) else { return }
         UserDefaults.standard.set(true, forKey: key)
