@@ -1,5 +1,6 @@
 import SwiftUI
 import AVFoundation
+import AudioToolbox
 
 /// Messages-style recorder for a journal entry (design: hold-3 #2).
 /// Hold the mic to record, slide up to lock, slide left to cancel.
@@ -14,6 +15,8 @@ struct VoiceRecorderBar<Tools: View>: View {
     @State private var drag: CGSize = .zero
     @State private var holding = false
     @State private var player: AVAudioPlayer?
+    @State private var pressStart: Date?
+    @State private var showTapHint = false
 
     private let lockDistance: CGFloat = 70
     private let cancelDistance: CGFloat = 110
@@ -30,7 +33,7 @@ struct VoiceRecorderBar<Tools: View>: View {
                 .transition(.opacity)
             }
             ZStack(alignment: .trailing) {
-                if voice.isActive { recorder } else { tools() }
+                if showTapHint && !voice.isActive { tapHint } else if voice.isActive { recorder } else { tools() }
                 micHitArea
             }
         }
@@ -40,6 +43,20 @@ struct VoiceRecorderBar<Tools: View>: View {
     }
 
     // MARK: pieces
+
+    /// Quick tap on the mic (like Messages): a short hint in the bar instead of recording.
+    private var tapHint: some View {
+        HStack {
+            Text("Tap and hold to record").font(.body).foregroundStyle(.secondary)
+            Spacer()
+            Image(systemName: "waveform").foregroundStyle(.tertiary).padding(.trailing, 48)
+        }
+        .padding(.leading, 18)
+        .frame(height: 48)
+        .glassEffect(.regular, in: .capsule)
+        .transition(.opacity)
+        .accessibilityIdentifier("tapHoldHint")
+    }
 
     private var lockHint: some View {
         VStack(spacing: 10) {
@@ -110,7 +127,7 @@ struct VoiceRecorderBar<Tools: View>: View {
                 DragGesture(minimumDistance: 0)
                     .onChanged { value in
                         if !holding {
-                            holding = true; locked = false; cancelled = false
+                            holding = true; locked = false; cancelled = false; pressStart = .now; showTapHint = false
                             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                             Task { try? await voice.start() }
                         }
@@ -127,7 +144,15 @@ struct VoiceRecorderBar<Tools: View>: View {
                     }
                     .onEnded { _ in
                         holding = false; drag = .zero
-                        if !locked && !cancelled {
+                        let quick = pressStart.map { Date.now.timeIntervalSince($0) < 0.35 } ?? false
+                        if quick && !locked && !cancelled {
+                            // Too short to be a recording: throw it away and show the hint, with a tick + haptic.
+                            Task { try? await Task.sleep(for: .milliseconds(150)); voice.cancel() }
+                            AudioServicesPlaySystemSound(1104)
+                            UINotificationFeedbackGenerator().notificationOccurred(.warning)
+                            withAnimation(.snappy(duration: 0.2)) { showTapHint = true }
+                            Task { try? await Task.sleep(for: .seconds(2)); withAnimation(.snappy(duration: 0.25)) { showTapHint = false } }
+                        } else if !locked && !cancelled {
                             // Give start() a moment if the hold was very short.
                             Task { try? await Task.sleep(for: .milliseconds(150)); voice.pause() }
                         }
