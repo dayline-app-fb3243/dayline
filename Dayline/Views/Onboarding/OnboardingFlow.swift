@@ -665,7 +665,7 @@ struct SetupStep<Content: View>: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
                 if let back {
-                    Button(action: back) { Image(systemName: "chevron.left").font(.body.weight(.semibold)).frame(width: 44, height: 44) }
+                    Button(action: back) { Image(systemName: "chevron.left").font(.body.weight(.semibold)).foregroundStyle(.primary).frame(width: 44, height: 44) }
                         .buttonStyle(.glass).buttonBorderShape(.circle)
                 }
                 Spacer()

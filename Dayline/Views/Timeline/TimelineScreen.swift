@@ -25,7 +25,7 @@ struct TimelineScreen: View {
     @State private var streetRoute: [CLLocationCoordinate2D] = []
     /// Preview flag "map.3d" (awaiting David's pick): the full-screen map opens tilted in 3D with real buildings,
     /// and gets a 2D/3D button. The route is drawn into the map, so it tilts with it.
-    @AppStorage("map.3d") private var map3DFlag = true
+    @AppStorage("map.3d") private var map3DFlag = false
     @State private var is3D = false
     /// The map is centered on your current location (filled arrow). Cleared when you pan away.
     @State private var onMyLocation = false
@@ -33,7 +33,7 @@ struct TimelineScreen: View {
     /// Preview flag "pin.style" (awaiting David's pick): "" = current pins, A = big Apple pin with dot,
     /// B = compact Apple pin with tail, C = native Apple Maps marker.
     @AppStorage("pin.style") private var pinStyle = "D"
-    /// "map.sheet": G (default, David's pick F) = Apple Maps style outline panel with the Day/Week/Month/Year pill
+    /// "map.sheet": G (default; option F in the preview sheets) = Apple Maps style outline panel with the Day/Week/Month/Year pill
     /// centered inside; pulling up grows only the outline, with the F glass card inside.
     /// A = Find My card, B = Settings-style icons, C = compact (older options).
     @AppStorage("map.sheet") private var mapSheet = "G"
@@ -308,7 +308,7 @@ struct TimelineScreen: View {
                 HStack {
                     Button { expanded = false } label: {
                         Image(systemName: "chevron.left").font(.scaled(size: 18, weight: .semibold))
-                            .foregroundStyle(Theme.accent).frame(width: 44, height: 44)
+                            .foregroundStyle(.primary).frame(width: 44, height: 44)
                     }
                     .buttonStyle(.plain)
                     .glassEffect(.regular.interactive(), in: .circle)
@@ -342,7 +342,7 @@ struct TimelineScreen: View {
                                 Button { withAnimation(.smooth(duration: 0.8)) { set3D(!is3D) } } label: {
                                     // Shows the current mode; each tap switches 2D <-> 3D.
                                     Text(is3D ? "3D" : "2D").font(.system(size: 18, weight: .semibold))
-                                        .foregroundStyle(Theme.accent).frame(width: 54, height: 58).contentShape(.rect)
+                                        .foregroundStyle(.primary).frame(width: 54, height: 58).contentShape(.rect)
                                 }
                                 .buttonStyle(.plain)
                                 .accessibilityLabel(is3D ? "Show 2D map" : "Show 3D map")
@@ -351,7 +351,7 @@ struct TimelineScreen: View {
                                     // Filled = the map is centered on you; outline as soon as you pan away. Not a follow mode.
                                     Image(systemName: onMyLocation ? "location.fill" : "location")
                                         .font(.system(size: 20, weight: .semibold))
-                                        .foregroundStyle(Theme.accent).frame(width: 54, height: 58).contentShape(.rect)
+                                        .foregroundStyle(.primary).frame(width: 54, height: 58).contentShape(.rect)
                                 }
                                 .buttonStyle(.plain)
                                 .accessibilityLabel("Show my location")
@@ -361,8 +361,8 @@ struct TimelineScreen: View {
                             .glassEffect(.regular, in: .capsule)
                         } else {
                         Button { recenterOnMe() } label: {
-                            Image(systemName: "location.fill").font(.scaled(size: 20, weight: .semibold))
-                                .foregroundStyle(Theme.accent).frame(width: 64, height: 64)
+                            Image(systemName: onMyLocation ? "location.fill" : "location").font(.scaled(size: 20, weight: .semibold))
+                                .foregroundStyle(.primary).frame(width: 64, height: 64)
                         }
                         .buttonStyle(.plain)
                         .glassEffect(.regular.interactive(), in: .circle)

@@ -250,7 +250,7 @@ struct ConfidentResultCard: View {
                     Button { MapJump.go(hit) } label: {
                         Image(systemName: "map").font(.headline).frame(width: 50, height: 50)
                     }
-                    .buttonStyle(.plain).foregroundStyle(Theme.accent)
+                    .buttonStyle(.plain).foregroundStyle(.primary)
                     .glassEffect(.regular.interactive(), in: .circle)
                     .accessibilityLabel("Show on Timeline")
                 }
