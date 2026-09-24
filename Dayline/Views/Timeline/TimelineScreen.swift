@@ -59,7 +59,9 @@ struct TimelineScreen: View {
                 VStack(alignment: .leading, spacing: 12) {
                     TabTitle("Timeline")
                     rangeControls
-                    if range == .day {
+                    if range == .day && !tlPage.isEmpty {
+                        dayPageSample
+                    } else if range == .day {
                         // Day: small map on top (tap for full screen), then one photo card per stop.
                         mapCard(height: 150, hint: true)
                         Text(title).font(.title2.bold()).padding(.horizontal, 2).padding(.top, 4)
@@ -98,6 +100,132 @@ struct TimelineScreen: View {
             .onChange(of: anchor) { onMyLocation = false; camera = .automatic }
             .onReceive(NotificationCenter.default.publisher(for: .showOnMap)) { _ in openJump() }
             .onAppear { openJump() }
+        }
+    }
+
+    /// Preview "timeline.page" 1-5: Day view layouts ("" = the current one). Sample-only until one is picked.
+    /// 1 = big map with the numbers on it. 2 = a line through the day with a pin per stop and photos inline.
+    /// 3 = numbers first as big tiles, then map and cards. 4 = photos in a side-scrolling row, stops listed below.
+    /// 5 = map, then stops grouped into Morning / Afternoon / Evening.
+    @AppStorage("timeline.page") private var tlPage = ""
+    private var dayVisits: [Visit] { rangeVisits.sorted { $0.arrival < $1.arrival } }
+    private func photos(for v: Visit) -> [UIImage] {
+        let end = v.departure ?? .now
+        return journal.filter { $0.kind == .photo && $0.date >= v.arrival && $0.date <= end }
+            .compactMap { $0.thumbnail.flatMap(UIImage.init(data:)) }
+    }
+    private func stopRow(_ v: Visit) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: v.category.symbol).font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.accent)
+                .frame(width: 30, height: 30).background(Theme.accent.opacity(0.14), in: .circle)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(v.placeName).font(.body.weight(.semibold))
+                Text(stopRange(v)).font(.caption).foregroundStyle(.secondary).monospacedDigit()
+            }
+            Spacer()
+        }
+    }
+    private func stopRange(_ v: Visit) -> String {
+        let f = DayActivityList.clock
+        return "\(f.string(from: v.arrival)) – \(v.departure.map { f.string(from: $0) } ?? "now")"
+    }
+    private func bigTile(_ value: String, _ label: String) -> some View {
+        VStack(spacing: 2) {
+            Text(value).font(.title2.bold()).monospacedDigit()
+            Text(label).font(.caption).foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity).padding(.vertical, 12)
+        .background(.background, in: .rect(cornerRadius: 18, style: .continuous))
+    }
+    @ViewBuilder private var dayPageSample: some View {
+        switch tlPage {
+        case "1":
+            mapCard(height: 320, hint: true)
+                .overlay(alignment: .bottom) {
+                    GlassEffectContainer(spacing: 6) {
+                        HStack(spacing: 6) {
+                            glassChip("\(placeCount)", "places"); glassChip(distanceText, "moved"); glassChip("\(rangePhotos.count)", "photos")
+                        }
+                    }
+                    .padding(10)
+                }
+            Text(title).font(.title2.bold()).padding(.horizontal, 2).padding(.top, 4)
+            DayPhotoCards(visits: rangeVisits, journal: journal.filter { interval.contains($0.date) })
+        case "2":
+            mapCard(height: 150, hint: true)
+            Text(title).font(.title2.bold()).padding(.horizontal, 2).padding(.top, 4)
+            Card(padding: 0) {
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(Array(dayVisits.enumerated()), id: \.offset) { i, v in
+                        HStack(alignment: .top, spacing: 12) {
+                            VStack(spacing: 0) {
+                                Rectangle().fill(i == 0 ? .clear : Theme.accent.opacity(0.35)).frame(width: 2, height: 10)
+                                Image(systemName: v.category.symbol).font(.system(size: 13, weight: .semibold)).foregroundStyle(.white)
+                                    .frame(width: 28, height: 28).background(Theme.accent, in: .circle)
+                                Rectangle().fill(i == dayVisits.count - 1 ? .clear : Theme.accent.opacity(0.35)).frame(width: 2).frame(maxHeight: .infinity)
+                            }
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text(v.placeName).font(.body.weight(.semibold)).padding(.top, 12)
+                                Text(stopRange(v)).font(.caption).foregroundStyle(.secondary).monospacedDigit()
+                                let pics = photos(for: v)
+                                if !pics.isEmpty {
+                                    HStack(spacing: 6) {
+                                        ForEach(pics.indices.prefix(3), id: \.self) { k in
+                                            Image(uiImage: pics[k]).resizable().scaledToFill().frame(width: 72, height: 72).clipShape(.rect(cornerRadius: 10))
+                                        }
+                                    }
+                                }
+                            }
+                            .padding(.bottom, 12)
+                            Spacer()
+                        }
+                        .padding(.horizontal, 14)
+                    }
+                }
+            }
+        case "3":
+            HStack(spacing: 8) {
+                bigTile("\(placeCount)", "places"); bigTile(distanceText, "moved"); bigTile("\(rangePhotos.count)", "photos")
+            }
+            mapCard(height: 180, hint: true)
+            DayPhotoCards(visits: rangeVisits, journal: journal.filter { interval.contains($0.date) })
+        case "4":
+            mapCard(height: 170, hint: true)
+            Text(title).font(.title2.bold()).padding(.horizontal, 2).padding(.top, 4)
+            let pics = journal.filter { interval.contains($0.date) && $0.kind == .photo }.compactMap { $0.thumbnail.flatMap(UIImage.init(data:)) }
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 10) {
+                    ForEach(pics.indices, id: \.self) { k in
+                        Image(uiImage: pics[k]).resizable().scaledToFill().frame(width: 150, height: 190).clipShape(.rect(cornerRadius: 18))
+                    }
+                }
+            }
+            Card(padding: 0) {
+                VStack(spacing: 0) {
+                    ForEach(Array(dayVisits.enumerated()), id: \.offset) { i, v in
+                        stopRow(v).padding(.horizontal, 14).padding(.vertical, 10)
+                        if i < dayVisits.count - 1 { Divider().padding(.leading, 56) }
+                    }
+                }
+            }
+        default:
+            mapCard(height: 170, hint: true)
+            let parts = [("Morning", 0, 12), ("Afternoon", 12, 17), ("Evening", 17, 24)]
+            ForEach(parts.indices, id: \.self) { pi in
+                let part = parts[pi]
+                let list = dayVisits.filter { let h = Calendar.current.component(.hour, from: $0.arrival); return h >= part.1 && h < part.2 }
+                if !list.isEmpty {
+                    Text(part.0).font(.subheadline.weight(.semibold)).foregroundStyle(.secondary).padding(.leading, 4).padding(.top, 4)
+                    Card(padding: 0) {
+                        VStack(spacing: 0) {
+                            ForEach(Array(list.enumerated()), id: \.offset) { i, v in
+                                stopRow(v).padding(.horizontal, 14).padding(.vertical, 10)
+                                if i < list.count - 1 { Divider().padding(.leading, 56) }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 

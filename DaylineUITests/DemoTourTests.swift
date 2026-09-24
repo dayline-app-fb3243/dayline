@@ -1448,6 +1448,21 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Timeline Day page samples 1-5 plus the current page (top and scrolled).
+    func testTimelinePages() throws {
+        for v in ["", "1", "2", "3", "4", "5"] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-timeline.page", v, "-no.lookaround"]
+            app.launchEnvironment["TZ"] = Self.zone(localHour: 18)
+            app.launch(); pause(1.5)
+            tab(app, "Timeline"); pause(4)
+            shot("tl-\(v.isEmpty ? "now" : v)-1")
+            app.swipeUp(); pause(1.5)
+            shot("tl-\(v.isEmpty ? "now" : v)-2")
+            app.terminate()
+        }
+    }
+
     /// Ring join preview: how blue meets orange, with a lighter orange capped short of dark. "" = now.
     func testRingJoin() throws {
         for v in ["", "A", "B", "C"] {
