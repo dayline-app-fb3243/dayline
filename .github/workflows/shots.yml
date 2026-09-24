@@ -11,7 +11,7 @@ jobs:
   preview:
     # Xcode 27 image (iOS 27 SDK + simulator). Change to macos-26 to build with Xcode 26 / iOS 26.
     runs-on: xcode-27
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
 
@@ -79,7 +79,7 @@ jobs:
 
       - name: Screenshots
         if: inputs.tests != 'icon'
-        timeout-minutes: 15
+        timeout-minutes: 45
         run: |
           mkdir -p shots /tmp/dayline-shots
           xcrun simctl ui "${{ steps.sim.outputs.udid }}" appearance light
@@ -89,6 +89,7 @@ jobs:
               -destination "id=${{ steps.sim.outputs.udid }}" \
               -derivedDataPath build -only-testing:DaylineUITests/DemoTourTests/$TEST \
               -collect-test-diagnostics never 2>&1 | tail -30 || true
+            cp /tmp/dayline-shots/*.png shots/ 2>/dev/null || true
           done
           cp /tmp/dayline-shots/*.png shots/ || true
           ls shots
