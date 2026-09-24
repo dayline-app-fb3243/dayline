@@ -72,6 +72,7 @@ struct NewEntryView: View {
     @FocusState private var titleFocused: Bool
     private let startedAt = Date.now
     private let groupID = UUID().uuidString
+    @State private var confirmDiscard = false
 
     enum CameraMode: Identifiable { case photo, video; var id: Self { self } }
 
@@ -130,7 +131,13 @@ struct NewEntryView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
-                Button("Close", systemImage: "xmark") { if voice.isRecording { Task { await stopVoice() } }; onDone() }
+                Button("Close", systemImage: "xmark") {
+                    if canSave || voice.isRecording { confirmDiscard = true } else { onDone() }
+                }
+                .confirmationDialog("Discard this entry?", isPresented: $confirmDiscard, titleVisibility: .visible) {
+                    Button("Discard Entry", role: .destructive) { Task { await discard() } }
+                    Button("Keep Editing", role: .cancel) {}
+                }
             }
             ToolbarItem(placement: .confirmationAction) {
                 Button("Save", systemImage: "checkmark") { save() }
@@ -274,6 +281,17 @@ struct NewEntryView: View {
         let next = EntryBlock(kind: .text)
         blocks.insert(contentsOf: [EntryBlock(kind: .voice, seconds: secs), next], at: min(at + 1, blocks.count))
         focus = next.id
+    }
+
+    /// Throws away everything added in this entry, including voice notes saved while recording.
+    private func discard() async {
+        if voice.isRecording { await voice.stop(context: context, coordinate: coordinate) }
+        let start = startedAt
+        if let voices = try? context.fetch(FetchDescriptor<JournalEntry>(predicate: #Predicate { $0.date >= start })) {
+            for v in voices where v.kind == .voice && v.groupID == nil { context.delete(v) }
+            try? context.save()
+        }
+        onDone()
     }
 
     private func save() {
