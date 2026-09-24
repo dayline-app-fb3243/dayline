@@ -482,7 +482,7 @@ struct ProfileView: View {
                     Card(padding: 0) {
                         NavigationLink { SiriCommandsView() } label: {
                             ProfileRow(symbol: "waveform", title: "Use with Siri", value: "Examples",
-                                       siriMark: UserDefaults.standard.bool(forKey: "profile.siriMark")) // preview until David OKs
+                                       siriMark: UserDefaults.standard.object(forKey: "profile.siriMark") as? Bool ?? true) // Sep 24: David approved ("Perfect")
                         }
                         .accessibilityIdentifier("useWithSiriRow")
                     }
