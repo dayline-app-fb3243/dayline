@@ -151,10 +151,10 @@ final class DemoTourTests: XCTestCase {
         pause(1)
         for (name, label) in [("68-location-settings", "Location"), ("69-photos-settings", "Photos"), ("69b-notifications-settings", "Notifications")] {
             let row = app.buttons.containing(NSPredicate(format: "label BEGINSWITH %@", label)).firstMatch
-            if row.waitForExistence(timeout: 3) { row.tap(); pause(3); shot(name); app.activate(); pause(1.5) }
+            if row.waitForExistence(timeout: 3) { row.tap(); pause(6); shot(name); app.activate(); pause(1.5) }
         }
         let appearance = app.buttons.containing(NSPredicate(format: "label BEGINSWITH %@", "Appearance")).firstMatch
-        if appearance.waitForExistence(timeout: 3) { appearance.tap(); pause(1.2); shot("60c-appearance-menu"); app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.06)).tap(); pause(0.8) }
+        if appearance.waitForExistence(timeout: 3) { appearance.tap(); pause(1.2); shot("60c-appearance-menu"); let sys = app.buttons["System"].firstMatch; if sys.waitForExistence(timeout: 2) { sys.tap() } else { app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.06)).tap() }; pause(0.8) }
         app.swipeDown(); pause(1)
         tapID(app, "checkLocationRow"); pause(2); shot("64-check-location")
         tapID(app, "check-1"); pause(1.2); tapID(app, "check-5"); pause(1.2); goBack(app); pause(1)

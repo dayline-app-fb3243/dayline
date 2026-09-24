@@ -52,8 +52,9 @@ struct SplashView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Image("SplashMap").resizable().scaledToFill()
-                .frame(maxWidth: .infinity).frame(height: 560, alignment: .top).clipped()
+            Color.clear.frame(maxWidth: .infinity).frame(height: 560)
+                .overlay(alignment: .top) { Image("SplashMap").resizable().scaledToFill() }
+                .clipped()
                 .overlay(alignment: .bottom) {
                     LinearGradient(stops: [.init(color: Color(.systemBackground).opacity(0), location: 0), .init(color: Color(.systemBackground), location: 0.8)],
                                    startPoint: .top, endPoint: .bottom).frame(height: 220)

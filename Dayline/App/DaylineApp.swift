@@ -14,6 +14,12 @@ struct DaylineApp: App {
         if args.contains("-demo") { UserDefaults.standard.set(!args.contains("-onboarding"), forKey: "onboarding.done") }
         // Every demo run starts on the default Dayline background (the tour picks Sunset later on).
         if args.contains("-demo") { UserDefaults.standard.removeObject(forKey: "background.preset") }
+        // Demo tour runs as a signed-in sample user (so Sign Out shows); onboarding runs start signed out.
+        if args.contains("-demo") {
+            let d = UserDefaults.standard
+            if args.contains("-onboarding") { ["auth.userID", "auth.name", "auth.email", "auth.provider"].forEach { d.removeObject(forKey: $0) } }
+            else { d.set("demo", forKey: "auth.userID"); d.set("Alex", forKey: "auth.name"); d.set("alex@example.com", forKey: "auth.email"); d.set("apple", forKey: "auth.provider") }
+        }
     }
 
     var body: some Scene {
