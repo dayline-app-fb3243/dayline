@@ -153,6 +153,20 @@ final class DemoTourTests: XCTestCase {
         }
         app.terminate()
 
+        do {
+            app = XCUIApplication()
+            app.launchArguments = ["-demo"]
+            app.launchEnvironment["TZ"] = Self.morningZone
+            app.launch()
+            tab(app, "Insights"); pause(1.5); app.buttons["Day"].firstMatch.tap(); pause(1.5); shot("c13-insights-day-now")
+            app.terminate()
+            app = XCUIApplication()
+            app.launchArguments = ["-demo", "-insights.simpleDay", "YES"]
+            app.launchEnvironment["TZ"] = Self.morningZone
+            app.launch()
+            tab(app, "Insights"); pause(1.5); app.buttons["Day"].firstMatch.tap(); pause(1.5); shot("c14-insights-day-proposed")
+            app.terminate()
+        }
         for (bg, extra, name) in [("system", [String](), "c4-profile"), ("black", [], "c5-profile-black"), ("white", [], "c6-profile-white-now"), ("white", ["-background.whiteGrouped", "YES"], "c7-profile-white-proposed")] {
             app = XCUIApplication()
             app.launchArguments = ["-demo", "-background.preset", bg] + extra

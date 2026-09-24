@@ -316,11 +316,9 @@ struct FactorRow: View {
                     .font(.footnote).foregroundStyle(.secondary)
             }
             Spacer()
-            Text(factor.points >= 0 ? "+\(factor.points)" : "\(factor.points)")
-                .font(.footnote.weight(.bold)).monospacedDigit()
-                .foregroundStyle(color)
-                .padding(.horizontal, 9).padding(.vertical, 4)
-                .background(color.opacity(0.14), in: .capsule)
+            Text(factor.points > 0 ? "+\(factor.points)" : factor.points == 0 ? "0" : "\(factor.points)")
+                .font(.body.weight(.semibold)).monospacedDigit()
+                .foregroundStyle(factor.points > 0 ? Color.primary : Color.secondary)
         }
         .padding(.horizontal, 16).padding(.vertical, 11)
     }

@@ -34,7 +34,41 @@ struct InsightsView: View {
     }
 
     // MARK: Day
-    private var dayView: some View {
+    /// Preview flag: simple Health-style Day page (score + summary, then one clean list). Off until David approves.
+    @AppStorage("insights.simpleDay") private var simpleDay = false
+
+    @ViewBuilder private var dayView: some View {
+        if simpleDay { simpleDayView } else { classicDayView }
+    }
+
+    private var simpleDayView: some View {
+        let r = ScoreEngine.score(DayData.input(for: .now, context: context))
+        return VStack(spacing: 12) {
+            Card {
+                HStack(spacing: 16) {
+                    ScoreRing(score: r.score, size: 72)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(r.label).font(.title3.bold()).foregroundStyle(Theme.scoreColor(r.score))
+                        Text(r.tip ?? r.summary).font(.subheadline).foregroundStyle(.secondary)
+                    }
+                    Spacer(minLength: 0)
+                }
+            }
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Points today").font(.footnote).helperText().textCase(.uppercase).padding(.leading, 16)
+                VStack(spacing: 0) {
+                    ForEach(Array(r.factors.enumerated()), id: \.element.id) { i, f in
+                        if i > 0 { Divider().padding(.leading, 58) }
+                        FactorRow(factor: f)
+                    }
+                }
+                .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: Theme.cardRadius, style: .continuous))
+            }
+            .accessibilityIdentifier("simpleDay")
+        }
+    }
+
+    private var classicDayView: some View {
         let r = ScoreEngine.score(DayData.input(for: .now, context: context))
         return VStack(spacing: 12) {
             ScoreCard(result: r)
