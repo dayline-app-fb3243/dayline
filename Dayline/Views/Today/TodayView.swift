@@ -20,6 +20,7 @@ struct TodayView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     header
+                    LocationOffCard()
                     NavigationLink { ScoreDetailView(result: result) } label: { ScoreCard(result: result, showsChevron: true) }
                         .buttonStyle(.plain)
                         .accessibilityIdentifier("scoreCard")
@@ -116,4 +117,29 @@ struct ScoreCard: View {
         }
     }
     private var labelColor: Color { Theme.scoreColor(result.score) }
+}
+
+
+/// Shows only when Location was turned off for Dayline, instead of a permanent row in Profile.
+struct LocationOffCard: View {
+    @ObservedObject private var location = LocationService.shared
+    @Environment(\.openURL) private var openURL
+    var body: some View {
+        if !DemoData.isDemo, location.authorization == .denied || location.authorization == .restricted {
+            Card(padding: 14) {
+                HStack(alignment: .top, spacing: 12) {
+                    Image(systemName: "location.slash.fill").font(.title3).foregroundStyle(Theme.accent).frame(width: 28)
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Location Is Off").font(.headline)
+                        Text("Dayline needs Location to build your timeline and score.").font(.subheadline).foregroundStyle(.secondary)
+                        Button("Open Settings") {
+                            if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
+                        }
+                        .font(.subheadline.weight(.semibold)).padding(.top, 2)
+                    }
+                }
+            }
+            .accessibilityIdentifier("locationOffCard")
+        }
+    }
 }

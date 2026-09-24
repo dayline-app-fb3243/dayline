@@ -374,12 +374,6 @@ struct ProfileView: View {
                         }
                         .accessibilityIdentifier("checkLocationRow")
                         Divider().padding(.leading, 57)
-                        Button { openSettings() } label: {
-                            ProfileRow(symbol: "location.fill", title: "Location", value: locationText)
-                        }
-                        Divider().padding(.leading, 57)
-                        Button { openSettings() } label: { ProfileRow(symbol: "photo.fill", title: "Photos", value: "Added to timeline") }
-                        Divider().padding(.leading, 57)
                         Button { openSettings() } label: { ProfileRow(symbol: "bell.fill", title: "Notifications", value: "Follows · 80 score") }
                         Divider().padding(.leading, 57)
                         HStack(spacing: 13) {
