@@ -46,7 +46,16 @@ struct YourScheduleView: View {
             }
             Section {
                 Toggle("Gym", isOn: $s.gym)
-                if s.gym {
+                if s.gym, GymHours.enabled, let c = GymHours.cached, let close = GymHours.closing(on: .now) {
+                    // Preview "gym.hours": the real closing time replaces the picker.
+                    LabeledContent("Go By") {
+                        VStack(alignment: .trailing, spacing: 1) {
+                            Text(UserSchedule.date(close, on: .now).formatted(date: .omitted, time: .shortened))
+                            Text("\(c.name) closes\(c.sample ? " · sample hours" : "")").font(.footnote).foregroundStyle(.secondary)
+                        }
+                    }
+                    .accessibilityIdentifier("gymBy")
+                } else if s.gym {
                     // The day score only counts the gym as missed after this time (e.g. when your gym closes).
                     DatePicker("Go By", selection: Binding(
                         get: { UserSchedule.date(s.gymDeadline, on: .now) },

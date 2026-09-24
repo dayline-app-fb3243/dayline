@@ -21,6 +21,7 @@ enum DayRefresher {
             let r = await RemindersService.shared.counts(for: today)
             DayCache.setReminders(done: r.done, total: r.total, for: today)
             await StepGoal.refresh()
+            await GymHours.refresh(context: context)
         }
         await PhotoService.shared.importPhotos(on: today, context: context)
         RoutineLearner.fillToday(context: context)

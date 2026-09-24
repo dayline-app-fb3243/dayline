@@ -1348,4 +1348,18 @@ final class DemoTourTests: XCTestCase {
         }
         app.terminate()
     }
+
+    /// Preview "gym.hours": Go By shows the gym's real closing time (demo: sample hours) instead of the picker.
+    func testGymHours() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo", "-gym.hours", "YES"]
+        app.launch(); pause(1.5)
+        tab(app, "Profile"); pause(2)
+        tapID(app, "yourScheduleRow"); pause(2)
+        app.swipeUp(); pause(1)
+        let gym = app.switches["Gym"].firstMatch
+        if gym.exists, (gym.value as? String) == "0" { gym.coordinate(withNormalizedOffset: CGVector(dx: 0.93, dy: 0.5)).tap() }
+        pause(1.5); shot("gh-settings")
+        app.terminate()
+    }
 }

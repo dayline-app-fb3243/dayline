@@ -68,7 +68,8 @@ enum ScoreEngine {
             if overdue > 0 { lost += full * Double(overdue) / Double(total); missed.append("Plans") }
         }
         var moveBy = 0
-        if s.gym { moveBy = max(moveBy, s.gymDeadline) }
+        // Preview "gym.hours": your gym's real closing time when known, otherwise the Go By setting.
+        if s.gym { moveBy = max(moveBy, GymHours.closing(on: day, calendar: calendar) ?? s.gymDeadline) }
         if s.walk || s.outside { moveBy = max(moveBy, bed - 60) }
         if moveBy > 0 { miss(.moving, s.gym && !(s.walk || s.outside) ? "Gym" : "Moving", deadline: moveBy) }
         miss(.gotOut, "Getting out", deadline: bed - 60)
