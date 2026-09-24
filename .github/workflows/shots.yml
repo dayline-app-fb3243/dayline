@@ -23,7 +23,7 @@ jobs:
           "$ICTOOL" --version || true
           mkdir -p shots
           for I in Design/AppIcon*.icon; do N=$(basename "$I" .icon)
-          for R in Default Dark ClearLight ClearDark TintedLight TintedDark; do
+          RS="Default Dark"; [ "$N" = AppIcon ] && RS="Default"; for R in $RS; do
             "$ICTOOL" "$I" --export-image --output-file "shots/$N-$R.png" --platform iOS --rendition "$R" --width 512 --height 512 --scale 2 || echo "fail $N $R"
           done; done
           ls -la shots
