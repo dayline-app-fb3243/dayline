@@ -62,6 +62,7 @@ struct YourScheduleView: View {
         .scrollContentBackground(.hidden)
         .background(AppBackgroundView())
         .navigationTitle("Your Schedule")
+        .backgroundNavBar()
         .navigationBarTitleDisplayMode(.inline)
         .onChange(of: s) { _, new in UserSchedule.current = new }
         .onAppear { s = UserSchedule.current }
@@ -130,6 +131,7 @@ struct WorkHoursView: View {
             }
         }
         .navigationTitle("Work Hours")
+        .backgroundNavBar()
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) { Button(role: .cancel) { dismiss() } }
@@ -175,6 +177,7 @@ struct PlacesView: View {
         .scrollContentBackground(.hidden)
         .background(AppBackgroundView())
         .navigationTitle("Places")
+        .backgroundNavBar()
         .navigationBarTitleDisplayMode(.inline)
         .onChange(of: s) { _, new in UserSchedule.current = new }
         .onAppear { s = UserSchedule.current }
@@ -257,6 +260,7 @@ struct AddPlaceView: View {
         .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search Maps")
         .onChange(of: query) { _, q in search.update(q) }
         .navigationTitle(title)
+        .backgroundNavBar()
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { ToolbarItem(placement: .cancellationAction) { Button(role: .cancel) { dismiss() } } }
     }

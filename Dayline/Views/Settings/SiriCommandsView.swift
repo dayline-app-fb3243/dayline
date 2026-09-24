@@ -39,6 +39,7 @@ struct SiriCommandsView: View {
         }
         .background(AppBackgroundView())
         .navigationTitle("Use with Siri")
+        .backgroundNavBar()
         .navigationBarTitleDisplayMode(.inline)
         .toolbarVisibility(.hidden, for: .tabBar)
         .accessibilityIdentifier("siriCommandsScreen")

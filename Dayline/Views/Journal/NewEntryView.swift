@@ -126,6 +126,7 @@ struct NewEntryView: View {
         .scrollDismissesKeyboard(.interactively)
         .background(AppBackgroundView())
         .navigationTitle("New entry")
+        .backgroundNavBar()
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {

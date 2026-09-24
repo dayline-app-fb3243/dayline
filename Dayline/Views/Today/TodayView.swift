@@ -43,8 +43,8 @@ struct TodayView: View {
         TimelineView(.everyMinute) { ctx in
             VStack(alignment: .leading, spacing: 2) {
                 Text(ctx.date.formatted(.dateTime.weekday(.wide).month(.abbreviated).day()))
-                    .font(.subheadline.weight(.medium)).foregroundStyle(.secondary)
-                Text(Self.greeting(at: ctx.date)).font(.largeTitle.bold())
+                    .font(.subheadline.weight(.medium)).helperText()
+                Text(Self.greeting(at: ctx.date)).font(.largeTitle.bold()).backgroundTitle()
                     .contentTransition(.opacity)
                     .accessibilityIdentifier("todayGreeting")
             }

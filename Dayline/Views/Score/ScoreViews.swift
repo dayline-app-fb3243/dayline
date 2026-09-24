@@ -33,6 +33,7 @@ struct ScoreDetailView: View {
         .onAppear { if !didSetStart { didSetStart = true; back = min(startBack, maxBack) } }
         .background(AppBackgroundView())
         .navigationTitle("Day score")
+        .backgroundNavBar()
         .toolbarVisibility(.hidden, for: .tabBar)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

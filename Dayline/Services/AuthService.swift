@@ -15,6 +15,10 @@ final class AuthService: ObservableObject {
     @AppStorage("auth.name") private(set) var name: String = ""
     @AppStorage("auth.email") private(set) var email: String = ""
     @AppStorage("auth.provider") private(set) var provider: String = ""
+    /// Profile photo from the sign-in account when it has one (Google does; Apple and email don't).
+    @AppStorage("auth.photoURL") private(set) var photoURL: String = ""
+    /// What to show as the account's name: the real name, or the email when there's no name.
+    var displayName: String { !name.isEmpty ? name : (!email.isEmpty ? email : "Your Account") }
     @Published var errorMessage: String?
 
     var isSignedIn: Bool { !userID.isEmpty }
@@ -56,7 +60,8 @@ final class AuthService: ObservableObject {
         // With the GoogleSignIn package added:
         // let result = try await GIDSignIn.sharedInstance.signIn(withPresenting: rootViewController)
         // await finish(userID: result.user.userID!, name: result.user.profile?.name ?? "",
-        //              email: result.user.profile?.email ?? "", provider: .google, idToken: result.user.idToken?.tokenString)
+        //              email: result.user.profile?.email ?? "", provider: .google, idToken: result.user.idToken?.tokenString,
+        //              photoURL: result.user.profile?.imageURL(withDimension: 240)?.absoluteString ?? "")
     }
 
     // MARK: Shared
@@ -66,8 +71,9 @@ final class AuthService: ObservableObject {
         await finish(userID: "demo", name: "Alex Kim", email: "alex@example.com", provider: provider, idToken: nil)
     }
 
-    private func finish(userID: String, name: String, email: String, provider: Provider, idToken: String?) async {
+    private func finish(userID: String, name: String, email: String, provider: Provider, idToken: String?, photoURL: String = "") async {
         self.userID = userID
+        self.photoURL = photoURL
         self.name = name
         self.email = email
         self.provider = provider.rawValue
@@ -92,7 +98,7 @@ final class AuthService: ObservableObject {
     }
 
     func signOut() {
-        userID = ""; name = ""; email = ""; provider = ""
+        userID = ""; name = ""; email = ""; provider = ""; photoURL = ""
     }
 
     /// Deletes the account on the server (when a backend is set up) and signs out.

@@ -179,9 +179,9 @@ struct TimelineScreen: View {
                 .padding(.horizontal, 16).padding(.top, 4)
             }
             .overlay(alignment: .bottomTrailing) {
-                GlassEffectContainer(spacing: 10) {
-                    VStack(spacing: 10) {
-                        VStack(spacing: 4) {
+                GlassEffectContainer(spacing: 14) {
+                    VStack(spacing: 14) {
+                        VStack(spacing: 0) {
                             mapToggle("Route", "point.topleft.down.to.point.bottomright.curvepath", $showRoute)
                             mapToggle("Photos", "photo", $showPhotos)
                             mapToggle("Journal", "doc.text", $showJournal)
@@ -189,8 +189,8 @@ struct TimelineScreen: View {
                         .padding(4)
                         .glassEffect(.regular, in: .capsule)
                         Button { withAnimation(.snappy) { camera = .userLocation(fallback: .automatic) } } label: {
-                            Image(systemName: "location.fill").font(.system(size: 18, weight: .semibold))
-                                .foregroundStyle(Theme.accent).frame(width: 50, height: 50)
+                            Image(systemName: "location.fill").font(.system(size: 20, weight: .semibold))
+                                .foregroundStyle(Theme.accent).frame(width: 64, height: 64)
                         }
                         .buttonStyle(.plain)
                         .glassEffect(.regular.interactive(), in: .circle)
@@ -210,9 +210,9 @@ struct TimelineScreen: View {
 
     private func mapToggle(_ title: String, _ symbol: String, _ on: Binding<Bool>) -> some View {
         Button { withAnimation(.snappy) { on.wrappedValue.toggle() } } label: {
-            Image(systemName: symbol).font(.system(size: 17, weight: .semibold))
+            Image(systemName: symbol).font(.system(size: 19, weight: .semibold))
                 .foregroundStyle(on.wrappedValue ? Theme.accent : Color.secondary)
-                .frame(width: 42, height: 42)
+                .frame(width: 56, height: 56)
                 .contentShape(.circle)
                 .glassEffect(on.wrappedValue ? .regular.interactive() : .identity, in: .circle)
         }
@@ -337,7 +337,7 @@ struct MostVisitedList: View {
     var clusters: [TimelineScreen.Cluster]
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Most visited").font(.footnote.weight(.semibold)).foregroundStyle(.secondary).textCase(.uppercase)
+            Text("Most visited").font(.footnote.weight(.semibold)).helperText().textCase(.uppercase)
                 .padding(.horizontal, 4).padding(.top, 8).padding(.bottom, 2)
             let top = Array(clusters.sorted { $0.hours > $1.hours }.prefix(6))
             if top.isEmpty {

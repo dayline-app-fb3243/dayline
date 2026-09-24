@@ -88,6 +88,7 @@ struct SiriDemoView: View {
             }
         }
         .navigationTitle("")
+        .backgroundNavBar()
         .toolbarVisibility(.hidden, for: .tabBar)
         .accessibilityIdentifier("siriDemo")
     }

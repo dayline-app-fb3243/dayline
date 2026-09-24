@@ -47,6 +47,7 @@ struct WidgetsDemoView: View {
         .background(LinearGradient(colors: [Color(red: 0.61, green: 0.75, blue: 1), Color(red: 0.93, green: 0.94, blue: 0.98)],
                                    startPoint: .top, endPoint: .bottom).ignoresSafeArea())
         .navigationTitle("Widgets")
+        .backgroundNavBar()
         .navigationBarTitleDisplayMode(.inline)
         .toolbarVisibility(.hidden, for: .tabBar)
         .accessibilityIdentifier("widgetsDemo")

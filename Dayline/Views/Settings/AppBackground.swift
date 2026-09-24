@@ -115,7 +115,7 @@ struct BackgroundPickerView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 8) {
-                Text("Backgrounds").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
+                Text("Backgrounds").font(.footnote.weight(.semibold)).helperText()
                     .textCase(.uppercase).padding(.leading, 16).padding(.top, 8)
                 LazyVGrid(columns: columns, spacing: 14) {
                     PhotosPicker(selection: $pick, matching: .images) {
@@ -152,7 +152,7 @@ struct BackgroundPickerView: View {
                 .padding(.horizontal, 2)
 
                 if presetRaw == BackgroundPreset.photo.rawValue {
-                    Text("Photo style").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
+                    Text("Photo style").font(.footnote.weight(.semibold)).helperText()
                         .textCase(.uppercase).padding(.leading, 16).padding(.top, 14)
                     Picker("Photo style", selection: $styleRaw) {
                         ForEach(PhotoStyle.allCases) { Text($0.title).tag($0.rawValue) }
@@ -164,6 +164,7 @@ struct BackgroundPickerView: View {
         }
         .background(Color(.systemGroupedBackground).ignoresSafeArea())
         .navigationTitle("Background")
+        .backgroundNavBar()
         .navigationBarTitleDisplayMode(.inline)
         .toolbarVisibility(.hidden, for: .tabBar)
         .onChange(of: pick) { _, item in
@@ -221,7 +222,7 @@ struct SectionHeader: View {
     var title: String
     init(_ title: String) { self.title = title }
     var body: some View {
-        Text(title).font(.footnote.weight(.semibold)).foregroundStyle(.secondary).textCase(.uppercase)
+        Text(title).font(.footnote.weight(.semibold)).helperText().textCase(.uppercase)
             .padding(.leading, 4).padding(.top, 6)
     }
 }
@@ -307,17 +308,25 @@ struct ProfileView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 10) {
                 NavigationLink { if auth.isSignedIn { AccountView() } else { PrivacyView() } } label: {
-                    Card(padding: 14) {
-                        HStack(spacing: 13) {
-                            if auth.isSignedIn { AccountAvatar(name: auth.name, size: 52) } else { ProfileIcon(symbol: "person.fill", size: 52) }
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(auth.isSignedIn ? (auth.name.isEmpty ? "Your Account" : auth.name) : "Not signed in").font(.title3.weight(.semibold))
-                                Text(auth.isSignedIn ? "Signed in with \(auth.provider.capitalized) \u{00B7} Backed up" : "Your timeline stays on this iPhone")
-                                    .font(.footnote).foregroundStyle(.secondary)
+                    // Same shape as the Apple Account card at the top of iOS Settings.
+                    Card(padding: 0) {
+                        HStack(spacing: 14) {
+                            if auth.isSignedIn {
+                                AccountAvatar(name: auth.displayName, size: 64, photoURL: auth.photoURL)
+                            } else {
+                                Image(systemName: "person.crop.circle.fill").font(.system(size: 64)).symbolRenderingMode(.hierarchical)
+                                    .foregroundStyle(Theme.accent).frame(width: 64, height: 64)
                             }
-                            Spacer()
-                            Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(.tertiary)
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(auth.isSignedIn ? auth.displayName : "Sign In").font(.title3.bold()).foregroundStyle(.primary).lineLimit(1)
+                                Text(auth.isSignedIn ? "Account, Backup, and Sign-In" : "Back up your timeline and use it on other devices")
+                                    .font(.subheadline).foregroundStyle(.secondary).lineLimit(2)
+                            }
+                            Spacer(minLength: 8)
+                            Image(systemName: "chevron.right").font(.body.weight(.semibold)).foregroundStyle(.tertiary)
                         }
+                        .padding(.horizontal, 16).padding(.vertical, 14)
+                        .contentShape(.rect)
                     }
                 }
                 .accessibilityIdentifier("accountRow")
@@ -378,7 +387,7 @@ struct ProfileView: View {
                     }
                 }
                 Text("Dayline asks quick yes/no questions, like \u{201C}Going to sleep now?\u{201D}, when it isn\u{2019}t sure. Answer right from the notification. Off by default.")
-                    .font(.footnote).foregroundStyle(.secondary).padding(.horizontal, 16).padding(.top, 6)
+                    .font(.footnote).helperText().padding(.horizontal, 16).padding(.top, 6)
                 if SiriSupport.isAvailable {
                     SectionHeader("Siri")
                     Card(padding: 0) {
@@ -395,7 +404,7 @@ struct ProfileView: View {
                         .accessibilityIdentifier("yourDataRow")
                 }
                 Text("Your places and photos stay on your iPhone. See our [Privacy Policy](dayline://privacy).")
-                    .font(.footnote).foregroundStyle(.secondary).tint(Theme.accent)
+                    .font(.footnote).helperLinkText()
                     .padding(.horizontal, 4).padding(.top, -3)
                     .environment(\.openURL, OpenURLAction { _ in showPolicy = true; return .handled })
                     .accessibilityIdentifier("privacyPolicyLink")
@@ -414,6 +423,7 @@ struct ProfileView: View {
         .buttonStyle(.plain)
         .background(AppBackgroundView())
         .navigationTitle("Profile")
+        .backgroundNavBar()
         .toolbarRole(.editor)
         .navigationDestination(isPresented: $showSiriDemo) { SiriDemoView() }
         .sheet(isPresented: $showPolicy) { PrivacyPolicyView() }
@@ -497,12 +507,13 @@ struct PrivacyView: View {
             }
             .padding(.top, 10)
             Text("Deletes your account, your backup and everything Dayline saved on this iPhone. This can't be undone.")
-                .font(.footnote).foregroundStyle(.secondary).padding(.horizontal, 4)
+                .font(.footnote).helperText().padding(.horizontal, 4)
           }
           .padding(18)
         }
         .background(AppBackgroundView())
         .navigationTitle("Your data")
+        .backgroundNavBar()
         .alert("Delete Account & Backup?", isPresented: $confirmDelete) {
             Button("Delete", role: .destructive) { Task { await deleteEverything() } }
             Button("Cancel", role: .cancel) {}
@@ -554,13 +565,14 @@ struct CheckLocationView: View {
                     }
                 }
                 Text("Checking more often gives a more exact timeline but uses more battery. Battery numbers are estimates for a normal day and depend on your iPhone and how much you move.")
-                    .font(.footnote).foregroundStyle(.secondary).padding(.horizontal, 16).padding(.top, 8)
+                    .font(.footnote).helperText().padding(.horizontal, 16).padding(.top, 8)
             }
             .padding(.horizontal, 18).padding(.top, 8)
         }
         .buttonStyle(.plain)
         .background(AppBackgroundView())
         .navigationTitle("Check Location")
+        .backgroundNavBar()
         .navigationBarTitleDisplayMode(.inline)
     }
 }
@@ -594,6 +606,7 @@ struct PrivacyPolicyView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             .navigationTitle("Privacy Policy").navigationBarTitleDisplayMode(.inline)
+            .backgroundNavBar()
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button { dismiss() } label: { Image(systemName: "xmark") }.accessibilityLabel("Close")
@@ -621,4 +634,59 @@ extension PrivacyView {
         if let id = Bundle.main.bundleIdentifier { UserDefaults.standard.removePersistentDomain(forName: id) }
         dismiss()
     }
+}
+
+// MARK: Text that sits right on the background (not inside a card)
+
+/// Whether the chosen background is dark, so text sitting on it needs light/blue colors.
+enum BackgroundTone {
+    static let darkPresets: Set<BackgroundPreset> = [.black, .ocean, .forest, .night, .graphite, .aurora]
+    static func isDark(presetRaw: String, styleRaw: String, scheme: ColorScheme) -> Bool {
+        if scheme == .dark { return true }
+        let preset = BackgroundPreset(rawValue: presetRaw) ?? .system
+        if darkPresets.contains(preset) { return true }
+        if preset == .photo, PhotoStyle(rawValue: styleRaw) == .dim { return true }
+        return false
+    }
+}
+
+private struct BackgroundText: ViewModifier {
+    enum Role { case helper, title, link }
+    var role: Role
+    @AppStorage("background.preset") private var presetRaw = BackgroundPreset.system.rawValue
+    @AppStorage("background.style") private var styleRaw = PhotoStyle.blur.rawValue
+    @Environment(\.colorScheme) private var scheme
+
+    func body(content: Content) -> some View {
+        let dark = BackgroundTone.isDark(presetRaw: presetRaw, styleRaw: styleRaw, scheme: scheme)
+        switch role {
+        // Small gray helper text (section headers, footers): blue on dark backgrounds, gray otherwise.
+        case .helper: content.foregroundStyle(dark ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(.secondary))
+        // Footer text with a link: helper color, and the link turns white on dark backgrounds.
+        case .link: content.foregroundStyle(dark ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(.secondary)).tint(dark ? .white : Theme.accent)
+        // Big titles on the background: white on dark backgrounds.
+        case .title: content.foregroundStyle(dark ? AnyShapeStyle(Color.white) : AnyShapeStyle(.primary))
+        }
+    }
+}
+
+private struct BackgroundNavBar: ViewModifier {
+    @AppStorage("background.preset") private var presetRaw = BackgroundPreset.system.rawValue
+    @AppStorage("background.style") private var styleRaw = PhotoStyle.blur.rawValue
+    @Environment(\.colorScheme) private var scheme
+    func body(content: Content) -> some View {
+        let dark = BackgroundTone.isDark(presetRaw: presetRaw, styleRaw: styleRaw, scheme: scheme)
+        content.toolbarColorScheme(dark ? .dark : nil, for: .navigationBar)
+    }
+}
+
+extension View {
+    /// Section headers and footer notes that sit on the background.
+    func helperText() -> some View { modifier(BackgroundText(role: .helper)) }
+    /// Footer notes that contain a link (like "Privacy Policy").
+    func helperLinkText() -> some View { modifier(BackgroundText(role: .link)) }
+    /// Large titles that sit on the background.
+    func backgroundTitle() -> some View { modifier(BackgroundText(role: .title)) }
+    /// Keeps the navigation title readable on dark backgrounds.
+    func backgroundNavBar() -> some View { modifier(BackgroundNavBar()) }
 }

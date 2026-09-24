@@ -143,6 +143,7 @@ struct StreakView: View {
         }
         .background(AppBackgroundView())
         .navigationTitle("Streak")
+        .backgroundNavBar()
         .toolbarVisibility(.hidden, for: .tabBar)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -237,12 +238,13 @@ struct FriendStreakView: View {
                 SectionHeader("Past week")
                 Card(padding: 12) { FriendWeekStrip(color: friend.color) { friend.isGood($0) } }
                 Text("Friends see streaks only. Places, photos and notes stay private.")
-                    .font(.footnote).foregroundStyle(.secondary).padding(.horizontal, 4)
+                    .font(.footnote).helperText().padding(.horizontal, 4)
             }
             .padding(.horizontal, 18).padding(.bottom, 30)
         }
         .background(AppBackgroundView())
         .navigationTitle(friend.fullName)
+        .backgroundNavBar()
         .toolbarVisibility(.hidden, for: .tabBar)
         .navigationBarTitleDisplayMode(.inline)
         .accessibilityIdentifier("friendScreen")
@@ -488,7 +490,7 @@ struct PeopleView: View {
                     }
                 }
                 Text("Turn someone off to hide them from your streak ring.")
-                    .font(.footnote).foregroundStyle(.secondary).padding(.horizontal, 16).padding(.top, 7)
+                    .font(.footnote).helperText().padding(.horizontal, 16).padding(.top, 7)
                 PeopleGroup {
                     NavigationLink { AskToShareView() } label: { LinkRow(title: "Ask Someone to Share", top: false) }
                         .accessibilityIdentifier("askToShare")
@@ -523,7 +525,7 @@ struct PeopleView: View {
                         }
                     }
                     Text("From your contacts. Follow sends a request. Invite sends a link in Messages.")
-                        .font(.footnote).foregroundStyle(.secondary).padding(.horizontal, 16).padding(.top, 7)
+                        .font(.footnote).helperText().padding(.horizontal, 16).padding(.top, 7)
                 }
             }
             .padding(.horizontal, 18).padding(.bottom, 30)
@@ -531,6 +533,7 @@ struct PeopleView: View {
         .buttonStyle(.plain)
         .background(AppBackgroundView())
         .navigationTitle("People")
+        .backgroundNavBar()
         .navigationBarTitleDisplayMode(.large)
         .searchable(text: $search, placement: .navigationBarDrawer(displayMode: .always), prompt: "Phone, Email or Contact")
         .toolbarVisibility(.hidden, for: .tabBar)
@@ -572,7 +575,7 @@ struct PersonView: View {
                         .padding(.horizontal, 16).frame(minHeight: 52)
                 }
                 Text("Friends only see your streak. Nothing else leaves your phone.")
-                    .font(.footnote).foregroundStyle(.secondary).padding(.horizontal, 16).padding(.top, 8)
+                    .font(.footnote).helperText().padding(.horizontal, 16).padding(.top, 8)
 
                 PeopleHeader("\(friend.name) Shares With You")
                 PeopleGroup {
@@ -601,6 +604,7 @@ struct PersonView: View {
         .buttonStyle(.plain)
         .background(AppBackgroundView())
         .navigationTitle("")
+        .backgroundNavBar()
         .navigationBarTitleDisplayMode(.inline)
         .toolbarVisibility(.hidden, for: .tabBar)
         .confirmationDialog("\(friend.name) will no longer see your streak.", isPresented: $confirmStop, titleVisibility: .visible) {
@@ -665,6 +669,7 @@ struct AskToShareView: View {
         .background(AppBackgroundView())
         .scrollDismissesKeyboard(.interactively)
         .navigationTitle("Ask to Share")
+        .backgroundNavBar()
         .navigationBarTitleDisplayMode(.inline)
         .toolbarVisibility(.hidden, for: .tabBar)
         .accessibilityIdentifier("askScreen")
@@ -716,7 +721,7 @@ struct ShareWithView: View {
                     }
                 }
                 Text(q.isEmpty ? "Share lets them see your streak only. Search to invite someone who isn\u{2019}t on Dayline." : "Share lets them see your streak only. Invite sends a link in Messages.")
-                    .font(.footnote).foregroundStyle(.secondary).padding(.horizontal, 16).padding(.top, 7)
+                    .font(.footnote).helperText().padding(.horizontal, 16).padding(.top, 7)
             }
             .padding(.horizontal, 18).padding(.bottom, 30)
         }
@@ -724,6 +729,7 @@ struct ShareWithView: View {
         .background(AppBackgroundView())
         .scrollDismissesKeyboard(.interactively)
         .navigationTitle("Share With")
+        .backgroundNavBar()
         .navigationBarTitleDisplayMode(.inline)
         .toolbarVisibility(.hidden, for: .tabBar)
         .accessibilityIdentifier("shareWithScreen")

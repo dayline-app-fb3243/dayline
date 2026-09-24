@@ -404,7 +404,9 @@ struct SetupStep<Content: View>: View {
     var subtitle: String
     var primary: String
     var primaryEnabled: Bool
-    var secondary: String
+    var secondary: String?
+    /// true = small blue text link under Continue instead of a second big button.
+    var secondaryIsLink: Bool = false
     var back: (() -> Void)?
     var onPrimary: () -> Void
     var onSecondary: () -> Void
@@ -429,8 +431,15 @@ struct SetupStep<Content: View>: View {
             VStack(spacing: 10) {
                 Button(action: onPrimary) { Text(primary).font(.headline).frame(maxWidth: .infinity).frame(height: 40) }
                     .buttonStyle(.glassProminent).disabled(!primaryEnabled).accessibilityIdentifier("setupPrimary")
-                Button(action: onSecondary) { Text(secondary).font(.headline).frame(maxWidth: .infinity).frame(height: 40) }
-                    .buttonStyle(.glass).foregroundStyle(.primary).accessibilityIdentifier("setupSecondary")
+                if let secondary {
+                    if secondaryIsLink {
+                        Button(secondary, action: onSecondary).font(.subheadline).foregroundStyle(Theme.accent)
+                            .accessibilityIdentifier("setupSecondary")
+                    } else {
+                        Button(action: onSecondary) { Text(secondary).font(.headline).frame(maxWidth: .infinity).frame(height: 40) }
+                            .buttonStyle(.glass).foregroundStyle(.primary).accessibilityIdentifier("setupSecondary")
+                    }
+                }
             }
             .controlSize(.large)
         }
@@ -514,7 +523,7 @@ struct PhoneCodeView: View {
     var body: some View {
         SetupStep(symbol: "ellipsis.message", title: "Enter Code",
                   subtitle: "Enter the 6-digit code sent to \(savedPhone).",
-                  primary: "Continue", primaryEnabled: code.count == 6, secondary: "Change Number",
+                  primary: "Continue", primaryEnabled: code.count == 6, secondary: "Change Number", secondaryIsLink: true,
                   back: back, onPrimary: {
                       // No text-message service is connected yet, so any 6 digits are accepted in this build.
                       verified = true; next()
@@ -556,7 +565,7 @@ struct EmailView: View {
     var body: some View {
         SetupStep(symbol: "envelope", title: "Email Address",
                   subtitle: "Enter your email to back up your timeline and sign in on other devices.",
-                  primary: "Continue", primaryEnabled: valid, secondary: "Use Sign in with Apple",
+                  primary: "Continue", primaryEnabled: valid, secondary: nil,
                   back: back, onPrimary: { savedEmail = email; next() }, onSecondary: back) {
             TextField("name@example.com", text: $email)
                 .keyboardType(.emailAddress).textContentType(.emailAddress)
@@ -579,7 +588,7 @@ struct EmailCodeView: View {
     var body: some View {
         SetupStep(symbol: "envelope.badge", title: "Check Your Email",
                   subtitle: "Enter the 6-digit code sent to \(savedEmail).",
-                  primary: "Continue", primaryEnabled: code.count == 6, secondary: "Change Email",
+                  primary: "Continue", primaryEnabled: code.count == 6, secondary: nil,
                   back: back, onPrimary: {
                       // No email service is connected yet, so any 6 digits are accepted in this build.
                       Task { await AuthService.shared.signInDemo(provider: .email); next() }

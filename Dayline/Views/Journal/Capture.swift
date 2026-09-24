@@ -35,6 +35,7 @@ private struct PhotoCaptureSheet: View {
             }
             .padding(24)
             .navigationTitle("Add photos").navigationBarTitleDisplayMode(.inline)
+            .backgroundNavBar()
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Close", systemImage: "xmark") { dismiss() } } }
             .onChange(of: selection) { _, items in Task { await save(items) } }
         }
@@ -97,6 +98,7 @@ private struct VoiceCaptureSheet: View {
             }
             .padding(24)
             .navigationTitle("Voice note").navigationBarTitleDisplayMode(.inline)
+            .backgroundNavBar()
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Close", systemImage: "xmark") { dismiss() } } }
         }
     }
@@ -110,6 +112,7 @@ private struct TextCaptureSheet: View {
         NavigationStack {
             TextEditor(text: $text).padding()
                 .navigationTitle("Note").navigationBarTitleDisplayMode(.inline)
+                .backgroundNavBar()
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) { Button("Close", systemImage: "xmark") { dismiss() } }
                     ToolbarItem(placement: .confirmationAction) {

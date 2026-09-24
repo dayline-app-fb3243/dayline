@@ -4,13 +4,34 @@ import SwiftUI
 struct AccountAvatar: View {
     var name: String
     var size: CGFloat
-    var body: some View {
-        Text(String(name.trimmingCharacters(in: .whitespaces).prefix(1)).uppercased().isEmpty ? "?" : String(name.trimmingCharacters(in: .whitespaces).prefix(1)).uppercased())
-            .font(.system(size: size * 0.42, weight: .semibold))
+    var photoURL: String = ""
+
+    /// "Alex Kim" -> "AK", "alex@example.com" -> "A".
+    private var initials: String {
+        let base = name.contains("@") ? String(name.split(separator: "@").first ?? "") : name
+        let parts = base.split(whereSeparator: { $0 == " " || $0 == "." }).prefix(2)
+        let s = parts.compactMap { $0.first.map(String.init) }.joined().uppercased()
+        return s.isEmpty ? "?" : s
+    }
+
+    private var placeholder: some View {
+        Text(initials)
+            .font(.system(size: size * (initials.count > 1 ? 0.38 : 0.44), weight: .semibold))
             .foregroundStyle(.white)
             .frame(width: size, height: size)
             .background(LinearGradient(colors: [Color(red: 0.29, green: 0.64, blue: 1), Color(red: 0.04, green: 0.36, blue: 0.9)],
-                                       startPoint: .topLeading, endPoint: .bottomTrailing), in: .circle)
+                                       startPoint: .top, endPoint: .bottom), in: .circle)
+    }
+
+    var body: some View {
+        if let url = URL(string: photoURL), !photoURL.isEmpty {
+            AsyncImage(url: url) { phase in
+                if let image = phase.image { image.resizable().scaledToFill() } else { placeholder }
+            }
+            .frame(width: size, height: size).clipShape(.circle)
+        } else {
+            placeholder
+        }
     }
 }
 
@@ -39,7 +60,7 @@ struct AccountView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 10) {
                 VStack(spacing: 4) {
-                    AccountAvatar(name: auth.name, size: 84)
+                    AccountAvatar(name: auth.displayName, size: 84, photoURL: auth.photoURL)
                     Text(auth.name.isEmpty ? "Your Account" : auth.name).font(.title2.weight(.semibold)).padding(.top, 6)
                     Label("Signed in with \(auth.provider.capitalized)", systemImage: auth.provider == "apple" ? "apple.logo" : "person.crop.circle")
                         .font(.subheadline).foregroundStyle(.secondary)
@@ -94,6 +115,7 @@ struct AccountView: View {
         .buttonStyle(.plain)
         .background(AppBackgroundView())
         .navigationTitle("Account")
+        .backgroundNavBar()
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.hidden, for: .tabBar)
         .alert("Sign Out?", isPresented: $confirmSignOut) {
@@ -114,6 +136,6 @@ struct AccountView: View {
     }
 
     private func footnote(_ text: String) -> some View {
-        Text(text).font(.footnote).foregroundStyle(.secondary).padding(.horizontal, 16).padding(.top, 2)
+        Text(text).font(.footnote).helperText().padding(.horizontal, 16).padding(.top, 2)
     }
 }
