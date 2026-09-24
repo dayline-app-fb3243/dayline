@@ -1,0 +1,28 @@
+name: Xcode project zip
+
+on:
+  workflow_dispatch:
+
+jobs:
+  zip:
+    runs-on: xcode-27
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate project
+        run: |
+          brew install xcodegen
+          xcodegen generate
+      - name: Check it builds for the simulator with default settings (no team)
+        run: |
+          set -o pipefail
+          xcodebuild -project Dayline.xcodeproj -scheme Dayline -destination 'generic/platform=iOS Simulator' -derivedDataPath /tmp/dd build | tail -n 30
+      - name: Zip
+        run: |
+          rm -rf /tmp/out && mkdir -p /tmp/out/Dayline
+          rsync -a --exclude .git --exclude .github --exclude '*.xcodeproj/xcuserdata' ./ /tmp/out/Dayline/
+          cd /tmp/out && zip -qry Dayline.zip Dayline && ls -la Dayline.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Dayline-xcode
+          path: /tmp/out/Dayline.zip
