@@ -72,8 +72,8 @@ struct IntroPages: View {
          "Dayline learns your routine from where you go and fills in your schedule. No typing.", Theme.accent),
         ("car.fill", "\"Take me back there\"",
          "Ask Siri for the place you ate four days ago. See your photos from it and get directions.", Theme.accent),
-        ("battery.100percent.bolt", "Private and light on battery",
-         "Tracks your route only while you are moving and rests when you stop. Everything stays on your iPhone.", Theme.accent)
+        ("lock.shield", "Private, and you pick the battery",
+         "Choose how often Dayline checks your location: every 1, 5 or 10 minutes. Everything stays on your iPhone.", Theme.accent)
     ]
     var body: some View {
         VStack(spacing: 0) {
