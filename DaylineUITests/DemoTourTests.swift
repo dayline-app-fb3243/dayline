@@ -1408,4 +1408,14 @@ final class DemoTourTests: XCTestCase {
             app.terminate()
         }
     }
+
+    /// Ring shades: now (by points lost) vs B / C (by the best score still possible today).
+    func testRingShades() throws {
+        for v in ["", "B", "C"] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-demo.rings", "-ring.shade", v]
+            app.launch(); pause(2.5); shot("rs-\(v.isEmpty ? "now" : v)")
+            app.terminate()
+        }
+    }
 }

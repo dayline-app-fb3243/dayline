@@ -27,7 +27,9 @@ struct DaylineApp: App {
     var body: some Scene {
         WindowGroup {
             Group {
-                if onboardingDone {
+                if ProcessInfo.processInfo.arguments.contains("-demo.rings") {
+                    RingSamplesView()
+                } else if onboardingDone {
                     RootView().task { await startUp() }
                 } else {
                     OnboardingFlow()

@@ -86,7 +86,16 @@ struct ScoreRing: View {
     private var lineWidth: CGFloat { lineWidthOverride ?? (thick ? (size * 0.17).rounded() : (size >= 120 ? 20 : 14)) }  // 14 pt small, 20 pt large
     private var behind: Bool { !paceStyle.isEmpty && (lost ?? 0) >= 5 }
     /// How far the day has slipped, 0...1: the more points are out of reach, the more orange.
-    private var slip: Double { min(1, Double(lost ?? 0) / 30) }
+    /// "ring.shade": "" (default) = by points lost (30 lost = darkest).
+    /// B / C = by the best score still possible today: 80 or more = lightest orange (a small miss, like the gym),
+    /// 75 very light, 50 darker, 20 very dark. Catching up (make-up points) moves it back toward blue.
+    /// C also starts the orange from a paler, almost peach tone.
+    @AppStorage("ring.shade") private var shade = ""
+    private var slip: Double {
+        guard !shade.isEmpty else { return min(1, Double(lost ?? 0) / 30) }
+        let best = 100 - Double(lost ?? 0)
+        return max(0, min(1, (80 - best) / 60))
+    }
     /// On track: deeper blue the better it's going.
     private var blueEnd: Color {
         guard let good, !paceStyle.isEmpty else { return Theme.accent }
@@ -107,6 +116,20 @@ struct ScoreRing: View {
     /// "ring.blend": 2 (default) = mostly blue with a short orange tail; the worse it's going, the darker the orange.
     /// 1 = even spread, 3 = deeper shades with a long soft middle (other options).
     @AppStorage("ring.blend") private var blend = "2"
+    private var orangeMid: Color {
+        switch shade {
+        case "B": return Color.orange.mix(with: .white, by: 0.35 * (1 - slip)).mix(with: Self.deepOrange, by: 0.35 * slip)
+        case "C": return Color(red: 1, green: 0.78, blue: 0.55).mix(with: Self.deepOrange, by: 0.5 * slip)
+        default: return Color.orange.mix(with: Self.deepOrange, by: 0.35 * slip)
+        }
+    }
+    private var orangeEnd: Color {
+        switch shade {
+        case "B": return Color.orange.mix(with: .white, by: 0.3 * (1 - slip)).mix(with: Self.deepOrange, by: 0.15 + 0.85 * slip)
+        case "C": return Color(red: 1, green: 0.66, blue: 0.35).mix(with: Self.deepOrange, by: slip)
+        default: return Color.orange.mix(with: Self.deepOrange, by: 0.3 + 0.7 * slip)
+        }
+    }
     private var gradient: Gradient {
         guard behind, paceStyle == "B" else { return Gradient(colors: colors) }
         let c = colors
@@ -114,8 +137,8 @@ struct ScoreRing: View {
         case "2":
             return Gradient(stops: [.init(color: c[0], location: 0),
                                     .init(color: c[1], location: 0.6 - 0.15 * slip),
-                                    .init(color: Color.orange.mix(with: Self.deepOrange, by: 0.35 * slip), location: 0.88 - 0.1 * slip),
-                                    .init(color: Color.orange.mix(with: Self.deepOrange, by: 0.3 + 0.7 * slip), location: 1)])
+                                    .init(color: orangeMid, location: 0.88 - 0.1 * slip),
+                                    .init(color: orangeEnd, location: 1)])
         case "3":
             return Gradient(stops: [.init(color: Color(red: 0.55, green: 0.78, blue: 1), location: 0),
                                     .init(color: Color(red: 0.0, green: 0.36, blue: 0.85), location: 0.3 - 0.1 * slip),
@@ -293,5 +316,41 @@ extension Font {
     /// SF at a set size that still follows the iPhone's text size and Bold Text settings (Dynamic Type).
     static func scaled(size: CGFloat, weight: Font.Weight = .regular, design: Font.Design? = nil, relativeTo style: UIFont.TextStyle = .body) -> Font {
         .system(size: UIFontMetrics(forTextStyle: style).scaledValue(for: size), weight: weight, design: design)
+    }
+}
+
+
+/// Screenshot-only ("-demo.rings"): Today cards for sample days, so ring shades can be compared side by side.
+struct RingSamplesView: View {
+    struct Sample { var title: String; var score: Int; var lost: Int; var madeUp: Int = 0; var good: Double }
+    static let samples: [Sample] = [
+        Sample(title: "On track", score: 62, lost: 0, good: 0.95),
+        Sample(title: "Missed the gym (best 90)", score: 48, lost: 10, good: 0.7),
+        Sample(title: "Best still 75", score: 44, lost: 25, good: 0.55),
+        Sample(title: "Best still 50", score: 30, lost: 50, good: 0.4),
+        Sample(title: "Best still 20", score: 12, lost: 80, good: 0.2),
+        Sample(title: "Catching up (journaled)", score: 58, lost: 25, madeUp: 18, good: 0.75),
+    ]
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Ring shades").font(.largeTitle.bold()).padding(.top, 8)
+                ForEach(Self.samples.indices, id: \.self) { i in
+                    let x = Self.samples[i]
+                    let pace = ScoreEngine.Pace(lost: x.lost, madeUp: x.madeUp, good: x.good)
+                    HStack(spacing: 14) {
+                        ScoreRing(score: x.score, size: 64, lost: pace.net, good: pace.good)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(x.title).font(.headline)
+                            Text("Score \(x.score) · best still possible \(100 - pace.net)").font(.subheadline).foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                    }
+                    .padding(12).background(.background, in: .rect(cornerRadius: 20))
+                }
+            }
+            .padding(.horizontal, 16)
+        }
+        .background(Color(.systemGroupedBackground))
     }
 }
