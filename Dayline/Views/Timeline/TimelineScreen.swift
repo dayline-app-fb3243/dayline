@@ -32,7 +32,10 @@ struct TimelineScreen: View {
     @AppStorage("pin.style") private var pinStyle = "D"
     /// Preview flag "map.sheet" (David 2:08, Find My reference): no floating toggles; a grabber on the range bar
     /// pulls up a glass sheet with Journal / Photos / Route switches. A = Find My card, B = Settings-style icons, C = compact.
-    @AppStorage("map.sheet") private var mapSheet = ""
+    @AppStorage("map.sheet") private var mapSheet = "A"
+    /// Preview flag "map.grabber": where the grabber sits so the range words stay centered.
+    /// A = grabber drawn over the top edge (takes no space), B = grabber just above the bar, C = even space above and below the words.
+    @AppStorage("map.grabber") private var grabber = ""
     @State private var sheetOpen = UserDefaults.standard.bool(forKey: "map.sheetOpen")
 
     private var interval: DateInterval {
@@ -344,11 +347,13 @@ struct TimelineScreen: View {
     /// Range bar with a grabber; pull up (or tap the grabber) to show the map layer switches, like Find My.
     private var pullUpBar: some View {
         VStack(spacing: 0) {
+            if grabber.isEmpty || sheetOpen {
             Capsule().fill(Color.secondary.opacity(0.5)).frame(width: 36, height: 5)
                 .padding(.top, 7).padding(.bottom, sheetOpen ? 10 : 2)
                 .frame(maxWidth: .infinity).contentShape(.rect)
                 .onTapGesture { withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) { sheetOpen.toggle() } }
                 .accessibilityIdentifier("mapGrabber")
+            }
             if sheetOpen {
                 VStack(alignment: .leading, spacing: mapSheet == "C" ? 8 : 14) {
                     if mapSheet != "C" {
@@ -368,7 +373,19 @@ struct TimelineScreen: View {
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }
             CapsuleSegmented(selection: $range, options: MapRange.allCases.map { ($0, $0.rawValue) }, plain: true)
-                .padding(.horizontal, 4).padding(.bottom, 4)
+                .padding(.horizontal, 4)
+                .padding(.top, !grabber.isEmpty && !sheetOpen ? (grabber == "C" ? 14 : 4) : 0)
+                .padding(.bottom, grabber == "C" && !sheetOpen ? 14 : 4)
+        }
+        .overlay(alignment: .top) {
+            if !grabber.isEmpty && !sheetOpen {
+                Capsule().fill(Color.secondary.opacity(0.5)).frame(width: 36, height: 5)
+                    .padding(.top, grabber == "A" ? 3 : (grabber == "C" ? 5 : 0))
+                    .offset(y: grabber == "B" ? -12 : 0)
+                    .frame(width: 120, height: 20, alignment: .top).contentShape(.rect)
+                    .onTapGesture { withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) { sheetOpen.toggle() } }
+                    .accessibilityIdentifier("mapGrabber")
+            }
         }
         .glassEffect(.regular, in: .rect(cornerRadius: sheetOpen ? 34 : 30))
         .padding(.horizontal, 12).padding(.bottom, 6)

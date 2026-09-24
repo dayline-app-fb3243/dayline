@@ -831,6 +831,19 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Grabber placement options on the map range bar: now vs A/B/C (words centered).
+    func testGrabberDemo() throws {
+        for v in ["now", "A", "B", "C"] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-map.3d", "YES", "-map.grabber", v == "now" ? "" : v]
+            app.launchEnvironment["TZ"] = Self.morningZone
+            app.launch(); pause(1.5)
+            tab(app, "Timeline"); pause(3)
+            tapID(app, "mapCard"); pause(6); shot("gb-\(v)")
+            app.terminate()
+        }
+    }
+
     /// Splash G/H/I: C's 3D look, new pins, closer and more top-down.
     func testSplashPinDemo() throws {
         for v in ["G", "H", "I"] {
