@@ -751,10 +751,9 @@ struct CheckLocationView: View {
     /// A = thumbnail at the left of each row, B = three big previews on top (like wallpapers), C = thumbnail at the right.
     @AppStorage("check.preview") private var preview = ""
     @State private var enlarged: Int?
+    /// Each preview is a mini iPhone screen (David: like Apple's Tips app examples), tap to enlarge.
     private func thumb(_ m: Int, w: CGFloat, h: CGFloat) -> some View {
-        IntervalRouteMap(minutes: m).frame(width: w, height: h)
-            .clipShape(.rect(cornerRadius: 10))
-            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.primary.opacity(0.1)))
+        MiniPhoneRoute(minutes: m, width: w)
             .contentShape(.rect).onTapGesture { enlarged = m }
             .accessibilityIdentifier("thumb-\(m)")
     }
@@ -770,9 +769,11 @@ struct CheckLocationView: View {
                 if preview == "B" {
                     HStack(spacing: 12) {
                         ForEach(options, id: \.0) { o in
-                            VStack(spacing: 6) {
-                                thumb(o.0, w: 104, h: 150)
-                                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(minutes == o.0 ? Theme.accent : .clear, lineWidth: 3))
+                            VStack(spacing: 18) {
+                                thumb(o.0, w: 96, h: 0)
+                                    .overlay(alignment: .bottom) {
+                                        if minutes == o.0 { Image(systemName: "checkmark.circle.fill").font(.title3).foregroundStyle(.white, Theme.accent).offset(y: 12) }
+                                    }
                                 Text(o.1).font(.footnote.weight(.semibold)).foregroundStyle(minutes == o.0 ? Theme.accent : .primary)
                             }
                             .frame(maxWidth: .infinity)
@@ -789,7 +790,7 @@ struct CheckLocationView: View {
                                 LocationService.shared.setCheckMinutes(o.0)
                             } label: {
                                 HStack(spacing: 12) {
-                                    if preview == "A" { thumb(o.0, w: 58, h: 58) }
+                                    if preview == "A" { thumb(o.0, w: 44, h: 0) }
                                     VStack(alignment: .leading, spacing: 1) {
                                         Text(o.1).font(.body).foregroundStyle(.primary)
                                         Text(o.2).font(.subheadline).foregroundStyle(.secondary)
@@ -799,7 +800,7 @@ struct CheckLocationView: View {
                                     if minutes == o.0 {
                                         Image(systemName: "checkmark").font(.body.weight(.semibold)).foregroundStyle(Theme.accent)
                                     }
-                                    if preview == "C" { thumb(o.0, w: 76, h: 58) }
+                                    if preview == "C" { thumb(o.0, w: 44, h: 0) }
                                 }
                                 .padding(.horizontal, 18).padding(.vertical, 11)
                                 .contentShape(.rect)

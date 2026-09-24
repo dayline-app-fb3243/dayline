@@ -89,3 +89,49 @@ struct IntervalRouteSheet: View {
             .presentationDragIndicator(.visible)
     }
 }
+
+/// A tiny iPhone (frame, Dynamic Island, status bar) showing the day map at a check rate, like the examples in Apple's Tips app.
+/// Drawn at a fixed base size and scaled down, so the details stay in proportion.
+struct MiniPhoneRoute: View {
+    var minutes: Int
+    var width: CGFloat
+    private let base: CGFloat = 200
+    var body: some View {
+        let h = base * 2.17
+        ZStack(alignment: .top) {
+            IntervalRouteMap(minutes: minutes)
+                .frame(width: base - 12, height: h - 12)
+                .clipShape(.rect(cornerRadius: 30))
+            // Status bar
+            HStack {
+                Text("9:41").font(.system(size: 13, weight: .semibold))
+                Spacer()
+                HStack(spacing: 4) {
+                    Image(systemName: "cellularbars")
+                    Image(systemName: "wifi")
+                    Image(systemName: "battery.100percent")
+                }
+                .font(.system(size: 11, weight: .semibold))
+            }
+            .foregroundStyle(.black)
+            .padding(.horizontal, 24).padding(.top, 17)
+            // Dynamic Island
+            Capsule().fill(.black).frame(width: 62, height: 18).padding(.top, 14)
+            // "Every N min" label, like the app's map pill
+            VStack {
+                Spacer()
+                Text("Every \(minutes) min").font(.system(size: 13, weight: .semibold))
+                    .padding(.horizontal, 12).padding(.vertical, 7)
+                    .background(.regularMaterial, in: .capsule)
+                    .padding(.bottom, 22)
+            }
+        }
+        .frame(width: base - 12, height: h - 12)
+        .padding(6)
+        .background(RoundedRectangle(cornerRadius: 36).fill(.black))
+        .overlay(RoundedRectangle(cornerRadius: 36).stroke(Color.gray.opacity(0.5), lineWidth: 1.5))
+        .frame(width: base, height: h)
+        .scaleEffect(width / base)
+        .frame(width: width, height: width * 2.17)
+    }
+}
