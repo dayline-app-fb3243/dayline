@@ -36,7 +36,7 @@ struct TimelineScreen: View {
     /// Preview flag "map.grabber": where the grabber sits so the range words stay centered.
     /// A = grabber drawn over the top edge (takes no space), B = grabber just above the bar, C = even space above and below the words.
     @AppStorage("map.grabber") private var grabber = "C"
-    @AppStorage("map.sheetRows") private var sheetRows = "D"
+    @AppStorage("map.sheetRows") private var sheetRows = "F"
     @State private var sheetOpen = UserDefaults.standard.bool(forKey: "map.sheetOpen")
 
     private var interval: DateInterval {
@@ -364,9 +364,9 @@ struct TimelineScreen: View {
                     // Preview flag "map.sheetRows" inside panel G: D = one card, E = separate cards with a line, F = one card with a line.
                     if sheetRows == "E" {
                         VStack(spacing: 10) {
-                            findMyRow("Journal", "Notes you wrote today", $showJournal).findMyCard()
-                            findMyRow("Photos", "Photos you took today", $showPhotos).findMyCard()
-                            findMyRow("Route", "The way you went", $showRoute).findMyCard()
+                            findMyRow("Journal", "Notes you wrote today", $showJournal).findMyCard(glass: true)
+                            findMyRow("Photos", "Photos you took today", $showPhotos).findMyCard(glass: true)
+                            findMyRow("Route", "The way you went", $showRoute).findMyCard(glass: true)
                         }
                         .padding(.horizontal, 12)
                     } else {
@@ -377,7 +377,7 @@ struct TimelineScreen: View {
                             Divider().padding(.leading, 20)
                             findMyRow("Route", sheetRows == "F" ? "The way you went" : nil, $showRoute)
                         }
-                        .findMyCard()
+                        .findMyCard(glass: true)
                         .padding(.horizontal, 12)
                     }
                 }
@@ -786,5 +786,9 @@ struct DayPhotoCards: View {
 
 private extension View {
     /// Rounded translucent card like the groups in Find My's sheet.
-    func findMyCard() -> some View { background(Color.primary.opacity(0.06), in: .rect(cornerRadius: 26, style: .continuous)) }
+    /// glass: real Liquid Glass (see-through, map color shows), like the cards in Find My's "Me" sheet.
+    @ViewBuilder func findMyCard(glass: Bool = false) -> some View {
+        if glass { glassEffect(.regular.tint(Color.white.opacity(0.06)), in: .rect(cornerRadius: 26, style: .continuous)) }
+        else { background(Color.primary.opacity(0.06), in: .rect(cornerRadius: 26, style: .continuous)) }
+    }
 }
