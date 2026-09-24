@@ -34,7 +34,7 @@ struct OnboardingFlow: View {
 struct AppMark: View {
     var size: CGFloat = 96
     var shadow = true
-    /// "mark.rings" (David approved app blue 9/24; set "" for the old square icon): just the two rings, no square.
+    /// "mark.rings": rings-only logo approved 9/24; color app blue for now (pick pending; set "" for the old square icon): just the two rings, no square.
     /// blue = app blue, ink = black/white, sky = light-to-deep blue, duo = blue + teal.
     @AppStorage("mark.rings") private var rings = "blue"
     var body: some View {
@@ -359,7 +359,7 @@ struct SignInSheet: View {
             }
             // Preview flag "signin.pinned" (awaiting David's OK): full-width button pinned to the bottom.
             if pinned && smallButton {
-                // "signin.small" (David approved 9/24): fitted sheet, small centered "Continue" pill.
+                // "signin.small" (on by default, approved in the 9/24 sign-in set): fitted sheet, small centered "Continue" pill.
                 Button(action: go) { Text("Continue").font(.headline).padding(.horizontal, 30) }
                     .buttonStyle(.glassProminent).tint(Theme.accent).controlSize(.large)
                     .frame(maxWidth: .infinity).padding(.top, 18)
