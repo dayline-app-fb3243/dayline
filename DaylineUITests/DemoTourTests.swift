@@ -1463,6 +1463,18 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Insights Month page samples 1-5 plus the current page.
+    func testInsightsPages() throws {
+        for v in ["", "1", "2", "3", "4", "5"] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-insights.page", v]
+            app.launch(); pause(1.5)
+            tab(app, "Insights"); pause(2.5)
+            shot("ip-\(v.isEmpty ? "now" : v)")
+            app.terminate()
+        }
+    }
+
     /// Ring join preview: how blue meets orange, with a lighter orange capped short of dark. "" = now.
     func testRingJoin() throws {
         for v in ["", "A", "B", "C"] {

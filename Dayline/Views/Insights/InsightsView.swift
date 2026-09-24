@@ -19,7 +19,7 @@ struct InsightsView: View {
                     CapsuleSegmented(selection: $range, options: InsightRange.allCases.map { ($0, $0.rawValue) }, plain: true).glassEffect(.regular, in: .capsule)
                     switch range {
                     case .day: dayView
-                    case .month: monthView
+                    case .month: if insPage.isEmpty { monthView } else { monthPageSample }
                     case .year: yearView
                     }
                 }
@@ -257,6 +257,134 @@ struct InsightsView: View {
             }
             if let rough { roughDayCard(rough, all: items) }
         }
+    }
+
+    /// Preview "insights.page" 1-5: Month layouts ("" = the current one). Sample-only until one is picked.
+    /// 1 = a calendar with each day's score. 2 = a line chart with your average. 3 = a big average ring and week bars.
+    /// 4 = how often each habit got done. 5 = best day, lowest day, and streak as cards over the bars.
+    @AppStorage("insights.page") private var insPage = ""
+    private var monthAvg: Int { monthScores.isEmpty ? 0 : monthScores.map(\.score).reduce(0, +) / monthScores.count }
+    private func dayColor(_ score: Int) -> Color { score < 45 ? Theme.bad : Theme.accent.opacity(score >= 80 ? 1 : 0.55) }
+
+    @ViewBuilder private var monthPageSample: some View {
+        let items = monthScores
+        switch insPage {
+        case "1":
+            Card {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("\(Date.now.formatted(.dateTime.month(.wide))) · average \(monthAvg)").font(.headline)
+                    let cal = Calendar.current
+                    let start = cal.dateInterval(of: .month, for: .now)?.start ?? .now
+                    let lead = (cal.component(.weekday, from: start) - cal.firstWeekday + 7) % 7
+                    let days = cal.range(of: .day, in: .month, for: .now)?.count ?? 30
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 7), spacing: 8) {
+                        ForEach(0..<7, id: \.self) { i in
+                            Text(cal.veryShortWeekdaySymbols[(i + cal.firstWeekday - 1) % 7]).font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
+                        }
+                        ForEach(0..<(lead + days), id: \.self) { i in
+                            if i < lead { Color.clear.frame(height: 36) } else {
+                                let d = cal.date(byAdding: .day, value: i - lead, to: start) ?? start
+                                let sc = items.first { cal.isDate($0.day, inSameDayAs: d) }?.score
+                                ZStack {
+                                    Circle().fill(sc.map { dayColor($0) } ?? Color(.tertiarySystemFill))
+                                    Text(sc.map { "\($0)" } ?? "\(i - lead + 1)").font(.caption.weight(.semibold))
+                                        .foregroundStyle(sc == nil ? Color.secondary : Color.white)
+                                }
+                                .frame(height: 36)
+                            }
+                        }
+                    }
+                }
+            }
+        case "2":
+            Card {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Average \(monthAvg)").font(.title2.bold())
+                    Chart {
+                        ForEach(items) { s in
+                            LineMark(x: .value("Day", s.day, unit: .day), y: .value("Score", s.score)).interpolationMethod(.catmullRom)
+                                .foregroundStyle(Theme.accent)
+                            PointMark(x: .value("Day", s.day, unit: .day), y: .value("Score", s.score)).foregroundStyle(dayColor(s.score)).symbolSize(28)
+                        }
+                        RuleMark(y: .value("Average", monthAvg)).foregroundStyle(.secondary).lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
+                    }
+                    .chartYScale(domain: 0...100)
+                    .frame(height: 200)
+                }
+            }
+            statsRow(items)
+        case "3":
+            Card {
+                VStack(spacing: 12) {
+                    ScoreRing(score: monthAvg, size: 140)
+                    Text("\(Date.now.formatted(.dateTime.month(.wide))) average").font(.subheadline).foregroundStyle(.secondary)
+                    let weeks = Dictionary(grouping: items) { Calendar.current.component(.weekOfMonth, from: $0.day) }.sorted { $0.key < $1.key }
+                    HStack(alignment: .bottom, spacing: 14) {
+                        ForEach(weeks.indices, id: \.self) { wi in
+                            let w = weeks[wi]
+                            let a = w.value.map(\.score).reduce(0, +) / max(1, w.value.count)
+                            VStack(spacing: 4) {
+                                Text("\(a)").font(.caption.weight(.semibold)).monospacedDigit()
+                                Capsule().fill(dayColor(a)).frame(width: 26, height: CGFloat(a) * 1.1)
+                                Text("W\(w.key)").font(.caption2).foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                    .frame(height: 150, alignment: .bottom)
+                }
+                .frame(maxWidth: .infinity)
+            }
+        case "4":
+            let titles = Array(Set(items.flatMap { $0.factors.map(\.title) })).sorted()
+            SectionHeader("How often")
+            Card(padding: 0) {
+                VStack(spacing: 0) {
+                    ForEach(Array(titles.prefix(7).enumerated()), id: \.offset) { i, t in
+                        let done = items.filter { $0.factors.contains { $0.title == t && $0.points > 0 } }.count
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack {
+                                Text(t).font(.body.weight(.semibold))
+                                Spacer()
+                                Text("\(done) of \(items.count) days").font(.subheadline).foregroundStyle(.secondary).monospacedDigit()
+                            }
+                            ProgressView(value: Double(done), total: Double(max(1, items.count))).tint(Theme.accent)
+                        }
+                        .padding(.horizontal, 16).padding(.vertical, 11)
+                        if i < min(titles.count, 7) - 1 { Divider().padding(.leading, 16) }
+                    }
+                }
+            }
+        default:
+            let best = items.max { $0.score < $1.score }
+            let low = items.min { $0.score < $1.score }
+            HStack(spacing: 8) {
+                if let best { bigCard("Best day", "\(best.score)", best.day.formatted(.dateTime.weekday(.abbreviated).day()), Theme.accent) }
+                if let low { bigCard("Lowest day", "\(low.score)", low.day.formatted(.dateTime.weekday(.abbreviated).day()), Theme.bad) }
+            }
+            Button { showStreak = true } label: { bigCard("Streak", "\(DayData.streak(context: context)) days", "Tap to see it", Theme.accent) }.buttonStyle(.plain)
+            Card {
+                Chart(items) { s in
+                    BarMark(x: .value("Day", s.day, unit: .day), y: .value("Score", s.score)).foregroundStyle(dayColor(s.score)).clipShape(.capsule)
+                }
+                .chartYScale(domain: 0...100).chartYAxis(.hidden).frame(height: 120)
+            }
+        }
+    }
+    private func statsRow(_ items: [DayScore]) -> some View {
+        HStack(spacing: 8) {
+            statCard("Streak", "\(DayData.streak(context: context)) days")
+            statCard("80+ days", "\(items.filter { $0.score >= 80 }.count)")
+            statCard("Under 45", "\(items.filter { $0.score < 45 }.count)")
+        }
+    }
+    private func bigCard(_ title: String, _ value: String, _ sub: String, _ color: Color) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
+            Text(value).font(.largeTitle.bold()).foregroundStyle(color).monospacedDigit()
+            Text(sub).font(.caption).foregroundStyle(.secondary)
+        }
+        .padding(16).frame(maxWidth: .infinity, alignment: .leading)
+        .background(.background, in: .rect(cornerRadius: 22, style: .continuous))
     }
 
     private func legend(_ color: Color, _ text: String) -> some View {
