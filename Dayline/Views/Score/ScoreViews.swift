@@ -244,8 +244,9 @@ struct DayActivityList: View {
 
     @Query(sort: \PlanItem.start) private var plans: [PlanItem]
     /// Preview flag "today.schedule": A (default) = plain list, no taps. B = timeline with a line through
-    /// category symbols, plus plans still to come today in gray. C = A plus tap a row to open it: time there,
-    /// photos, and a small map of the place.
+    /// category symbols, plus plans still to come today in gray. C = only what actually happened, built fresh
+    /// each day: places (home stays too), journal entries away from a place, plans you finished, and a "?" row
+    /// for time Dayline knows nothing about, with a guess. Tap any row to open it.
     @AppStorage("today.schedule") private var style = "A"
     @State private var open: String?
 
@@ -253,6 +254,8 @@ struct DayActivityList: View {
         var id: String; var time: Date; var title: String; var detail: String; var isNow: Bool
         var symbol = "sun.max.fill"; var upcoming = false
         var place: CLLocationCoordinate2D? = nil; var end: Date? = nil
+        var kind = Kind.visit; var note: String? = nil
+        enum Kind { case wake, visit, journal, plan, gap }
     }
 
     static let clock: DateFormatter = { let f = DateFormatter(); f.dateFormat = "h:mm"; return f }()
@@ -264,10 +267,15 @@ struct DayActivityList: View {
         let window = DayBoundary.shared.window(for: day)
         let sensedWake = DayBoundary.shared.wakeUp(on: day)
         let wake: Date? = (DemoData.isDemo && isToday)
-            ? cal.date(bySettingHour: 6, minute: 50, second: 0, of: day)
+            ? cal.date(bySettingHour: DemoData.lateDay ? 9 : 6, minute: DemoData.lateDay ? 0 : 50, second: 0, of: day)
             : DayData.input(for: day, context: context).firstActivity
         let wakeDetail = DemoData.isDemo ? "Phone first used" : (sensedWake != nil ? "First move after sleep" : "First activity")
-        if let wake { out.append(Row(id: "wake", time: wake, title: "Woke up", detail: wakeDetail, isNow: false)) }
+        if let wake {
+            out.append(Row(id: "wake", time: wake, title: "Woke up", detail: wakeDetail, isNow: false, kind: .wake,
+                           note: DemoData.isDemo || sensedWake != nil
+                               ? "Up at \(Self.clock.string(from: wake)). That\u{2019}s the first time your phone moved or was used after sleep."
+                               : "Your first activity today was at \(Self.clock.string(from: wake))."))
+        }
         if style == "B" && isToday {
             for p in plans where cal.isDate(p.start, inSameDayAs: day) && p.start > now && !p.isDone {
                 out.append(Row(id: "plan-\(p.start.timeIntervalSince1970)-\(p.title)", time: p.start, title: p.title,
@@ -284,16 +292,82 @@ struct DayActivityList: View {
             out.append(Row(id: "\(v.arrival.timeIntervalSince1970)-\(v.placeKey)", time: v.arrival, title: v.placeName, detail: detail, isNow: here && isToday,
                            symbol: v.category.symbol, place: CLLocationCoordinate2D(latitude: v.latitude, longitude: v.longitude), end: end))
         }
+        if style == "C" { out = builtFromDay(out, day: day, window: window, wake: wake, now: now, isToday: isToday) }
         return out.sorted { $0.time < $1.time }
     }
 
+    /// C: adds home stays, journal entries away from any place, finished plans, and "?" rows for unknown time.
+    private func builtFromDay(_ base: [Row], day: Date, window: DateInterval, wake: Date?, now: Date, isToday: Bool) -> [Row] {
+        var out = base
+        let start = wake ?? window.start
+        // Home stays after waking up, 45 min or longer.
+        for v in visits where v.category == .home && v.arrival <= now {
+            let a = max(v.arrival, start), e = min(v.departure ?? now, now, window.end)
+            guard window.contains(a), e.timeIntervalSince(a) >= 45 * 60 else { continue }
+            let here = (v.departure ?? .distantFuture) > now && isToday
+            out.append(Row(id: "home-\(a.timeIntervalSince1970)", time: a, title: "Home",
+                           detail: here ? "Here since \(Self.clock.string(from: a))" : Self.duration(e.timeIntervalSince(a)), isNow: here,
+                           symbol: "house.fill", place: CLLocationCoordinate2D(latitude: v.latitude, longitude: v.longitude), end: e))
+        }
+        func covered(_ t: Date) -> Bool { out.contains { r in r.kind == .visit && r.end.map { t >= r.time && t <= $0 } == true } }
+        // Journal entries that don't belong to a place row.
+        for j in journal where window.contains(j.date) && j.date <= now && !covered(j.date) {
+            let (title, sym): (String, String) = switch j.kind {
+            case .photo: ("Photo", "camera.fill"); case .voice: ("Voice memo", "mic.fill"); case .text: ("Journal entry", "pencil")
+            }
+            out.append(Row(id: "j-\(j.date.timeIntervalSince1970)", time: j.date, title: title,
+                           detail: j.text.isEmpty ? "From your journal" : String(j.text.prefix(40)), isNow: false,
+                           symbol: sym, place: j.latitude.flatMap { la in j.longitude.map { CLLocationCoordinate2D(latitude: la, longitude: $0) } },
+                           end: j.date, kind: .journal, note: j.text.isEmpty ? nil : j.text))
+        }
+        // Plans you finished that no place row already shows.
+        for p in plans where window.contains(p.start) && p.isDone && !covered(p.start) && !covered(p.end) {
+            out.append(Row(id: "p-\(p.start.timeIntervalSince1970)", time: p.start, title: p.title, detail: "Done · from your plans",
+                           isNow: false, symbol: p.category.symbol, end: p.end, kind: .plan))
+        }
+        // "?" rows: 45 min or more between two things with nothing known.
+        var gaps: [Row] = []
+        var cursor = start
+        for r in out.sorted(by: { $0.time < $1.time }) where r.time >= start {
+            if r.time.timeIntervalSince(cursor) >= 45 * 60 {
+                let guess = Self.guess(from: cursor, to: r.time)
+                gaps.append(Row(id: "gap-\(cursor.timeIntervalSince1970)", time: cursor, title: guess,
+                                detail: "\(Self.clock.string(from: cursor)) - \(Self.clock.string(from: r.time)) · not sure", isNow: false,
+                                symbol: "questionmark", end: r.time, kind: .gap,
+                                note: "Dayline has nothing from \(Self.clock.string(from: cursor)) to \(Self.clock.string(from: r.time)): no place, photo, or journal entry. A photo or voice memo next time fills this in."))
+            }
+            cursor = max(cursor, r.end ?? r.time)
+        }
+        return out + gaps
+    }
+
+    /// A guess for unknown time from the hour it starts: breakfast, lunch, or dinner, otherwise just "?".
+    static func guess(from a: Date, to b: Date) -> String {
+        let cal = Calendar.current
+        let mid = a.addingTimeInterval(min(b.timeIntervalSince(a) / 2, 45 * 60))
+        let m = cal.component(.hour, from: mid) * 60 + cal.component(.minute, from: mid)
+        switch m {
+        case 6 * 60..<(10 * 60 + 30): return "Breakfast?"
+        case (11 * 60 + 30)..<(14 * 60 + 30): return "Lunch?"
+        case (17 * 60 + 30)..<(21 * 60): return "Dinner?"
+        default: return "Not sure"
+        }
+    }
+
     /// C: the opened row. From arrival to leaving (or now), the photos taken there, and a small map.
-    @ViewBuilder private func detail(_ r: Row, _ place: CLLocationCoordinate2D) -> some View {
+    @ViewBuilder private func detail(_ r: Row) -> some View {
         let end = r.end ?? .now
         let pics = journal.filter { $0.kind == .photo && $0.date >= r.time && $0.date <= end }.compactMap { $0.thumbnail.flatMap(UIImage.init(data:)) }
+        let texts = r.kind == .visit ? journal.filter { $0.kind != .photo && !$0.text.isEmpty && $0.date >= r.time && $0.date <= end }.map(\.text) : []
         VStack(alignment: .leading, spacing: 10) {
-            Text("\(Self.clock.string(from: r.time)) - \(r.isNow ? "now" : Self.clock.string(from: end))")
-                .font(.subheadline).foregroundStyle(.secondary)
+            if r.kind == .visit || r.kind == .plan {
+                Text("\(Self.clock.string(from: r.time)) - \(r.isNow ? "now" : Self.clock.string(from: end))")
+                    .font(.subheadline).foregroundStyle(.secondary)
+            }
+            if let note = r.note { Text(note).font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true) }
+            ForEach(texts, id: \.self) { t in
+                Text("\u{201C}\(t)\u{201D}").font(.subheadline).fixedSize(horizontal: false, vertical: true)
+            }
             if !pics.isEmpty {
                 HStack(spacing: 6) {
                     ForEach(pics.indices.prefix(4), id: \.self) { k in
@@ -301,12 +375,14 @@ struct DayActivityList: View {
                     }
                 }
             }
-            Map(initialPosition: .camera(MapCamera(centerCoordinate: place, distance: 700))) {
-                Marker(r.title, systemImage: r.symbol, coordinate: place).tint(Theme.accent)
+            if let place = r.place, r.kind == .visit {
+                Map(initialPosition: .camera(MapCamera(centerCoordinate: place, distance: 700))) {
+                    Marker(r.title, systemImage: r.symbol, coordinate: place).tint(Theme.accent)
+                }
+                .mapStyle(.standard(pointsOfInterest: .excludingAll))
+                .allowsHitTesting(false)
+                .frame(height: 120).clipShape(.rect(cornerRadius: 12))
             }
-            .mapStyle(.standard(pointsOfInterest: .excludingAll))
-            .allowsHitTesting(false)
-            .frame(height: 120).clipShape(.rect(cornerRadius: 12))
         }
         .padding(.leading, 70).padding(.trailing, 14).padding(.bottom, 12)
         .transition(.opacity)
@@ -378,26 +454,30 @@ struct DayActivityList: View {
                             Text(Self.clock.string(from: r.time))
                                 .font(.subheadline.weight(.semibold)).foregroundStyle(.secondary).monospacedDigit()
                                 .frame(width: 46, alignment: .leading)
-                            Circle().fill(Theme.accent).frame(width: 8, height: 8)
+                            if r.kind == .gap {
+                                Circle().stroke(Color.secondary.opacity(0.6), style: StrokeStyle(lineWidth: 1.5, dash: [2, 2])).frame(width: 8, height: 8)
+                            } else {
+                                Circle().fill(Theme.accent).frame(width: 8, height: 8)
+                            }
                             VStack(alignment: .leading, spacing: 1) {
-                                Text(r.title).font(.body.weight(.semibold))
+                                Text(r.title).font(.body.weight(.semibold)).foregroundStyle(r.kind == .gap ? .secondary : .primary)
                                 Text(r.detail).font(.caption).foregroundStyle(.secondary)
                             }
                             Spacer()
                             if r.isNow { Text("now").font(.caption.weight(.semibold)).foregroundStyle(Theme.accent) }
-                            if style == "C" && r.place != nil {
-                                Image(systemName: "chevron.down").font(.footnote.weight(.semibold)).foregroundStyle(.tertiary)
+                            if style == "C" {
+                                Image(systemName: "chevron.down").font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
                                     .rotationEffect(.degrees(open == r.id ? 180 : 0))
                             }
                         }
                         .padding(.horizontal, 14).padding(.vertical, 11)
                         .contentShape(.rect)
                         .onTapGesture {
-                            guard style == "C", r.place != nil else { return }
+                            guard style == "C" else { return }
                             withAnimation(.snappy) { open = open == r.id ? nil : r.id }
                         }
                         .accessibilityIdentifier("scheduleRow-\(i)")
-                        if style == "C", open == r.id, let place = r.place { detail(r, place) }
+                        if style == "C", open == r.id { detail(r) }
                         if i < rows.count - 1 { Divider().padding(.leading, 70) }
                     }
                 }

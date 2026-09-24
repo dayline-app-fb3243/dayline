@@ -91,6 +91,8 @@ struct UserSchedule: Codable, Equatable, Sendable {
     var rangeText: String { "\(Self.timeText(wake)) \u{2013} \(Self.timeText(bed))" }
     var home: SavedPlace? { places.first { $0.kind == "home" } }
     var workPlace: SavedPlace? { places.first { $0.kind == "work" } }
+    /// Your gym: picked in Places, or learned after 10 days there (see GymHours.learn).
+    var gymPlace: SavedPlace? { places.first { $0.kind == "gym" } }
 }
 
 /// Sets the personal step goal from the usual daily steps over the last weeks (Motion history).

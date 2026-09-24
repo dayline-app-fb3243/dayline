@@ -1362,4 +1362,21 @@ final class DemoTourTests: XCTestCase {
         pause(1.5); shot("gh-settings")
         app.terminate()
     }
+
+    /// Schedule C, built only from what happened: a late start with a "?" gap until work at noon,
+    /// a lunch photo, and rows opened (wake-up, the gap, lunch).
+    func testScheduleBuilt() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo", "-today.schedule", "C", "-demo.day", "late"]
+        app.launchEnvironment["TZ"] = Self.zone(localHour: 15)
+        app.launch(); pause(2.5)
+        let list = app.descendants(matching: .any)["todaySchedule"].firstMatch
+        for _ in 0..<3 where list.exists && list.frame.maxY > app.frame.maxY - 90 { app.swipeUp(velocity: .slow); pause(1) }
+        shot("sb-closed")
+        for (name, label) in [("wake", "Woke up"), ("gap", "Breakfast?"), ("lunch", "Lucia Trattoria")] {
+            let row = app.staticTexts[label].firstMatch
+            if row.exists { row.tap(); pause(2.5); app.swipeUp(velocity: .slow); pause(1.5); shot("sb-open-\(name)"); row.tap(); pause(1.5) }
+        }
+        app.terminate()
+    }
 }

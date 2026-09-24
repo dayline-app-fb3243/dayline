@@ -88,7 +88,34 @@ final class LocationService: NSObject, ObservableObject {
                                       source: source))
         try? context.save()
         lastSample = location.timestamp
+        if source != "visit" { detectStay(context: context, at: location) }
         DayBoundary.shared.noteBattery()   // charging at night helps tell when you fell asleep
+    }
+
+    /// Our own stay check on top of Apple's visits: 15 minutes of checks (3 in a row at the default
+    /// 5-minute rate) within 100 m of each other is a stay. Walking past a place never lasts that long.
+    /// Moving 150 m away from an open stay ends it at the last check that was still there.
+    private func detectStay(context: ModelContext, at location: CLLocation) {
+        let since = location.timestamp.addingTimeInterval(-3 * 3600)
+        let recent = ((try? context.fetch(FetchDescriptor<LocationSample>(predicate: #Predicate { $0.timestamp >= since },
+                                                                           sortBy: [SortDescriptor(\.timestamp)]))) ?? [])
+        func loc(_ s: LocationSample) -> CLLocation { CLLocation(latitude: s.latitude, longitude: s.longitude) }
+        let openVisits = (try? context.fetch(FetchDescriptor<Visit>(predicate: #Predicate { $0.departure == nil }))) ?? []
+        for v in openVisits where CLLocation(latitude: v.latitude, longitude: v.longitude).distance(from: location) > 150 {
+            let lastThere = recent.last { loc($0).distance(from: CLLocation(latitude: v.latitude, longitude: v.longitude)) <= 100 }
+            v.departure = lastThere?.timestamp ?? location.timestamp
+        }
+        // The run of checks, newest first, that all sit within 100 m of this one.
+        var run: [LocationSample] = []
+        for s in recent.reversed() { if loc(s).distance(from: location) <= 100 { run.append(s) } else { break } }
+        guard let first = run.last, location.timestamp.timeIntervalSince(first.timestamp) >= 15 * 60,
+              !openVisits.contains(where: { $0.departure == nil && CLLocation(latitude: $0.latitude, longitude: $0.longitude).distance(from: location) <= 150 })
+        else { try? context.save(); return }
+        let lat = run.map(\.latitude).reduce(0, +) / Double(run.count), lon = run.map(\.longitude).reduce(0, +) / Double(run.count)
+        let v = Visit(arrival: first.timestamp, departure: nil, latitude: lat, longitude: lon, placeName: "Place", category: .other)
+        context.insert(v)
+        try? context.save()
+        Task { await PlaceNamer.shared.name(v) }
     }
 
     private func record(visit: CLVisit) {
@@ -99,8 +126,11 @@ final class LocationService: NSObject, ObservableObject {
         let key = Visit.key(latitude: lat, longitude: lon)
 
         // Close an open visit at the same place instead of duplicating it.
-        let open = FetchDescriptor<Visit>(predicate: #Predicate { $0.placeKey == key && $0.departure == nil })
-        if let existing = try? context.fetch(open).first {
+        // (Also one our own stay check already opened within 150 m, so a stay is never counted twice.)
+        let open = FetchDescriptor<Visit>(predicate: #Predicate { $0.departure == nil })
+        let here = CLLocation(latitude: lat, longitude: lon)
+        if let existing = ((try? context.fetch(open)) ?? []).first(where: {
+            $0.placeKey == key || CLLocation(latitude: $0.latitude, longitude: $0.longitude).distance(from: here) <= 150 }) {
             existing.departure = departure
         } else {
             let newVisit = Visit(arrival: arrival, departure: departure, latitude: lat, longitude: lon,

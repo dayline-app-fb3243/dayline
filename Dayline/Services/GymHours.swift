@@ -42,10 +42,8 @@ enum GymHours {
     @MainActor static func refresh(context: ModelContext) async {
         guard enabled, !DemoData.isDemo, let key = apiKey else { return }
         if let c = cached, Date.now.timeIntervalSince(c.fetched) < 7 * 86_400 { return }
-        let since = Date.now.addingTimeInterval(-60 * 86_400)
-        let visits = (try? context.fetch(FetchDescriptor<Visit>(predicate: #Predicate { $0.arrival > since }))) ?? []
-        let gyms = visits.filter { $0.category == .gym }
-        guard let top = Dictionary(grouping: gyms, by: \.placeKey).max(by: { $0.value.count < $1.value.count })?.value.first else { return }
+        learn(context: context)
+        guard let top = UserSchedule.current.gymPlace else { return }
 
         var req = URLRequest(url: URL(string: "https://places.googleapis.com/v1/places:searchText")!)
         req.httpMethod = "POST"
@@ -53,15 +51,30 @@ enum GymHours {
         req.setValue(key, forHTTPHeaderField: "X-Goog-Api-Key")
         req.setValue("places.displayName,places.regularOpeningHours", forHTTPHeaderField: "X-Goog-FieldMask")
         let body: [String: Any] = [
-            "textQuery": top.placeName, "maxResultCount": 1,
+            "textQuery": top.name == "Gym" && !top.address.isEmpty ? top.address : top.name, "maxResultCount": 1,
             "locationBias": ["circle": ["center": ["latitude": top.latitude, "longitude": top.longitude], "radius": 200.0]],
         ]
         req.httpBody = try? JSONSerialization.data(withJSONObject: body)
         guard let (data, resp) = try? await URLSession.shared.data(for: req),
               (resp as? HTTPURLResponse)?.statusCode == 200,
               let closes = parse(data) else { return }
-        let c = Cached(name: top.placeName, closes: closes, fetched: .now)
+        let c = Cached(name: top.name, closes: closes, fetched: .now)
         if let d = try? JSONEncoder().encode(c) { UserDefaults.standard.set(d, forKey: cacheKey) }
+    }
+
+    /// No gym picked in Places yet: a place Apple Maps calls a gym, visited on 10 different days in the
+    /// last 60, becomes your gym.
+    @MainActor static func learn(context: ModelContext) {
+        var sched = UserSchedule.current
+        guard sched.gymPlace == nil else { return }
+        let since = Date.now.addingTimeInterval(-60 * 86_400)
+        let visits = (try? context.fetch(FetchDescriptor<Visit>(predicate: #Predicate { $0.arrival > since }))) ?? []
+        let byPlace = Dictionary(grouping: visits.filter { $0.category == .gym }, by: \.placeKey)
+        let cal = Calendar.current
+        guard let (_, list) = byPlace.max(by: { Set($0.value.map { cal.startOfDay(for: $0.arrival) }).count < Set($1.value.map { cal.startOfDay(for: $0.arrival) }).count }),
+              Set(list.map { cal.startOfDay(for: $0.arrival) }).count >= 10, let v = list.last else { return }
+        sched.places.append(SavedPlace(kind: "gym", name: v.placeName, address: "", latitude: v.latitude, longitude: v.longitude))
+        UserSchedule.current = sched
     }
 
     /// Google periods: open/close with day 0 = Sunday. A close after midnight counts as 11:59 PM that day.

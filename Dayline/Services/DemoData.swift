@@ -18,6 +18,8 @@ enum SampleMode {
 enum DemoData {
     static let base = (lat: 40.7359, lon: -73.9911)
     static let isDemo = SampleMode.on
+    /// Screenshot-only "-demo.day late": a day that starts at 9 with a gap until work at noon.
+    static var lateDay: Bool { UserDefaults.standard.string(forKey: "demo.day") == "late" }
 
     /// Today's score in demo mode, matching the approved design.
     /// "-demo.pace" (screenshots only) shows David's own example with a gym by 8 PM:
@@ -187,6 +189,14 @@ enum DemoData {
 
         // Today so far (matches the approved design: 4 places, about 3 km).
         let lunch = place(0.019, 0.016)
+        if lateDay {
+            // Screenshot-only "-demo.day late": up at 9, nothing known until work at noon, a lunch photo.
+            add(context, "Office", .work, work, at(today, 12, 0), at(today, 12, 50))
+            add(context, "Lucia Trattoria", .food, lunch, at(today, 13, 0), at(today, 13, 45))
+            add(context, "Office", .work, work, at(today, 13, 55), nil)
+            context.insert(JournalEntry(date: at(today, 13, 20), kind: .photo, text: "Lunch with the team.",
+                                        thumbnail: photo("demo-coffee") ?? swatch(.brown), latitude: lunch.0, longitude: lunch.1, isTranscribed: true))
+        } else {
         add(context, "Gym", .gym, gym, at(today, 7, 2), at(today, 7, 54))
         add(context, "Blue Door Coffee", .coffee, cafe, at(today, 8, 10), at(today, 8, 35))
         add(context, "Office", .work, work, at(today, 9, 0), at(today, 12, 25))
@@ -195,6 +205,7 @@ enum DemoData {
         context.insert(JournalEntry(date: at(today, 8, 12), kind: .photo, text: "Coffee before work. Feeling focused today.",
                                     thumbnail: photo("demo-coffee") ?? swatch(.brown), latitude: cafe.0, longitude: cafe.1, isTranscribed: true))
         context.insert(JournalEntry(date: at(today, 8, 13), kind: .photo, thumbnail: photo("demo-park"), latitude: cafe.0, longitude: cafe.1))
+        }
         // Photos from earlier this month, placed where they were taken.
         for (i, name) in ["demo-park", "demo-sunset", "demo-coffee"].enumerated() {
             let day = calendar.date(byAdding: .day, value: -(i * 3 + 6), to: today)!
@@ -225,15 +236,15 @@ enum DemoData {
                                     thumbnail: photo("demo-danish"), latitude: bakery.0, longitude: bakery.1))
         context.insert(JournalEntry(date: at(fourAgo, 9, 19), kind: .photo, thumbnail: photo("demo-danish2"), latitude: bakery.0, longitude: bakery.1))
         writeTrack(context)
-        context.insert(JournalEntry(date: at(today, 11, 40), kind: .voice,
+        if !lateDay { context.insert(JournalEntry(date: at(today, 11, 40), kind: .voice,
                                     text: "Finished the big project draft early. Feeling good about today.",
-                                    audioDuration: 42, latitude: work.0, longitude: work.1, isTranscribed: true))
+                                    audioDuration: 42, latitude: work.0, longitude: work.1, isTranscribed: true)) }
         try? context.save()
         RoutineLearner.fillToday(context: context)
         // Today's schedule exactly as in the design.
         for item in ((try? context.fetch(FetchDescriptor<PlanItem>())) ?? []) where calendar.isDateInToday(item.start) { context.delete(item) }
         let weekdays = Date.now.formatted(.dateTime.weekday(.wide)) + "s"
-        context.insert(PlanItem(title: "Gym", start: at(today, 7, 0), end: at(today, 7, 52), isAuto: true, reason: "Learned from your routine", isDone: true, category: .gym))
+        if !lateDay { context.insert(PlanItem(title: "Gym", start: at(today, 7, 0), end: at(today, 7, 52), isAuto: true, reason: "Learned from your routine", isDone: true, category: .gym)) }
         context.insert(PlanItem(title: "Work", start: at(today, 9, 0), end: at(today, 17, 0), isAuto: true, reason: "Learned from your usual 9-5", category: .work))
         context.insert(PlanItem(title: "Lunch out", start: at(today, 12, 30), end: at(today, 13, 15), isAuto: true, reason: "You usually eat out on \(weekdays)", category: .food))
         context.insert(PlanItem(title: "Evening walk", start: at(today, 18, 0), end: at(today, 18, 45), isAuto: true, reason: "You usually walk after work", category: .outdoors))

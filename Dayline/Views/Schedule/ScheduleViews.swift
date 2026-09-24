@@ -170,7 +170,8 @@ struct PlacesView: View {
             Section {
                 row(kind: "home", title: "Home", symbol: "house.fill", color: .blue, place: s.home)
                 row(kind: "work", title: "Work", symbol: "briefcase.fill", color: .brown, place: s.workPlace)
-            } footer: { Text("Dayline uses these to know when you\u{2019}re home and when you\u{2019}re at work.") }
+                row(kind: "gym", title: "Gym", symbol: "dumbbell.fill", color: .green, place: s.gymPlace)
+            } footer: { Text("Dayline uses these to know when you\u{2019}re home, at work, and at your gym. If you go to the same gym on 10 days, Dayline adds it here for you.") }
             Section("My Places") {
                 ForEach(s.places.filter { $0.kind == "other" }) { p in
                     HStack(spacing: 12) {
@@ -199,8 +200,8 @@ struct PlacesView: View {
         .onAppear { s = UserSchedule.current }
         .sheet(item: Binding(get: { adding.map { KindBox(kind: $0) } }, set: { adding = $0?.kind })) { box in
             NavigationStack {
-                AddPlaceView(title: box.kind == "home" ? "Home" : box.kind == "work" ? "Work" : "Add Place") { item in
-                    let place = SavedPlace(kind: box.kind, name: box.kind == "home" ? "Home" : box.kind == "work" ? "Work" : (item.name ?? "Place"),
+                AddPlaceView(title: box.kind == "home" ? "Home" : box.kind == "work" ? "Work" : box.kind == "gym" ? "Gym" : "Add Place") { item in
+                    let place = SavedPlace(kind: box.kind, name: box.kind == "home" ? "Home" : box.kind == "work" ? "Work" : (item.name ?? (box.kind == "gym" ? "Gym" : "Place")),
                                            address: AddPlaceView.address(item), latitude: item.location.coordinate.latitude,
                                            longitude: item.location.coordinate.longitude)
                     if box.kind != "other" { s.places.removeAll { $0.kind == box.kind } }
