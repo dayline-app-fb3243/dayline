@@ -114,7 +114,7 @@ enum JournalSearch {
                 let mins = v.departure.map { Int($0.timeIntervalSince(v.arrival) / 60) }
                 let len = mins.map { $0 >= 60 ? "\($0 / 60) h \($0 % 60) min" : "\($0) min" } ?? "Still here"
                 let note = entries.first { e in e.kind == .text && abs(e.date.timeIntervalSince(v.arrival)) < 3 * 3600 && cal.isDate(e.date, inSameDayAs: v.arrival) }
-                let why = note.map { "\(len) · \u{201C}\($0.text.prefix(40))\u{201D}" } ?? len
+                let why = note.map { "\(len) · \u{201C}\($0.text)\u{201D}" } ?? len
                 hits.append(SearchHit(place: v.placeName, date: v.arrival, reason: why, symbol: v.category.symbol, coordinate: v.coordinate))
             }
         }
