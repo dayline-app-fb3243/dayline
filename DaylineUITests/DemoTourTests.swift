@@ -221,6 +221,8 @@ final class DemoTourTests: XCTestCase {
             if bg == "system" {
                 app.swipeDown(); pause(1)
                 tapID(app, "accountRow"); pause(1.8); shot("c4b-account")
+                goBack(app); pause(1)
+                tapID(app, "yourDataRow"); pause(1.8); shot("c4c-your-data")
                 goBack(app)
                 tab(app, "Journal"); pause(2); shot("c19-journal")
                 let jc = app.buttons["journalCard"].firstMatch

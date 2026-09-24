@@ -495,7 +495,7 @@ struct PrivacyView: View {
             Card {
                 VStack(alignment: .leading, spacing: 10) {
                     Label("Stored on this iPhone", systemImage: "iphone").font(.headline)
-                    Text("Your places, route, photos and notes are kept on this iPhone. Voice notes are turned into text on the device. If you sign in, a backup is kept for you only.")
+                    Text("Your places, route, photos and notes are kept on this iPhone. Voice notes are turned into text on the device. With Back Up Timeline on, a copy is kept in your own iCloud.")
                         .font(.subheadline).foregroundStyle(.secondary)
                 }
             }
@@ -506,7 +506,7 @@ struct PrivacyView: View {
                 .accessibilityIdentifier("deleteAccount")
             }
             .padding(.top, 10)
-            Text("Deletes your account, your backup and everything Dayline saved on this iPhone. This can't be undone.")
+            Text("Deletes your account, your iCloud backup and everything Dayline saved on this iPhone. This can't be undone.")
                 .font(.footnote).helperText().padding(.horizontal, 4)
           }
           .padding(18)
