@@ -77,7 +77,7 @@ struct TimelineScreen: View {
             .navigationTitle("Timeline")
             .tabRoot()
             .fullScreenCover(isPresented: $expanded) {
-                fullMap.onAppear { if map3DFlag { set3D(true) } }
+                fullMap
                     .onDisappear { is3D = false; camera = .automatic }
             }
             .onChange(of: range) { camera = .automatic }
@@ -109,7 +109,7 @@ struct TimelineScreen: View {
                         Marker("", systemImage: v.category.symbol, coordinate: v.coordinate).tint(v.category.pinColor)
                     } else if !pinStyle.isEmpty {
                         Annotation("", coordinate: v.coordinate, anchor: .bottom) {
-                            ApplePin(symbol: v.category.symbol, color: v.category.pinColor, big: pinStyle == "A")
+                            ApplePin(symbol: v.category.symbol, color: pinStyle == "D" ? Theme.accent : v.category.pinColor, big: pinStyle == "A", dot: pinStyle == "D" ? true : nil)
                         }
                     } else {
                     Annotation("", coordinate: v.coordinate) {
@@ -134,7 +134,7 @@ struct TimelineScreen: View {
                         Marker("", systemImage: "book.closed.fill", coordinate: entry.coordinate!).tint(.purple)
                     } else if !pinStyle.isEmpty {
                         Annotation("", coordinate: entry.coordinate!, anchor: .bottom) {
-                            ApplePin(symbol: "book.closed.fill", color: .purple, big: pinStyle == "A")
+                            ApplePin(symbol: "book.closed.fill", color: pinStyle == "D" ? Theme.accent : .purple, big: pinStyle == "A", dot: pinStyle == "D" ? true : nil)
                         }
                     } else {
                     Annotation("", coordinate: entry.coordinate!) {
@@ -152,7 +152,7 @@ struct TimelineScreen: View {
                 } else if !pinStyle.isEmpty {
                     Annotation("", coordinate: entry.coordinate!, anchor: .bottom) {
                         if let data = entry.thumbnail, let image = UIImage(data: data) {
-                            ApplePhotoPin(image: image, big: pinStyle == "A")
+                            ApplePhotoPin(image: image, big: pinStyle == "A", dot: pinStyle == "D" ? true : nil)
                         }
                     }
                 } else {
@@ -265,18 +265,12 @@ struct TimelineScreen: View {
                         }
                         .padding(4)
                         .glassEffect(.regular, in: .capsule)
-                        if map3DFlag {
-                            Button { withAnimation(.smooth(duration: 0.8)) { set3D(!is3D) } } label: {
-                                Text(is3D ? "2D" : "3D").font(.scaled(size: 17, weight: .semibold))
-                                    .foregroundStyle(Theme.accent).frame(width: 64, height: 64)
-                            }
-                            .buttonStyle(.plain)
-                            .glassEffect(.regular.interactive(), in: .circle)
-                            .accessibilityLabel(is3D ? "Show flat map" : "Show 3D map")
-                            .accessibilityIdentifier("toggle3D")
-                        }
-                        Button { withAnimation(.snappy) { camera = .userLocation(fallback: .automatic) } } label: {
-                            Image(systemName: "location.fill").font(.scaled(size: 20, weight: .semibold))
+                        Button {
+                            // With map.3d on, the location button works like Apple Maps: tap to tilt into 3D, tap again for flat.
+                            if map3DFlag { withAnimation(.smooth(duration: 0.8)) { set3D(!is3D) } }
+                            else { withAnimation(.snappy) { camera = .userLocation(fallback: .automatic) } }
+                        } label: {
+                            Image(systemName: map3DFlag ? (is3D ? "location.north.line.fill" : "location") : "location.fill").font(.scaled(size: 20, weight: .semibold))
                                 .foregroundStyle(Theme.accent).frame(width: 64, height: 64)
                         }
                         .buttonStyle(.plain)

@@ -6,8 +6,11 @@ struct ApplePin: View {
     var symbol: String
     var color: Color
     var big = true
+    /// Small size with Apple's dot under the pin (pin.style D: A's shape at C's size, theme blue).
+    var dot: Bool? = nil
     var body: some View {
-        let d: CGFloat = big ? 46 : 34
+        let d: CGFloat = big ? 46 : (dot == true ? 24 : 34)
+        let showDot = dot ?? big
         VStack(spacing: 0) {
             ZStack {
                 Circle().fill(LinearGradient(colors: [color.mix(with: .white, by: 0.22), color], startPoint: .top, endPoint: .bottom))
@@ -16,12 +19,12 @@ struct ApplePin: View {
             .frame(width: d, height: d)
             .padding(big ? 3.5 : 2.5)
             .background(Circle().fill(.white))
-            PinTail().fill(.white).frame(width: big ? 14 : 11, height: big ? 8 : 6).offset(y: -1)
-            if big {
-                Circle().fill(color).frame(width: 9, height: 9)
-                    .padding(2.5).background(Circle().fill(.white))
+            PinTail().fill(.white).frame(width: big ? 14 : 10, height: big ? 8 : 6).offset(y: -1)
+            if showDot {
+                Circle().fill(color).frame(width: big ? 9 : 7, height: big ? 9 : 7)
+                    .padding(big ? 2.5 : 2).background(Circle().fill(.white))
                     .shadow(color: .black.opacity(0.25), radius: 2, y: 1)
-                    .padding(.top, 5)
+                    .padding(.top, big ? 5 : 3)
             }
         }
         .compositingGroup()
@@ -33,17 +36,19 @@ struct ApplePin: View {
 struct ApplePhotoPin: View {
     var image: UIImage
     var big = true
+    var dot: Bool? = nil
     var body: some View {
-        let d: CGFloat = big ? 50 : 38
+        let d: CGFloat = big ? 50 : (dot == true ? 30 : 38)
+        let showDot = dot ?? big
         VStack(spacing: 0) {
             Image(uiImage: image).resizable().scaledToFill().frame(width: d, height: d)
                 .clipShape(.rect(cornerRadius: d * 0.28))
                 .padding(big ? 3.5 : 2.5)
                 .background(RoundedRectangle(cornerRadius: d * 0.28 + 3).fill(.white))
-            PinTail().fill(.white).frame(width: big ? 14 : 11, height: big ? 8 : 6).offset(y: -1)
-            if big {
-                Circle().fill(Color.accentColor).frame(width: 9, height: 9)
-                    .padding(2.5).background(Circle().fill(.white)).padding(.top, 5)
+            PinTail().fill(.white).frame(width: big ? 14 : 10, height: big ? 8 : 6).offset(y: -1)
+            if showDot {
+                Circle().fill(Theme.accent).frame(width: big ? 9 : 7, height: big ? 9 : 7)
+                    .padding(big ? 2.5 : 2).background(Circle().fill(.white)).padding(.top, big ? 5 : 3)
             }
         }
         .compositingGroup()

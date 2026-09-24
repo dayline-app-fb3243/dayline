@@ -694,6 +694,45 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// David 1:56-1:57 round: new pin (A shape, small, theme blue, dot) on the big map flat and 3D (3D via the location button).
+    func testPinDMapDemo() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo", "-route.style", "snap", "-pin.style", "D", "-map.3d", "YES"]
+        app.launchEnvironment["TZ"] = Self.morningZone
+        app.launch(); pause(1.5)
+        tab(app, "Timeline"); pause(3)
+        tapID(app, "mapCard"); pause(7); shot("pd-flat")
+        tapID(app, "locateMe"); pause(7); shot("pd-3d")
+        app.terminate()
+    }
+
+    /// Splash G/H/I: C's 3D look, new pins, closer and more top-down.
+    func testSplashPinDemo() throws {
+        for v in ["G", "H", "I"] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-onboarding", "-splash.map", v]
+            app.launchEnvironment["TZ"] = Self.morningZone
+            app.launch(); pause(7); shot("sp-\(v)")
+            app.terminate()
+        }
+    }
+
+    /// Check Location with route previews per rate: A left thumbs, B big previews on top, C right thumbs; B enlarged.
+    func testCheckPreviewDemo() throws {
+        for v in ["A", "B", "C"] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-check.preview", v]
+            app.launchEnvironment["TZ"] = Self.morningZone
+            app.launch(); pause(1.5)
+            tab(app, "Profile"); pause(1.5)
+            let row = app.staticTexts["Check Location"].firstMatch
+            if !row.isHittable { app.swipeUp(); pause(0.8) }
+            row.tap(); pause(5); shot("ck-\(v)")
+            if v == "B" { tapID(app, "thumb-10"); pause(5); shot("ck-B-big") }
+            app.terminate()
+        }
+    }
+
     /// Timeline Day map route: now vs snapped to streets vs precise GPS track.
     func testRouteDemo() throws {
         for v in ["now", "snap", "gps"] {

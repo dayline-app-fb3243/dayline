@@ -747,6 +747,17 @@ struct PrivacyView: View {
 /// Profile > Check Location: pick how often Dayline saves your location.
 struct CheckLocationView: View {
     @AppStorage(LocationService.intervalKey) private var minutes = 5
+    /// Preview flag "check.preview" (awaiting David's pick): map thumbnails of the day route at each rate.
+    /// A = thumbnail at the left of each row, B = three big previews on top (like wallpapers), C = thumbnail at the right.
+    @AppStorage("check.preview") private var preview = ""
+    @State private var enlarged: Int?
+    private func thumb(_ m: Int, w: CGFloat, h: CGFloat) -> some View {
+        IntervalRouteMap(minutes: m).frame(width: w, height: h)
+            .clipShape(.rect(cornerRadius: 10))
+            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.primary.opacity(0.1)))
+            .contentShape(.rect).onTapGesture { enlarged = m }
+            .accessibilityIdentifier("thumb-\(m)")
+    }
     private let options: [(Int, String, String, String)] = [
         (1, "1 Minute", "Best tracking. Exact routes and short stops.", "12%"),
         (5, "5 Minutes", "Good tracking. Most stops, rougher routes.", "6%"),
@@ -756,6 +767,19 @@ struct CheckLocationView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
+                if preview == "B" {
+                    HStack(spacing: 12) {
+                        ForEach(options, id: \.0) { o in
+                            VStack(spacing: 6) {
+                                thumb(o.0, w: 104, h: 150)
+                                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(minutes == o.0 ? Theme.accent : .clear, lineWidth: 3))
+                                Text(o.1).font(.footnote.weight(.semibold)).foregroundStyle(minutes == o.0 ? Theme.accent : .primary)
+                            }
+                            .frame(maxWidth: .infinity)
+                        }
+                    }
+                    .padding(.bottom, 18)
+                }
                 SectionHeader("Check every").padding(.bottom, 6)
                 Card(padding: 0) {
                     VStack(spacing: 0) {
@@ -764,7 +788,8 @@ struct CheckLocationView: View {
                                 minutes = o.0
                                 LocationService.shared.setCheckMinutes(o.0)
                             } label: {
-                                HStack {
+                                HStack(spacing: 12) {
+                                    if preview == "A" { thumb(o.0, w: 58, h: 58) }
                                     VStack(alignment: .leading, spacing: 1) {
                                         Text(o.1).font(.body).foregroundStyle(.primary)
                                         Text(o.2).font(.subheadline).foregroundStyle(.secondary)
@@ -774,6 +799,7 @@ struct CheckLocationView: View {
                                     if minutes == o.0 {
                                         Image(systemName: "checkmark").font(.body.weight(.semibold)).foregroundStyle(Theme.accent)
                                     }
+                                    if preview == "C" { thumb(o.0, w: 76, h: 58) }
                                 }
                                 .padding(.horizontal, 18).padding(.vertical, 11)
                                 .contentShape(.rect)
@@ -790,11 +816,14 @@ struct CheckLocationView: View {
         }
         .buttonStyle(.plain)
         .background(AppBackgroundView())
+        .sheet(item: Binding(get: { enlarged.map { IntervalID(id: $0) } }, set: { enlarged = $0?.id })) { IntervalRouteSheet(minutes: $0.id) }
         .navigationTitle("Check Location")
         .backgroundNavBar()
         .navigationBarTitleDisplayMode(.inline)
     }
 }
+
+private struct IntervalID: Identifiable { let id: Int }
 
 /// Full privacy policy, opened from the link under Profile > Privacy.
 struct PrivacyPolicyView: View {
