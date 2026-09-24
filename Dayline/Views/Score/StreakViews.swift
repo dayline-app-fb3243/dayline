@@ -610,14 +610,37 @@ struct PersonView: View {
     }
 }
 
+/// Gray search field that matches the People screen and the approved Share With design.
+private struct FlatSearchField: View {
+    @Binding var text: String
+    var id: String
+    var body: some View {
+        HStack(spacing: 7) {
+            Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
+            TextField("Phone, Email or Contact", text: $text)
+                .textInputAutocapitalization(.never).autocorrectionDisabled()
+                .accessibilityIdentifier(id)
+            if !text.isEmpty {
+                Button { text = "" } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(.tertiary) }
+                    .buttonStyle(.plain).accessibilityLabel("Clear text")
+            }
+        }
+        .font(.body)
+        .padding(.horizontal, 12).frame(height: 40)
+        .background(Color(.tertiarySystemFill), in: .capsule)
+        .padding(.top, 4)
+    }
+}
+
 /// Ask someone to share their streak with you.
 struct AskToShareView: View {
     @State private var search = ""
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
+                FlatSearchField(text: $search, id: "askSearch")
                 Text("They\u{2019}ll get a request to share their streak with you.")
-                    .font(.subheadline).foregroundStyle(.secondary).padding(.horizontal, 14).padding(.top, 6)
+                    .font(.subheadline).foregroundStyle(.secondary).padding(.horizontal, 14).padding(.top, 10)
                 PeopleHeader("Contacts on Dayline")
                 PeopleGroup {
                     ForEach(Array(PeopleStore.contacts.enumerated()), id: \.offset) { i, c in
@@ -640,9 +663,9 @@ struct AskToShareView: View {
         }
         .buttonStyle(.plain)
         .background(AppBackgroundView())
+        .scrollDismissesKeyboard(.interactively)
         .navigationTitle("Ask to Share")
         .navigationBarTitleDisplayMode(.inline)
-        .searchable(text: $search, placement: .navigationBarDrawer(displayMode: .always), prompt: "Phone, Email or Contact")
         .toolbarVisibility(.hidden, for: .tabBar)
         .accessibilityIdentifier("askScreen")
     }
@@ -655,17 +678,29 @@ struct ShareWithView: View {
     private func match(_ c: (String, String)) -> Bool { q.isEmpty || c.0.lowercased().contains(q) || c.1.lowercased().contains(q) }
     private var onDayline: [(String, String)] { PeopleStore.contacts.filter(match) }
     private var notOn: [(String, String)] { q.isEmpty ? [] : PeopleStore.notOnDayline.filter(match) }
+    /// Friends who share with you but don't see your streak yet (Priya in the demo).
+    private var followers: [StreakFriend] {
+        let sharing = Set(PeopleStore.sharingWith.map(\.name))
+        return FriendStore.friends.filter { !sharing.contains($0.name) && (q.isEmpty || $0.fullName.lowercased().contains(q)) }
+    }
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                if !onDayline.isEmpty {
+                FlatSearchField(text: $search, id: "shareSearch")
+                if !onDayline.isEmpty || !followers.isEmpty {
                     PeopleHeader("Contacts on Dayline")
                     PeopleGroup {
                         ForEach(Array(onDayline.enumerated()), id: \.offset) { i, c in
-                            PersonRow(name: c.0, subtitle: c.1, last: i == onDayline.count - 1) {
+                            PersonRow(name: c.0, subtitle: c.1, last: followers.isEmpty && i == onDayline.count - 1) {
                                 PillButton(title: "Share", done: "Sharing")
                             }
                             .accessibilityIdentifier("share-\(c.0)")
+                        }
+                        ForEach(Array(followers.enumerated()), id: \.offset) { i, f in
+                            PersonRow(name: f.fullName, subtitle: "Shares with you", color: f.color, last: i == followers.count - 1) {
+                                PillButton(title: "Share", done: "Sharing")
+                            }
+                            .accessibilityIdentifier("share-\(f.name)")
                         }
                     }
                 }
@@ -687,9 +722,9 @@ struct ShareWithView: View {
         }
         .buttonStyle(.plain)
         .background(AppBackgroundView())
+        .scrollDismissesKeyboard(.interactively)
         .navigationTitle("Share With")
         .navigationBarTitleDisplayMode(.inline)
-        .searchable(text: $search, placement: .navigationBarDrawer(displayMode: .always), prompt: "Phone, Email or Contact")
         .toolbarVisibility(.hidden, for: .tabBar)
         .accessibilityIdentifier("shareWithScreen")
     }

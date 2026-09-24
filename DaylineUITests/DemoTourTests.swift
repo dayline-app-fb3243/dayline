@@ -103,7 +103,7 @@ final class DemoTourTests: XCTestCase {
         tapID(app, "addPerson"); pause(2); shot("38-share-with")
         let shareBtn = app.buttons["Share"].firstMatch
         if shareBtn.waitForExistence(timeout: 2) { shareBtn.tap(); pause(1); shot("38b-share-with-sharing") }
-        let sf = app.searchFields.firstMatch
+        let sf = app.textFields["shareSearch"]
         if sf.waitForExistence(timeout: 2) {
             sf.tap(); sf.typeText("Ma"); pause(1.5); shot("38c-share-with-search")
             dismissSearch(app)
@@ -248,7 +248,7 @@ final class DemoTourTests: XCTestCase {
     private func backToTabs(_ app: XCUIApplication) {
         for _ in 0..<6 {
             if app.tabBars.firstMatch.exists && app.tabBars.firstMatch.isHittable { return }
-            if app.keyboards.firstMatch.exists { dismissSearch(app); continue }
+            if app.keyboards.firstMatch.exists { dismissSearch(app) }
             let back = app.navigationBars.buttons.element(boundBy: 0)
             if back.exists && back.isHittable { back.tap() } else { app.swipeDown(velocity: .fast) }
             Thread.sleep(forTimeInterval: 1.2)
