@@ -26,13 +26,12 @@ final class DemoTourTests: XCTestCase {
         app.launchArguments = ["-demo", "-onboarding"]
         app.launchEnvironment["TZ"] = Self.morningZone
         app.launch()
-        pause(0.8); shot("01-splash")
-        pause(2)
-        shot("02-intro-1")
-        tapID(app, "introContinue"); pause(1.2); shot("03-intro-2")
-        tapID(app, "introContinue"); pause(1.2); shot("04-intro-3")
-        tapID(app, "introContinue"); pause(1.5); shot("05-sign-in")
-        tapID(app, "appleSignIn"); pause(1.8); shot("05c-apple-sheet")
+        pause(1.5); shot("01-splash")
+        tapID(app, "splashContinue"); pause(1.5); shot("02-sign-in-sheet")
+        tapID(app, "signInOption-Google"); pause(0.8); shot("02b-sign-in-google")
+        tapID(app, "signInOption-Email"); pause(0.8); shot("02c-sign-in-email")
+        tapID(app, "signInOption-Apple"); pause(0.5)
+        tapID(app, "signInContinue"); pause(1.8); shot("05c-apple-sheet")
         tapID(app, "appleDemoContinue"); pause(1.5)
         let phone = app.textFields["phoneField"]; _ = phone.waitForExistence(timeout: 5); phone.tap(); phone.typeText("2015550142"); pause(1); shot("06a-phone")
         tapID(app, "setupPrimary"); pause(1.5)
@@ -128,6 +127,24 @@ final class DemoTourTests: XCTestCase {
         }
         // Profile > Background: pick a preset and show it behind Today.
         tab(app, "Profile"); pause(2); shot("60-profile")
+        app.swipeUp(); pause(1.2); shot("60b-profile-bottom")
+        let policy = app.links["Privacy Policy"].firstMatch
+        if policy.waitForExistence(timeout: 3) { policy.tap() } else { tapID(app, "privacyPolicyLink") }
+        pause(1.5); shot("66-privacy-policy"); app.swipeUp(); pause(1); shot("66b-privacy-policy-end")
+        let closePolicy = app.buttons["Close"].firstMatch
+        if closePolicy.waitForExistence(timeout: 2) { closePolicy.tap() } else { app.swipeDown(velocity: .fast) }
+        pause(1.2)
+        tapID(app, "signOutRow"); pause(1.2); shot("67-sign-out-confirm")
+        let cancel = app.alerts.buttons["Cancel"].firstMatch
+        if cancel.waitForExistence(timeout: 2) { cancel.tap() }
+        pause(1)
+        for (name, label) in [("68-location-settings", "Location"), ("69-photos-settings", "Photos"), ("69b-notifications-settings", "Notifications")] {
+            let row = app.buttons.containing(NSPredicate(format: "label BEGINSWITH %@", label)).firstMatch
+            if row.waitForExistence(timeout: 3) { row.tap(); pause(3); shot(name); app.activate(); pause(1.5) }
+        }
+        let appearance = app.buttons.containing(NSPredicate(format: "label BEGINSWITH %@", "Appearance")).firstMatch
+        if appearance.waitForExistence(timeout: 3) { appearance.tap(); pause(1.2); shot("60c-appearance-menu"); app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.06)).tap(); pause(0.8) }
+        app.swipeDown(); pause(1)
         tapID(app, "checkLocationRow"); pause(2); shot("64-check-location")
         tapID(app, "check-1"); pause(1.2); tapID(app, "check-5"); pause(1.2); goBack(app); pause(1)
         // Hidden Siri demo page: long-press "Your data", then step through all 6 commands.

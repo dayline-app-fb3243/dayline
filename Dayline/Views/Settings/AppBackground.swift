@@ -290,6 +290,20 @@ struct ProfileView: View {
                         .simultaneousGesture(LongPressGesture(minimumDuration: 1.2).onEnded { _ in showSiriDemo = true })
                         .accessibilityIdentifier("yourDataRow")
                 }
+                Text("Your places and photos stay on your iPhone. See our [Privacy Policy](dayline://privacy).")
+                    .font(.footnote).foregroundStyle(.secondary).tint(.blue)
+                    .padding(.horizontal, 4).padding(.top, -3)
+                    .environment(\.openURL, OpenURLAction { _ in showPolicy = true; return .handled })
+                    .accessibilityIdentifier("privacyPolicyLink")
+                if auth.isSignedIn {
+                    Button { confirmSignOut = true } label: {
+                        Text("Sign Out").foregroundStyle(.red).frame(maxWidth: .infinity).frame(minHeight: 52)
+                            .background(Color(.secondarySystemGroupedBackground).opacity(0.9), in: .rect(cornerRadius: 26, style: .continuous))
+                            .contentShape(.rect)
+                    }
+                    .padding(.top, 12)
+                    .accessibilityIdentifier("signOutRow")
+                }
             }
             .padding(.horizontal, 18).padding(.bottom, 30)
         }
@@ -298,7 +312,17 @@ struct ProfileView: View {
         .navigationTitle("Profile")
         .toolbarRole(.editor)
         .navigationDestination(isPresented: $showSiriDemo) { SiriDemoView() }
+        .sheet(isPresented: $showPolicy) { PrivacyPolicyView() }
+        .alert("Sign Out?", isPresented: $confirmSignOut) {
+            Button("Cancel", role: .cancel) {}
+            Button("Sign Out", role: .destructive) { auth.signOut() }
+        } message: {
+            Text("Your timeline stays on this iPhone. Sign in again anytime to back it up.")
+        }
     }
+
+    @State private var showPolicy = false
+    @State private var confirmSignOut = false
 
     @AppStorage(LocationService.intervalKey) private var checkMinutes = 5
     private var checkText: String { checkMinutes == 1 ? "Every 1 min" : "Every \(checkMinutes) min" }
@@ -358,10 +382,6 @@ struct PrivacyView: View {
                         .font(.subheadline).foregroundStyle(.secondary)
                 }
             }
-            if auth.isSignedIn {
-                Button("Sign Out", role: .destructive) { auth.signOut() }
-                    .frame(maxWidth: .infinity).padding(.top, 8)
-            }
           }
           .padding(18)
         }
@@ -420,5 +440,43 @@ struct CheckLocationView: View {
         .background(AppBackgroundView())
         .navigationTitle("Check Location")
         .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+/// Full privacy policy, opened from the link under Profile > Privacy.
+struct PrivacyPolicyView: View {
+    @Environment(\.dismiss) private var dismiss
+    private let sections: [(String, String)] = [
+        ("The short version", "Your places, routes, photos and notes stay on your iPhone. We don\u{2019}t sell your data and there are no ads."),
+        ("What Dayline collects", "Location, to build your timeline of places and routes. Photos you allow, to show them on your day. Microphone, only while you record a voice note; it\u{2019}s turned into text on your iPhone."),
+        ("What leaves your iPhone", "If you sign in, your name, email and an encrypted backup of your timeline are stored for you only. If you share with friends, they see only your streak number."),
+        ("How we use it", "Only to run Dayline for you: building your timeline, backing it up and showing your streak to people you choose. We don\u{2019}t use it for ads or sell it to anyone."),
+        ("Siri and Shortcuts", "When you ask Siri about a place, Dayline answers from the data on your iPhone."),
+        ("Keeping it safe", "Your backup is encrypted in transit and at rest. Only you can restore it."),
+        ("Your choices", "Change what Dayline can use at any time in Settings. Delete your account and backup from Profile > Your Data."),
+        ("Children", "Dayline isn\u{2019}t meant for children under 13."),
+        ("Changes", "If this policy changes, we\u{2019}ll show you what changed in the app."),
+        ("Contact", "Questions? Email privacy@dayline.app."),
+    ]
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Last updated September 24, 2026").font(.subheadline).foregroundStyle(.secondary).padding(.bottom, 6)
+                    ForEach(sections, id: \.0) { s in
+                        Text(s.0).font(.headline).padding(.top, 14)
+                        Text(s.1).font(.body)
+                    }
+                }
+                .padding(.horizontal, 22).padding(.bottom, 30)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .navigationTitle("Privacy Policy").navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button { dismiss() } label: { Image(systemName: "xmark") }.accessibilityLabel("Close")
+                }
+            }
+        }
     }
 }

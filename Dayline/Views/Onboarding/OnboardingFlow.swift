@@ -3,21 +3,19 @@ import AVFoundation
 import Photos
 import AuthenticationServices
 
-/// First launch: splash -> 3 intro pages -> sign in -> permissions -> app.
+/// First launch: splash -> sign-in sheet (Apple / Google / Email) -> phone -> code -> permissions -> app.
 struct OnboardingFlow: View {
     @AppStorage("onboarding.done") private var done = false
     @State private var step: Step = .splash
-    enum Step { case splash, intro, signIn, email, emailCode, phone, code, permissions }
+    enum Step { case splash, email, emailCode, phone, code, permissions }
 
     var body: some View {
         ZStack {
             switch step {
-            case .splash: SplashView { withAnimation(.smooth) { step = .intro } }
-            case .intro: IntroPages { withAnimation(.smooth) { step = .signIn } }
-            case .signIn: SignInView(next: { withAnimation(.smooth) { step = .phone } },
+            case .splash: SplashView(next: { withAnimation(.smooth) { step = .phone } },
                                      email: { withAnimation(.smooth) { step = .email } })
             case .email: EmailView(next: { withAnimation(.smooth) { step = .emailCode } },
-                                   back: { withAnimation(.smooth) { step = .signIn } })
+                                   back: { withAnimation(.smooth) { step = .splash } })
             case .emailCode: EmailCodeView(next: { withAnimation(.smooth) { step = .phone } },
                                            back: { withAnimation(.smooth) { step = .email } })
             case .phone: PhoneNumberView(next: { withAnimation(.smooth) { step = .code } },
@@ -35,9 +33,9 @@ struct AppMark: View {
     var size: CGFloat = 96
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: size * 0.26, style: .continuous)
-                .fill(LinearGradient(colors: [Color(red: 0.25, green: 0.55, blue: 1), Color(red: 0.45, green: 0.35, blue: 0.95)],
-                                     startPoint: .topLeading, endPoint: .bottomTrailing))
+            RoundedRectangle(cornerRadius: size * 0.225, style: .continuous)
+                .fill(LinearGradient(colors: [Color(red: 0.29, green: 0.64, blue: 1), Color(red: 0.04, green: 0.36, blue: 0.9)],
+                                     startPoint: .top, endPoint: .bottom))
             Image(systemName: "point.topleft.down.to.point.bottomright.curvepath.fill")
                 .font(.system(size: size * 0.46, weight: .semibold)).foregroundStyle(.white)
         }
@@ -46,194 +44,210 @@ struct AppMark: View {
     }
 }
 
+/// The one splash: map on top, big left title, Continue opens the sign-in sheet.
 struct SplashView: View {
     var next: () -> Void
-    @State private var appear = false
-    var body: some View {
-        VStack(spacing: 18) {
-            AppMark().scaleEffect(appear ? 1 : 0.8).opacity(appear ? 1 : 0)
-            Text("Dayline").font(.largeTitle.bold()).opacity(appear ? 1 : 0)
-            Text("Your day, written for you.").font(.headline).foregroundStyle(.secondary).opacity(appear ? 1 : 0)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(.systemGroupedBackground))
-        .accessibilityIdentifier("splash")
-        .task {
-            withAnimation(.spring(duration: 0.8)) { appear = true }
-            try? await Task.sleep(for: .seconds(1.8))
-            next()
-        }
-    }
-}
+    var email: () -> Void
+    @State private var showSignIn = false
 
-struct IntroPages: View {
-    var next: () -> Void
-    @State private var page = 0
-    private let pages: [(String, String, String, Color)] = [
-        ("calendar.day.timeline.left", "Your day builds itself",
-         "Dayline learns your routine from where you go and fills in your schedule. No typing.", Theme.accent),
-        ("car.fill", "\"Take me back there\"",
-         "Ask Siri for the place you ate four days ago. See your photos from it and get directions.", Theme.accent),
-        ("lock.shield", "Private, and you pick the battery",
-         "Choose how often Dayline checks your location: every 1, 5 or 10 minutes. Everything stays on your iPhone.", Theme.accent)
-    ]
     var body: some View {
-        VStack(spacing: 0) {
-            TabView(selection: $page) {
-                ForEach(pages.indices, id: \.self) { i in
-                    let p = pages[i]
-                    VStack(spacing: 22) {
-                        Spacer()
-                        Image(systemName: p.0).font(.system(size: 64, weight: .semibold)).foregroundStyle(p.3)
-                            .frame(width: 150, height: 150)
-                            .background(Color(.secondarySystemGroupedBackground), in: .circle)
-                        Text(p.1).font(.title.bold()).multilineTextAlignment(.center)
-                        Text(p.2).font(.body).foregroundStyle(.secondary).multilineTextAlignment(.center)
-                            .padding(.horizontal, 36)
-                        Spacer(); Spacer()
-                    }
-                    .tag(i)
+        VStack(alignment: .leading, spacing: 0) {
+            Image("SplashMap").resizable().scaledToFill()
+                .frame(maxWidth: .infinity).frame(height: 560, alignment: .top).clipped()
+                .overlay(alignment: .bottom) {
+                    LinearGradient(stops: [.init(color: Color(.systemBackground).opacity(0), location: 0), .init(color: Color(.systemBackground), location: 0.8)],
+                                   startPoint: .top, endPoint: .bottom).frame(height: 220)
                 }
+                .ignoresSafeArea(edges: .top)
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Your day,\nremembered.").font(.largeTitle.bold())
+                Text("Dayline builds your timeline from where you go. Low-power, so it\u{2019}s easy on your battery.")
+                    .font(.body).foregroundStyle(.secondary)
             }
-            .tabViewStyle(.page(indexDisplayMode: .always))
-            .indexViewStyle(.page(backgroundDisplayMode: .always))
-
-            Button { page < pages.count - 1 ? withAnimation { page += 1 } : next() } label: {
-                Text(page < pages.count - 1 ? "Continue" : "Get Started").font(.headline).frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.glassProminent)
-            .controlSize(.extraLarge)
-            .padding(.horizontal, 24).padding(.bottom, 16)
-            .accessibilityIdentifier("introContinue")
+            .padding(.horizontal, 28).padding(.top, -40)
+            Spacer()
+            Button { showSignIn = true } label: { Text("Continue").font(.headline).frame(maxWidth: .infinity) }
+                .buttonStyle(.glassProminent).controlSize(.extraLarge)
+                .padding(.horizontal, 24).padding(.bottom, 16)
+                .accessibilityIdentifier("splashContinue")
         }
-        .background(Color(.systemGroupedBackground))
+        .background(Color(.systemBackground))
+        .accessibilityIdentifier("splash")
+        .sheet(isPresented: $showSignIn) {
+            SignInSheet(next: { showSignIn = false; next() }, email: { showSignIn = false; email() })
+                .presentationDetents([.height(500)])
+        }
     }
 }
 
-struct SignInView: View {
+/// Sign-in sheet in the style of Apple's own "Sign in with Apple" sheet: pick one, then the blue button.
+struct SignInSheet: View {
     var next: () -> Void
     var email: () -> Void
-    @ObservedObject private var auth = AuthService.shared
-    @Environment(\.colorScheme) private var scheme
-    private let isDemo = ProcessInfo.processInfo.arguments.contains("-demo")
+    enum Option: String, CaseIterable { case apple = "Apple", google = "Google", email = "Email" }
+    @State private var choice: Option = .apple
     @State private var showAppleDemo = false
+    @ObservedObject private var auth = AuthService.shared
+    @Environment(\.dismiss) private var dismiss
+    private let isDemo = ProcessInfo.processInfo.arguments.contains("-demo")
+    @State private var apple = AppleSignInRunner()
 
     var body: some View {
-        VStack(spacing: 14) {
-            Spacer()
-            AppMark(size: 84)
-            Text("Welcome to Dayline").font(.largeTitle.bold()).multilineTextAlignment(.center)
-            Text("Sign in to back up your timeline and keep it across devices.")
-                .font(.body).foregroundStyle(.secondary).multilineTextAlignment(.center).padding(.horizontal, 30)
-            Spacer()
-
-            SignInWithAppleButton(.signIn) { auth.configure($0) } onCompletion: { result in
-                Task { await auth.handleApple(result); if auth.isSignedIn { next() } }
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text("Sign In to Dayline").font(.title2.bold())
+                Spacer()
+                Button { dismiss() } label: { Image(systemName: "xmark").font(.body.weight(.semibold)).frame(width: 44, height: 44) }
+                    .buttonStyle(.glass).buttonBorderShape(.circle).accessibilityLabel("Close")
             }
-            .signInWithAppleButtonStyle(scheme == .dark ? .white : .black)
-            .frame(height: 54)
-            .clipShape(.capsule)
-            .allowsHitTesting(!isDemo)
-            .overlay {
-                // Demo builds aren't signed with an Apple developer account, so show a stand-in sheet.
-                if isDemo { Color.clear.contentShape(.capsule).onTapGesture { showAppleDemo = true } }
+            HStack(spacing: 14) {
+                AppMark(size: 56).shadow(radius: 0)
+                Text("Choose how you want to sign in. Your timeline stays on your iPhone.").font(.subheadline)
             }
-            .accessibilityIdentifier("appleSignIn")
-
-            Button {
-                Task {
-                    if isDemo { await auth.signInDemo(provider: .google); next() } else { await auth.signInWithGoogle(); if auth.isSignedIn { next() } }
+            .padding(.top, 10)
+            VStack(spacing: 0) {
+                ForEach(Option.allCases, id: \.self) { o in
+                    Button { choice = o } label: { row(o) }.buttonStyle(.plain)
+                        .accessibilityIdentifier("signInOption-\(o.rawValue)")
+                    if o != .email { Divider().padding(.leading, 60) }
                 }
-            } label: {
-                HStack(spacing: 10) {
-                    GoogleG().frame(width: 20, height: 20)
-                    Text("Sign in with Google").font(.system(size: 19, weight: .medium))
-                }
-                .frame(maxWidth: .infinity).frame(height: 54)
-                .foregroundStyle(.primary)
-                .background(Color(.secondarySystemGroupedBackground), in: .capsule)
-                .overlay(Capsule().stroke(Color(.separator), lineWidth: 1))
             }
-            .accessibilityIdentifier("googleSignIn")
-
-            Button(action: email) {
-                Label("Continue with Email", systemImage: "envelope.fill")
-                    .font(.system(size: 19, weight: .medium))
-                    .frame(maxWidth: .infinity).frame(height: 54)
-                    .foregroundStyle(.primary)
-                    .background(Color(.secondarySystemGroupedBackground), in: .capsule)
-                    .overlay(Capsule().stroke(Color(.separator), lineWidth: 1))
-            }
-            .accessibilityIdentifier("emailSignIn")
-
-            Text("By continuing, you agree to Dayline's Terms and Privacy Policy.")
-                .font(.footnote).foregroundStyle(.secondary).multilineTextAlignment(.center).padding(.top, 4)
-
+            .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 24, style: .continuous))
+            .padding(.top, 16)
+            Button(action: go) { Text("Continue with \(choice.rawValue)").font(.headline).padding(.horizontal, 10) }
+                .buttonStyle(.glassProminent).controlSize(.large)
+                .frame(maxWidth: .infinity).padding(.top, 18)
+                .accessibilityIdentifier("signInContinue")
             if let error = auth.errorMessage {
-                Text(error).font(.footnote).foregroundStyle(.red).multilineTextAlignment(.center)
+                Text(error).font(.footnote).foregroundStyle(.red).frame(maxWidth: .infinity).padding(.top, 8)
             }
+            Spacer(minLength: 0)
         }
-        .padding(.horizontal, 24).padding(.bottom, 20)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.horizontal, 20).padding(.top, 20)
         .background(Color(.systemGroupedBackground))
         .sheet(isPresented: $showAppleDemo) {
             AppleSignInDemoSheet {
                 showAppleDemo = false
                 Task { await auth.signInDemo(provider: .apple); next() }
             }
-            .presentationDetents([.height(560)])
+            .presentationDetents([.height(520)])
+        }
+    }
+
+    private func row(_ o: Option) -> some View {
+        HStack(spacing: 16) {
+            Group {
+                switch o {
+                case .apple: Image(systemName: "apple.logo").font(.title3)
+                case .google: GoogleG().frame(width: 20, height: 20)
+                case .email: Image(systemName: "envelope.fill").font(.body)
+                }
+            }
+            .foregroundStyle(.primary).frame(width: 28)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(o.rawValue).foregroundStyle(.primary)
+                Text(o == .apple ? "Fastest, uses Face ID" : o == .google ? "Your Google account" : "We\u{2019}ll send you a code")
+                    .font(.subheadline).foregroundStyle(.secondary)
+            }
+            Spacer()
+            Image(systemName: choice == o ? "checkmark.circle.fill" : "circle")
+                .font(.title3).foregroundStyle(choice == o ? Color.blue : Color(.tertiaryLabel))
+        }
+        .padding(.horizontal, 16).frame(minHeight: 62).contentShape(.rect)
+    }
+
+    private func go() {
+        switch choice {
+        case .apple:
+            if isDemo { showAppleDemo = true; return }
+            apple.start { result in Task { await auth.handleApple(result); if auth.isSignedIn { next() } } }
+        case .google:
+            Task { if isDemo { await auth.signInDemo(provider: .google); next() } else { await auth.signInWithGoogle(); if auth.isSignedIn { next() } } }
+        case .email: email()
         }
     }
 }
 
-/// Demo stand-in for the system Sign in with Apple sheet (the real one needs a paid developer account).
+/// Runs the real Sign in with Apple request (shows Apple's own sheet).
+@MainActor
+final class AppleSignInRunner: NSObject, ASAuthorizationControllerDelegate, ASAuthorizationControllerPresentationContextProviding {
+    private var done: ((Result<ASAuthorization, Error>) -> Void)?
+    func start(_ done: @escaping (Result<ASAuthorization, Error>) -> Void) {
+        self.done = done
+        let request = ASAuthorizationAppleIDProvider().createRequest()
+        AuthService.shared.configure(request)
+        let c = ASAuthorizationController(authorizationRequests: [request])
+        c.delegate = self; c.presentationContextProvider = self
+        c.performRequests()
+    }
+    func authorizationController(controller: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) { done?(.success(authorization)) }
+    func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: Error) { done?(.failure(error)) }
+    func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
+        UIApplication.shared.connectedScenes.compactMap { ($0 as? UIWindowScene)?.keyWindow }.first ?? ASPresentationAnchor()
+    }
+}
+
+/// Demo stand-in for Apple's own Sign in with Apple sheet (the real one needs a paid developer account).
+/// Laid out like the real iOS 26 sheet.
 struct AppleSignInDemoSheet: View {
     var onContinue: () -> Void
-    @State private var hideEmail = false
+    @State private var hideEmail = true
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        VStack(spacing: 0) {
+        VStack(alignment: .leading, spacing: 0) {
             HStack {
+                Text("Sign in with Apple").font(.title2.bold())
+                Spacer()
                 Button { dismiss() } label: { Image(systemName: "xmark").font(.body.weight(.semibold)).frame(width: 44, height: 44) }
                     .buttonStyle(.glass).buttonBorderShape(.circle)
+            }
+            HStack(spacing: 14) {
+                AppMark(size: 56).shadow(radius: 0)
+                Text("Create an account for Dayline using your Apple Account (alex@icloud.com).").font(.subheadline)
+            }
+            .padding(.top, 10)
+            HStack(spacing: 16) {
+                Image(systemName: "person.fill").frame(width: 28)
+                VStack(alignment: .leading, spacing: 1) { Text("Name"); Text("Alex Morgan").font(.subheadline).foregroundStyle(.secondary) }
                 Spacer()
+                Image(systemName: "xmark.circle.fill").foregroundStyle(Color(.tertiaryLabel))
             }
-            Image(systemName: "apple.logo").font(.system(size: 34)).padding(.top, 2)
-            Text("Sign in with Apple").font(.title2.bold()).padding(.top, 8)
-            AppMark(size: 56).padding(.top, 16)
-            Text("Create an account for Dayline using your Apple Account \u{201C}alex@icloud.com\u{201D}.")
-                .font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center).padding(.top, 12).padding(.horizontal, 20)
+            .padding(.horizontal, 16).frame(minHeight: 60)
+            .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 24, style: .continuous))
+            .padding(.top, 16)
             VStack(spacing: 0) {
-                HStack { Image(systemName: "person.circle.fill").foregroundStyle(.secondary); Text("Alex Morgan"); Spacer() }
-                    .padding(.horizontal, 16).frame(height: 48)
-                Divider().padding(.leading, 44)
                 choice("Share My Email", "alex@icloud.com", selected: !hideEmail) { hideEmail = false }
-                Divider().padding(.leading, 44)
-                choice("Hide My Email", "Forward to alex@icloud.com", selected: hideEmail) { hideEmail = true }
+                Divider().padding(.leading, 60)
+                choice("Hide My Email", "Forward To: alex@icloud.com", selected: hideEmail) { hideEmail = true }
             }
-            .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 22, style: .continuous))
-            .padding(.top, 18)
-            Spacer(minLength: 12)
-            Button(action: onContinue) { Text("Continue").font(.headline).frame(maxWidth: .infinity).frame(height: 40) }
+            .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 24, style: .continuous))
+            .padding(.top, 10)
+            Button(action: onContinue) { Text("Continue").font(.headline).padding(.horizontal, 30) }
                 .buttonStyle(.glassProminent).controlSize(.large)
+                .frame(maxWidth: .infinity).padding(.top, 18)
                 .accessibilityIdentifier("appleDemoContinue")
+            Text("Use a different Apple Account").font(.subheadline).foregroundStyle(.blue)
+                .frame(maxWidth: .infinity).padding(.top, 12)
+            Spacer(minLength: 0)
         }
-        .padding(.horizontal, 20).padding(.top, 12).padding(.bottom, 16)
+        .padding(.horizontal, 20).padding(.top, 20)
         .background(Color(.systemGroupedBackground))
     }
 
     private func choice(_ title: String, _ detail: String, selected: Bool, _ action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            HStack(spacing: 12) {
-                Image(systemName: selected ? "checkmark.circle.fill" : "circle").foregroundStyle(selected ? Color.blue : Color(.tertiaryLabel)).font(.title3)
+            HStack(spacing: 16) {
+                Image(systemName: "envelope.fill").frame(width: 28).foregroundStyle(.primary)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(title).foregroundStyle(.primary)
-                    Text(detail).font(.footnote).foregroundStyle(.secondary)
+                    Text(detail).font(.subheadline).foregroundStyle(.secondary)
                 }
                 Spacer()
+                Image(systemName: selected ? "checkmark.circle.fill" : "circle").font(.title3)
+                    .foregroundStyle(selected ? Color.blue : Color(.tertiaryLabel))
             }
-            .padding(.horizontal, 16).frame(height: 56).contentShape(.rect)
+            .padding(.horizontal, 16).frame(minHeight: 60).contentShape(.rect)
         }
         .buttonStyle(.plain)
     }
