@@ -879,17 +879,18 @@ struct EmailCodeView: View {
 /// so the next scene has loaded before it fades in. It keeps going under the sign-in sheet until you're through.
 struct SplashLoop: View {
     static let scenes = ["M", "P", "Q", "R"]
-    @State private var slots = ["M", "P"]
-    @State private var front = 0
-    @State private var step = 0
+    /// The scene on screen and the one loading behind it (nil = no second map, so only one map renders most of the time).
+    @State private var current = 0
+    @State private var next: Int? = nil
+    @State private var showNext = false
     /// The first map needs a moment to load its 3D tiles; fade it in after that so there's no empty grid.
     @State private var shown = false
     var body: some View {
         ZStack {
-            ForEach(0..<2, id: \.self) { k in
-                SplashLiveMap(style: slots[k], drifting: true)
-                    .id("\(k)-\(slots[k])")
-                    .opacity(front == k ? 1 : 0.001)
+            // Keyed by scene, so when the next scene takes over it keeps its map (no reload).
+            ForEach([current] + (next.map { [$0] } ?? []), id: \.self) { i in
+                SplashLiveMap(style: Self.scenes[i], drifting: true)
+                    .opacity(i == next && !showNext ? 0.001 : 1)
             }
         }
         .opacity(shown ? 1 : 0)
@@ -897,11 +898,15 @@ struct SplashLoop: View {
             try? await Task.sleep(for: .seconds(1.6))
             withAnimation(.easeIn(duration: 1.0)) { shown = true }
             while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(6.5))
-                withAnimation(.easeInOut(duration: 1.6)) { front = 1 - front }
-                try? await Task.sleep(for: .seconds(1.8))
-                step += 1
-                slots[1 - front] = Self.scenes[(step + 1) % Self.scenes.count]
+                // 4 s on its own, then the next scene starts loading underneath (3 s head start), then a 1.6 s crossfade.
+                try? await Task.sleep(for: .seconds(4))
+                next = (current + 1) % Self.scenes.count
+                try? await Task.sleep(for: .seconds(3))
+                withAnimation(.easeInOut(duration: 1.6)) { showNext = true }
+                try? await Task.sleep(for: .seconds(1.7))
+                // Drop the old map right away so only one keeps rendering.
+                var t = Transaction(); t.disablesAnimations = true
+                withTransaction(t) { current = next ?? current; next = nil; showNext = false }
             }
         }
     }
@@ -998,9 +1003,8 @@ struct SplashLiveMap: View {
                   .standard(pointsOfInterest: .excludingAll))
         .mapControlVisibility(.hidden)
         .mapCameraKeyframeAnimator(trigger: drift) { cam in
-            KeyframeTrack(\MapCamera.heading) { LinearKeyframe(cam.heading + 26, duration: 15) }
-            KeyframeTrack(\MapCamera.pitch) { CubicKeyframe(min(cam.pitch + 12, 62), duration: 15) }
-            KeyframeTrack(\MapCamera.distance) { CubicKeyframe(cam.distance * 0.8, duration: 15) }
+            KeyframeTrack(\MapCamera.heading) { LinearKeyframe(cam.heading + 18, duration: 12) }
+            KeyframeTrack(\MapCamera.distance) { LinearKeyframe(cam.distance * 0.85, duration: 12) }
         }
         .task {
             if drifting { try? await Task.sleep(for: .milliseconds(400)); drift = true }
@@ -1030,7 +1034,10 @@ struct SplashLiveMap: View {
         if style == "F" { return .camera(MapCamera(centerCoordinate: center, distance: 2800, heading: 210, pitch: 55)) }
         return .region(MKCoordinateRegion(center: center, span: .init(latitudeDelta: 0.021, longitudeDelta: 0.021)))
     }
+    /// Walking routes are fetched once per scene and reused every time the loop comes back around.
+    @MainActor private static var routeCache: [String: [CLLocationCoordinate2D]] = [:]
     private func loadRoute() async {
+        if let cached = Self.routeCache[style] { route = cached; return }
         var all: [CLLocationCoordinate2D] = []
         for (a, b) in zip(stops, stops.dropFirst()) {
             let r = MKDirections.Request()
@@ -1046,5 +1053,6 @@ struct SplashLiveMap: View {
             }
         }
         route = all
+        Self.routeCache[style] = all
     }
 }
