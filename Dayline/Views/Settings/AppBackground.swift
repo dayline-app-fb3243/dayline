@@ -467,11 +467,24 @@ struct ProfileIcon: View {
     var symbol: String
     var size: CGFloat = 30
     var color: Color = Theme.accent
+    /// Preview flag "icons.tile" (David picks): A = flat solid tile, white glyph (default, like iOS Settings);
+    /// B = light tint tile, colored glyph; C = colored glyph only, no tile.
+    @AppStorage("icons.tile") private var tile = "A"
     var body: some View {
-        Image(systemName: symbol).font(.system(size: size * 0.5, weight: .semibold)).foregroundStyle(.white)
-            .frame(width: size, height: size)
-            // Flat solid fill like iOS Settings (David: no 3D gradient look).
-            .background(color, in: .rect(cornerRadius: size * 0.24, style: .continuous))
+        switch tile {
+        case "B":
+            Image(systemName: symbol).font(.system(size: size * 0.5, weight: .semibold)).foregroundStyle(color)
+                .frame(width: size, height: size)
+                .background(color.opacity(0.15), in: .rect(cornerRadius: size * 0.24, style: .continuous))
+        case "C":
+            Image(systemName: symbol).font(.system(size: size * 0.6, weight: .regular)).foregroundStyle(color)
+                .frame(width: size, height: size)
+        default:
+            Image(systemName: symbol).font(.system(size: size * 0.5, weight: .semibold)).foregroundStyle(.white)
+                .frame(width: size, height: size)
+                // Flat solid fill like iOS Settings (David: no 3D gradient look).
+                .background(color, in: .rect(cornerRadius: size * 0.24, style: .continuous))
+        }
     }
 }
 
