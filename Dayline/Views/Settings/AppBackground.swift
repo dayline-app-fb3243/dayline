@@ -314,6 +314,7 @@ struct ProfileView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 10) {
+                TabTitle("Profile")
                 NavigationLink { if auth.isSignedIn { AccountView() } else { PrivacyView() } } label: {
                     // Same shape as the Apple Account card at the top of iOS Settings.
                     Card(padding: 0) {
@@ -429,8 +430,7 @@ struct ProfileView: View {
         .buttonStyle(.plain)
         .background(AppBackgroundView())
         .navigationTitle("Profile")
-        .backgroundNavBar()
-        .navigationBarTitleDisplayMode(.large)
+        .tabRoot()
         .navigationDestination(isPresented: $showSiriDemo) { SiriDemoView() }
         .sheet(isPresented: $showPolicy) { PrivacyPolicyView() }
         .alert("Sign Out?", isPresented: $confirmSignOut) {

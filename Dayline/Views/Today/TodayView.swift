@@ -30,11 +30,7 @@ struct TodayView: View {
                 .padding(.bottom, 24)
             }
             .background(AppBackgroundView())
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) { EmptyView() }
-            }
-            .navigationBarTitleDisplayMode(.large)
-            .backgroundNavBar()
+            .tabRoot()
             .sheet(item: $capture) { mode in CaptureSheet(mode: mode) }
         }
     }
@@ -49,7 +45,7 @@ struct TodayView: View {
                     .contentTransition(.opacity)
                     .accessibilityIdentifier("todayGreeting")
             }
-            .padding(.top, 4)
+            .padding(.top, 2)
         }
     }
 

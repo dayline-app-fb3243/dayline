@@ -32,6 +32,7 @@ struct TimelineScreen: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
+                    TabTitle("Timeline")
                     rangeControls
                     if range == .day {
                         // Day: small map on top (tap for full screen), then one photo card per stop.
@@ -63,8 +64,7 @@ struct TimelineScreen: View {
             }
             .background(AppBackgroundView())
             .navigationTitle("Timeline")
-            .navigationBarTitleDisplayMode(.large)
-            .backgroundNavBar()
+            .tabRoot()
             .fullScreenCover(isPresented: $expanded) { fullMap }
             .onChange(of: range) { camera = .automatic }
             .onChange(of: anchor) { camera = .automatic }

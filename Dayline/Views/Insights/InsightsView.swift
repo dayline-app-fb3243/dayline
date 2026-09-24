@@ -15,6 +15,7 @@ struct InsightsView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
+                    TabTitle("Insights")
                     CapsuleSegmented(selection: $range, options: InsightRange.allCases.map { ($0, $0.rawValue) }, plain: true).glassEffect(.regular, in: .capsule)
                     switch range {
                     case .day: dayView
@@ -26,8 +27,7 @@ struct InsightsView: View {
             }
             .background(AppBackgroundView())
             .navigationTitle("Insights")
-            .navigationBarTitleDisplayMode(.large)
-            .backgroundNavBar()
+            .tabRoot()
             .navigationDestination(isPresented: $showStreak) { StreakView() }
             .navigationBarTitleDisplayMode(.large)
         }

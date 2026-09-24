@@ -26,6 +26,15 @@ struct JournalView: View {
         NavigationStack {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 10) {
+                    TabTitle("Journal") {
+                        Button { composing = true } label: {
+                            Image(systemName: "plus").font(.title3.weight(.medium)).frame(width: 44, height: 44)
+                        }
+                        .buttonStyle(.plain).foregroundStyle(Theme.accent)
+                        .glassEffect(.regular.interactive(), in: .circle)
+                        .accessibilityLabel("New entry")
+                        .accessibilityIdentifier("newEntry")
+                    }
                     if entries.isEmpty {
                         ContentUnavailableView("No journal yet", systemImage: "doc.text",
                                                description: Text("Tap + to add a note, photo or voice memo."))
@@ -44,14 +53,7 @@ struct JournalView: View {
             }
             .background(AppBackgroundView())
             .navigationTitle("Journal")
-            .navigationBarTitleDisplayMode(.large)
-            .backgroundNavBar()
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("New entry", systemImage: "plus") { composing = true }
-                        .accessibilityIdentifier("newEntry")
-                }
-            }
+            .tabRoot()
             .sheet(isPresented: $composing) { NavigationStack { NewEntryView(onDone: { composing = false }) } }
             .sheet(item: $editingGroup) { g in NavigationStack { NewEntryView(onDone: { editingGroup = nil }, editing: g) } }
         }

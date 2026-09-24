@@ -185,3 +185,27 @@ enum ChromeStyle {
         }
     }
 }
+
+/// Large title for the root of each tab, sitting right under the status bar like iOS large titles,
+/// with an optional button inline on the right (David: no empty band above the title).
+struct TabTitle<Trailing: View>: View {
+    let title: String
+    @ViewBuilder var trailing: () -> Trailing
+    init(_ title: String, @ViewBuilder trailing: @escaping () -> Trailing = { EmptyView() }) {
+        self.title = title; self.trailing = trailing
+    }
+    var body: some View {
+        HStack(alignment: .center) {
+            Text(title).font(.largeTitle.bold()).backgroundTitle()
+                .accessibilityAddTraits(.isHeader)
+            Spacer()
+            trailing()
+        }
+        .padding(.top, 2)
+    }
+}
+
+extension View {
+    /// Root tab screens draw their own TabTitle, so the empty navigation bar row is hidden.
+    func tabRoot() -> some View { toolbar(.hidden, for: .navigationBar) }
+}
