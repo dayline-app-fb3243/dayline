@@ -556,6 +556,21 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Profile "Use with Siri" row: waveform tile now vs the Siri mark David picked.
+    func testSiriProfileDemo() throws {
+        for on in ["NO", "YES"] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-profile.siriMark", on]
+            app.launchEnvironment["TZ"] = Self.morningZone
+            app.launch(); pause(1.5)
+            tab(app, "Profile"); pause(1.5)
+            let row = app.descendants(matching: .any)["useWithSiriRow"].firstMatch
+            for _ in 0..<4 where !(row.exists && row.isHittable) { app.swipeUp(); pause(1) }
+            pause(1); shot("sm\(on)-profile-siri")
+            app.terminate()
+        }
+    }
+
     /// Previews for David: sign-in sheets sized to content, splash A/B/C, streak day opening the Day score page.
     func testPreviewsDemo() throws {
         var app = XCUIApplication()

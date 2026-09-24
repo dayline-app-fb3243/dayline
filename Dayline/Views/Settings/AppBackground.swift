@@ -430,7 +430,8 @@ struct ProfileView: View {
                     profileHeader("Siri")
                     Card(padding: 0) {
                         NavigationLink { SiriCommandsView() } label: {
-                            ProfileRow(symbol: "waveform", title: "Use with Siri", value: "Examples")
+                            ProfileRow(symbol: "waveform", title: "Use with Siri", value: "Examples",
+                                       siriMark: UserDefaults.standard.bool(forKey: "profile.siriMark")) // preview until David OKs
                         }
                         .accessibilityIdentifier("useWithSiriRow")
                     }
@@ -537,9 +538,17 @@ struct ProfileRow: View {
     var symbol: String
     var title: String
     var value: String
+    var siriMark = false
     var body: some View {
         HStack(spacing: 13) {
-            ProfileIcon(symbol: symbol)
+            if siriMark {
+                // The Siri mark David picked (demo-20 A), white on the same blue tile as the other rows.
+                SiriMark(color: .white).padding(5)
+                    .frame(width: 30, height: 30)
+                    .background(Theme.accent, in: .rect(cornerRadius: 30 * 0.24, style: .continuous))
+            } else {
+                ProfileIcon(symbol: symbol)
+            }
             Text(title).font(.body.weight(.medium)).foregroundStyle(.primary)
             Spacer()
             Text(value).font(.subheadline).foregroundStyle(.secondary).lineLimit(1)
