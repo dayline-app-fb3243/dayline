@@ -174,3 +174,14 @@ extension View {
         frame(width: size, height: size).modifier(MarkerBackground(fill: fill, size: size))
     }
 }
+
+
+enum ChromeStyle {
+    static var tint: Color {
+        switch UserDefaults.standard.string(forKey: "chrome.style") ?? "now" {
+        case "B": return Color.primary
+        case "C": return Color.secondary
+        default: return Theme.accent
+        }
+    }
+}

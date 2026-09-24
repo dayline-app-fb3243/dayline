@@ -28,7 +28,7 @@ private struct PhotoCaptureSheet: View {
                 PhotosPicker(selection: $selection, maxSelectionCount: 10, matching: .images, photoLibrary: .shared()) {
                     Label("Choose photos", systemImage: "photo.stack").frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.glassProminent).controlSize(.large)
+                .buttonStyle(.glassProminent).tint(Theme.accent).controlSize(.large)
                 if saving { ProgressView() }
                 Text("Photos go on your timeline at the place they were taken.")
                     .font(.footnote).foregroundStyle(.secondary).multilineTextAlignment(.center)

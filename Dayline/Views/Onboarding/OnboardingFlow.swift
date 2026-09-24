@@ -88,7 +88,7 @@ struct SplashView: View {
             .padding(.horizontal, 28).padding(.top, -40)
             Spacer()
             Button { showSignIn = true } label: { Text("Continue").font(.headline).frame(maxWidth: .infinity) }
-                .buttonStyle(.glassProminent).controlSize(.extraLarge)
+                .buttonStyle(.glassProminent).tint(Theme.accent).controlSize(.extraLarge)
                 .padding(.horizontal, 24).padding(.bottom, 16)
                 .accessibilityIdentifier("splashContinue")
         }
@@ -138,7 +138,7 @@ struct SignInSheet: View {
             .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 24, style: .continuous))
             .padding(.top, 16)
             Button(action: go) { Text("Continue with \(choice.rawValue)").font(.headline).padding(.horizontal, 10) }
-                .buttonStyle(.glassProminent).controlSize(.large)
+                .buttonStyle(.glassProminent).tint(Theme.accent).controlSize(.large)
                 .frame(maxWidth: .infinity).padding(.top, 18)
                 .accessibilityIdentifier("signInContinue")
             if let error = auth.errorMessage {
@@ -258,7 +258,7 @@ struct AppleSignInDemoSheet: View {
             .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 24, style: .continuous))
             .padding(.top, 10)
             Button(action: onContinue) { Text("Continue").font(.headline).padding(.horizontal, 30) }
-                .buttonStyle(.glassProminent).controlSize(.large)
+                .buttonStyle(.glassProminent).tint(Theme.accent).controlSize(.large)
                 .frame(maxWidth: .infinity).padding(.top, 18)
                 .accessibilityIdentifier("appleDemoContinue")
             Text("Use a different Apple Account").font(.subheadline).foregroundStyle(Theme.accent)
@@ -357,7 +357,7 @@ struct PermissionsView: View {
             Button { Task { await request(page.kind); advance() } } label: {
                 Text("Continue").font(.headline).frame(maxWidth: .infinity)
             }
-            .buttonStyle(.glassProminent).controlSize(.extraLarge)
+            .buttonStyle(.glassProminent).tint(Theme.accent).controlSize(.extraLarge)
             .accessibilityIdentifier("permissionsContinue")
         }
         .padding(.horizontal, 28).padding(.bottom, 16)
@@ -431,7 +431,7 @@ struct SetupStep<Content: View>: View {
             VStack(spacing: 10) {
                 // Apple's standard filled button: large control size, system semibold text.
                 Button(action: onPrimary) { Text(primary).font(.headline).frame(maxWidth: .infinity) }
-                    .buttonStyle(.borderedProminent).buttonBorderShape(.capsule)
+                    .buttonStyle(.borderedProminent).tint(Theme.accent).buttonBorderShape(.capsule)
                     .disabled(!primaryEnabled).accessibilityIdentifier("setupPrimary")
                 if let secondary {
                     if secondaryIsLink {

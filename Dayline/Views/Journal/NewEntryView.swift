@@ -157,7 +157,7 @@ struct NewEntryView: View {
             }
             ToolbarItem(placement: .confirmationAction) {
                 Button("Save", systemImage: "checkmark") { Task { await saveTapped() } }
-                    .buttonStyle(.glassProminent).disabled(!canSave)
+                    .buttonStyle(.glassProminent).tint(Theme.accent).disabled(!canSave)
                     .accessibilityIdentifier("saveEntry")
             }
         }

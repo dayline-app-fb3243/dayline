@@ -191,6 +191,16 @@ final class DemoTourTests: XCTestCase {
             app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Streak'")).firstMatch.tap(); pause(2); shot("c18c-streak-thick")
             app.terminate()
         }
+        for letter in ["now", "B", "C"] {
+            app = XCUIApplication()
+            app.launchArguments = ["-demo", "-chrome.style", letter, "-yourData.style", "A"]
+            app.launchEnvironment["TZ"] = Self.morningZone
+            app.launch()
+            tab(app, "Profile"); pause(1.5)
+            tapID(app, "accountRow"); pause(1.5); shot("c25\(letter)-back-button"); goBack(app); pause(1)
+            tapID(app, "yourDataRow"); pause(1.5); tapID(app, "deleteAccount"); pause(1.2); shot("c25\(letter)x-alert")
+            app.terminate()
+        }
         for letter in ["A", "B", "C"] {
             app = XCUIApplication()
             app.launchArguments = ["-demo", "-notifications.style", letter]

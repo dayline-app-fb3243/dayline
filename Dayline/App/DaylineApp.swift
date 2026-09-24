@@ -33,7 +33,10 @@ struct DaylineApp: App {
                     OnboardingFlow()
                 }
             }
-            .tint(Theme.accent)   // one blue accent on every screen
+            // Preview flag "chrome.style" (David picks): now = blue back/close/alert buttons;
+            // B = black like iOS (label color); C = gray. Switches, links and main buttons stay blue.
+            .tint(ChromeStyle.tint)
+            .toggleStyle(SwitchToggleStyle(tint: Theme.accent))
             .preferredColorScheme(Appearance(rawValue: appearanceRaw)?.scheme)
         }
         .modelContainer(ModelStore.container)
