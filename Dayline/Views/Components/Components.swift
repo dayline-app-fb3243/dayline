@@ -89,9 +89,19 @@ struct ScoreRing: View {
         guard behind else { return [Theme.ringStart, Theme.accent] }
         switch paceStyle {
         case "A": return [Color.orange.mix(with: .white, by: 0.35), .orange]
-        case "B": return [Theme.ringStart, Theme.accent.mix(with: .orange, by: 0.3 + 0.7 * slip), .orange]
+        case "B": return [Theme.ringStart, Theme.accent, .orange, Color(red: 0.85, green: 0.35, blue: 0.0)]
         default: return [Theme.ringStart, Theme.accent]
         }
+    }
+    /// B behind: light blue -> darker blue -> orange -> darker orange, spread evenly so there's no hard seam.
+    /// The more points slip away, the earlier along the fill the orange starts.
+    private var gradient: Gradient {
+        guard behind, paceStyle == "B" else { return Gradient(colors: colors) }
+        let c = colors
+        return Gradient(stops: [.init(color: c[0], location: 0),
+                                .init(color: c[1], location: 0.45 - 0.2 * slip),
+                                .init(color: c[2], location: 0.8 - 0.15 * slip),
+                                .init(color: c[3], location: 1)])
     }
     var body: some View {
         ZStack {
@@ -108,7 +118,7 @@ struct ScoreRing: View {
             // with the dark end color (that made a dark spot at the top).
             Circle()
                 .trim(from: 0, to: progress)
-                .stroke(AngularGradient(colors: colors, center: .center,
+                .stroke(AngularGradient(gradient: gradient, center: .center,
                                         startAngle: .zero, endAngle: .degrees(360 * max(progress, 0.01))),
                         style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
                 .rotationEffect(.degrees(-90))
