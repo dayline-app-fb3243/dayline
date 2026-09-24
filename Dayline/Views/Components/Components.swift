@@ -48,6 +48,8 @@ enum Theme {
     static let voice = accent
     static let route = accent
     static let ring = AngularGradient(colors: [Color.blue.opacity(0.45), .blue], center: .center)
+    /// Solid (not see-through) version of the ring's light start color.
+    static let ringStart = Color(red: 0.55, green: 0.76, blue: 1.0)
     /// Score label colour, used everywhere a score is shown.
     static func scoreColor(_ score: Int) -> Color { score < 45 ? bad : accent }
     /// Days scoring this or more count toward the streak.
@@ -60,11 +62,19 @@ struct ScoreRing: View {
     var body: some View {
         ZStack {
             Circle().stroke(.quaternary, lineWidth: lineWidth)
+            let progress = CGFloat(min(max(score, 0), 100)) / 100
+            // Gradient covers only the filled part, so the round start cap isn't painted
+            // with the dark end color (that made a dark spot at the top).
             Circle()
-                .trim(from: 0, to: CGFloat(score) / 100)
-                .stroke(Theme.ring,
+                .trim(from: 0, to: progress)
+                .stroke(AngularGradient(colors: [Theme.ringStart, .blue], center: .center,
+                                        startAngle: .zero, endAngle: .degrees(360 * max(progress, 0.01))),
                         style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
                 .rotationEffect(.degrees(-90))
+            if score > 0 {
+                Circle().fill(Theme.ringStart).frame(width: lineWidth, height: lineWidth)
+                    .offset(y: -size / 2)
+            }
             Text("\(score)")
                 .font(.system(size: size * 0.3, weight: .heavy))
                 .contentTransition(.numericText())
