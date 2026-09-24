@@ -104,8 +104,7 @@ final class DemoTourTests: XCTestCase {
         let sf = app.searchFields.firstMatch
         if sf.waitForExistence(timeout: 2) {
             sf.tap(); sf.typeText("Ma"); pause(1.5); shot("38c-share-with-search")
-            let cancel = app.buttons["Cancel"].firstMatch
-            if cancel.waitForExistence(timeout: 2) { cancel.tap() }
+            dismissSearch(app)
             pause(1)
         }
         goBack(app); pause(1)
@@ -113,8 +112,8 @@ final class DemoTourTests: XCTestCase {
         let close = app.buttons["Close"].firstMatch
         if close.waitForExistence(timeout: 2) { close.tap() } else { app.swipeDown(velocity: .fast) }
         pause(1.5)
-        goBack(app)
-        goBack(app)
+        backToTabs(app)
+        tab(app, "Insights"); pause(1.5)
         tapSegment(app, "Day"); pause(2.5); shot("31-insights-day")
         tapSegment(app, "Year"); pause(2.5); shot("32-insights-year")
         tapSegment(app, "Month"); pause(2)
@@ -232,6 +231,26 @@ final class DemoTourTests: XCTestCase {
         let back = app.navigationBars.buttons.element(boundBy: 0)
         if back.waitForExistence(timeout: 3) { back.tap() }
         Thread.sleep(forTimeInterval: 1.2)
+    }
+
+    /// Closes an active search field (Apple shows Cancel or an X).
+    private func dismissSearch(_ app: XCUIApplication) {
+        for label in ["Cancel", "Close", "Clear text"] {
+            let b = app.buttons[label].firstMatch
+            if b.exists && b.isHittable { b.tap(); Thread.sleep(forTimeInterval: 0.6) }
+            if !app.keyboards.firstMatch.exists { return }
+        }
+    }
+
+    /// Goes back until the tab bar shows again, so the next tab tap lands.
+    private func backToTabs(_ app: XCUIApplication) {
+        for _ in 0..<6 {
+            if app.tabBars.firstMatch.exists && app.tabBars.firstMatch.isHittable { return }
+            if app.keyboards.firstMatch.exists { dismissSearch(app); continue }
+            let back = app.navigationBars.buttons.element(boundBy: 0)
+            if back.exists && back.isHittable { back.tap() } else { app.swipeDown(velocity: .fast) }
+            Thread.sleep(forTimeInterval: 1.2)
+        }
     }
 
     private func pause(_ seconds: TimeInterval) { Thread.sleep(forTimeInterval: seconds) }
