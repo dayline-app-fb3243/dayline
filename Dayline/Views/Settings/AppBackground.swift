@@ -583,10 +583,10 @@ struct PrivacyPolicyView: View {
     private let sections: [(String, String)] = [
         ("The short version", "Your places, routes, photos and notes stay on your iPhone. We don\u{2019}t sell your data and there are no ads."),
         ("What Dayline collects", "Location, to build your timeline of places and routes. Photos you allow, to show them on your day. Microphone, only while you record a voice note; it\u{2019}s turned into text on your iPhone."),
-        ("What leaves your iPhone", "If you sign in, your name, email and an encrypted backup of your timeline are stored for you only. If you share with friends, they see only your streak number."),
+        ("What leaves your iPhone", "If Back Up Timeline is on, your timeline and journal are saved in your own iCloud account. Dayline can\u{2019}t see it. If you share with friends, they see only your streak number."),
         ("How we use it", "Only to run Dayline for you: building your timeline, backing it up and showing your streak to people you choose. We don\u{2019}t use it for ads or sell it to anyone."),
         ("Siri", "When you ask Siri about a place, Dayline answers from the data on your iPhone."),
-        ("Keeping it safe", "Your backup is encrypted in transit and at rest. Only you can restore it."),
+        ("Keeping it safe", "Your iCloud backup is protected by Apple and encrypted in transit and at rest. Only you can restore it."),
         ("Your choices", "Change what Dayline can use at any time in Settings. Delete your account and backup from Profile > Your Data."),
         ("Children", "Dayline isn\u{2019}t meant for children under 13."),
         ("Changes", "If this policy changes, we\u{2019}ll show you what changed in the app."),

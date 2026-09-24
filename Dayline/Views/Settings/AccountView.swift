@@ -88,7 +88,7 @@ struct AccountView: View {
                         row("Last Backup", lastText)
                     }
                 }
-                footnote("Your timeline, journal and photos list are backed up so you can restore them on a new iPhone.")
+                footnote("Your timeline, journal and photos are backed up to your iCloud, so you can restore them on a new iPhone.")
 
                 Card(padding: 0) {
                     Button { if let url = URL(string: "https://account.apple.com") { openURL(url) } } label: {
