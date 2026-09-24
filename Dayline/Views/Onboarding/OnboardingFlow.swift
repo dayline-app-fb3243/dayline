@@ -932,7 +932,7 @@ struct SplashLiveMap: View {
         if style == "G" { return .camera(MapCamera(centerCoordinate: center, distance: 1900, heading: 29, pitch: 40)) }
         if style == "H" { return .camera(MapCamera(centerCoordinate: center, distance: 1600, heading: 29, pitch: 30)) }
         if style == "I" { return .camera(MapCamera(centerCoordinate: center, distance: 2000, heading: 0, pitch: 18)) }
-        // J/K/L (David 2:17): H, zoomed right in like Apple Maps up close (trees, detailed 3D), route in view.
+        // J/K/L: H, zoomed right in like Apple Maps up close (trees, detailed 3D), route in view.
         let coffee = CLLocationCoordinate2D(latitude: 40.7520, longitude: -73.9785)
         if style == "J" { return .camera(MapCamera(centerCoordinate: coffee, distance: 900, heading: 29, pitch: 40)) }
         if style == "K" { return .camera(MapCamera(centerCoordinate: coffee, distance: 600, heading: 29, pitch: 50)) }

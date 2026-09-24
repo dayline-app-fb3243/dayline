@@ -622,7 +622,7 @@ final class DemoTourTests: XCTestCase {
     }
 
     /// Video: Apple's own segmented control (pill.native) on the Timeline: taps, fast drags, and drags past the ends.
-    /// Native pill with the selected word in theme blue (David 2:20).
+    /// Native pill with the selected word in theme blue.
     func testNativePillBlue() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-demo", "-pill.native", "YES"]
@@ -773,7 +773,7 @@ final class DemoTourTests: XCTestCase {
         app.terminate()
     }
 
-    /// David 2:15: 2D/3D button on top of the location button (one glass capsule), pull-up sheet instead of floating buttons,
+    /// 2D/3D button on top of the location button (one glass capsule), pull-up sheet instead of floating buttons,
     /// then map gestures: one-finger pan, pinch zoom, two-finger rotate.
     func testMapButtonsVideo() throws {
         let app = XCUIApplication()
@@ -794,7 +794,7 @@ final class DemoTourTests: XCTestCase {
         app.terminate()
     }
 
-    /// Splash J/K/L: H zoomed right in (David 2:17). Plus route.blue off/on on the Year map.
+    /// Splash J/K/L: H zoomed right in. Plus route.blue off/on on the Year map.
     func testSplashCloseDemo() throws {
         for v in ["J", "K", "L"] {
             let app = XCUIApplication()

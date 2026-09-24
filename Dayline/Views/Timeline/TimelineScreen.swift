@@ -106,7 +106,7 @@ struct TimelineScreen: View {
                 } else {
                     // Full route for the whole range, thinned so a year stays fast.
                     MapPolyline(coordinates: thinnedRoute)
-                        // Preview flag "route.blue" (David 2:17): every route line the same solid theme blue.
+                        // Preview flag "route.blue": every route line the same solid theme blue.
                         .stroke(UserDefaults.standard.bool(forKey: "route.blue") ? Theme.accent : Theme.accent.opacity(0.45), style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
                 }
             }
@@ -290,7 +290,7 @@ struct TimelineScreen: View {
                         .glassEffect(.regular, in: .capsule)
                         }
                         if map3DFlag {
-                            // map.3d (David 2:15): like Apple Maps, a 2D/3D button sits on top of the location button in one glass capsule.
+                            // map.3d: like Apple Maps, a 2D/3D button sits on top of the location button in one glass capsule.
                             // The location button always goes to your current location.
                             VStack(spacing: 0) {
                                 Button { withAnimation(.smooth(duration: 0.8)) { set3D(!is3D) } } label: {

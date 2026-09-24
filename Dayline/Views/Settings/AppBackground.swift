@@ -257,16 +257,12 @@ struct CapsuleSegmented<Value: Hashable>: View {
         return forced != 0 ? forced * jellyParams.maxStretch : stretch
     }
 
-    private static let tintSelectedOnce: Void = {
-        UISegmentedControl.appearance().setTitleTextAttributes([.foregroundColor: UIColor(Theme.accent)], for: .selected)
-    }()
-
     var body: some View {
         if UserDefaults.standard.bool(forKey: "pill.native") {
             // Preview flag "pill.native" (David 2:04: "exactly like Apple's"): the system segmented control,
             // so the Liquid Glass lens, stretch, squish and edge bounce are Apple's own.
-            // Selected word in theme blue, like the selected tab in the tab bar (David 2:20).
-            let _ = Self.tintSelectedOnce
+            // Selected word in theme blue, like the selected tab in the tab bar.
+            let _ = segmentedSelectedTint
             Picker("", selection: $selection) {
                 ForEach(options, id: \.0) { value, title in Text(title).tag(value) }
             }
@@ -1159,3 +1155,8 @@ struct NotificationsView: View {
         note("Opens iOS Settings for Dayline's sounds, banners and badges.")
     }
 }
+
+/// Selected word of the system segmented control in theme blue, like the selected tab. Set once.
+private let segmentedSelectedTint: Void = {
+    UISegmentedControl.appearance().setTitleTextAttributes([.foregroundColor: UIColor(Theme.accent)], for: .selected)
+}()

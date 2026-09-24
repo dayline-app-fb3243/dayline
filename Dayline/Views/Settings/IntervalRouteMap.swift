@@ -6,7 +6,7 @@ import MapKit
 struct IntervalRouteMap: View {
     var minutes: Int
     var interactive = false
-    /// Show a dot at every location check, so you can see how precise each rate is (David 2:18).
+    /// Show a dot at every location check, so you can see how precise each rate is.
     var dots = false
     @State private var route: [CLLocationCoordinate2D] = []
     private static let stops: [CLLocationCoordinate2D] = [
@@ -83,7 +83,7 @@ struct IntervalRouteMap: View {
     }
 }
 
-/// Preview flag "check.big" (David 2:18): tapping a mini iPhone opens it big but not full screen, with a dot at each check.
+/// Preview flag "check.big": tapping a mini iPhone opens it big but not full screen, with a dot at each check.
 /// A = floating card, B = half-height sheet, C = the mini iPhone zoomed up big.
 struct IntervalRouteCard: View {
     var minutes: Int
