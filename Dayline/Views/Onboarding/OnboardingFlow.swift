@@ -34,9 +34,9 @@ struct OnboardingFlow: View {
 struct AppMark: View {
     var size: CGFloat = 96
     var shadow = true
-    /// "mark.rings": rings-only logo approved 9/24; color app blue for now (pick pending; set "" for the old square icon): just the two rings, no square.
+    /// "mark.rings": rings-only logo approved 9/24; color light to deep (David "Yes" 1:36 9/24; set "" for the old square icon): just the two rings, no square.
     /// blue = app blue, ink = black/white, sky = light-to-deep blue, duo = blue + teal.
-    @AppStorage("mark.rings") private var rings = "blue"
+    @AppStorage("mark.rings") private var rings = "sky"
     var body: some View {
         if rings.isEmpty { iconBody } else { RingMark(size: size, palette: rings) }
     }
@@ -886,11 +886,21 @@ struct SplashLiveMap: View {
     var body: some View {
         Map(initialPosition: position, interactionModes: []) {
             if route.count > 1 {
-                MapPolyline(coordinates: route)
-                    .stroke(Theme.accent, style: StrokeStyle(lineWidth: 5, lineCap: .round, lineJoin: .round))
+                if style == "D" {
+                    // D: thick route with a white edge, close and steep, like Apple Maps directions.
+                    MapPolyline(coordinates: route).stroke(.white, style: StrokeStyle(lineWidth: 11, lineCap: .round, lineJoin: .round))
+                    MapPolyline(coordinates: route).stroke(Theme.accent, style: StrokeStyle(lineWidth: 7, lineCap: .round, lineJoin: .round))
+                } else if style == "F" {
+                    // F: light-to-deep blue along the day, matching the ring logo.
+                    MapPolyline(coordinates: route).stroke(LinearGradient(colors: [Color(red: 0.45, green: 0.75, blue: 1), Color(red: 0.05, green: 0.3, blue: 0.85)], startPoint: .leading, endPoint: .trailing),
+                                                           style: StrokeStyle(lineWidth: 6, lineCap: .round, lineJoin: .round))
+                } else {
+                    MapPolyline(coordinates: route)
+                        .stroke(Theme.accent, style: StrokeStyle(lineWidth: style == "E" ? 6 : 5, lineCap: .round, lineJoin: .round))
+                }
             }
             ForEach(stops) { s in
-                Annotation(style == "B" ? s.time : "", coordinate: s.c) {
+                Annotation(style == "B" || style == "F" ? s.time : "", coordinate: s.c) {
                     Image(systemName: s.symbol).font(.system(size: 12, weight: .bold)).foregroundStyle(.white)
                         .frame(width: 28, height: 28).background(Theme.accent, in: .circle)
                         .overlay(Circle().stroke(.white, lineWidth: 2.5)).shadow(color: .black.opacity(0.25), radius: 4, y: 2)
@@ -898,7 +908,9 @@ struct SplashLiveMap: View {
             }
         }
         .mapStyle(style == "B" ? .standard(emphasis: .muted, pointsOfInterest: .excludingAll) :
-                  style == "C" ? .standard(elevation: .realistic, pointsOfInterest: .excludingAll) :
+                  style == "C" || style == "D" ? .standard(elevation: .realistic, pointsOfInterest: .excludingAll) :
+                  style == "E" ? .hybrid(elevation: .realistic, pointsOfInterest: .excludingAll) :
+                  style == "F" ? .standard(elevation: .realistic, emphasis: .muted, pointsOfInterest: .excludingAll) :
                   .standard(pointsOfInterest: .excludingAll))
         .mapControlVisibility(.hidden)
         .task { await loadRoute() }
@@ -906,6 +918,11 @@ struct SplashLiveMap: View {
     private var position: MapCameraPosition {
         let center = CLLocationCoordinate2D(latitude: 40.7552, longitude: -73.9790)
         if style == "C" { return .camera(MapCamera(centerCoordinate: center, distance: 2600, heading: 29, pitch: 55)) }
+        // D: closer and steeper, looking up the route from Home.
+        if style == "D" { return .camera(MapCamera(centerCoordinate: .init(latitude: 40.7545, longitude: -73.9800), distance: 1700, heading: 35, pitch: 70)) }
+        // E: satellite 3D.  F: muted 3D from the other side, with times.
+        if style == "E" { return .camera(MapCamera(centerCoordinate: center, distance: 2400, heading: 29, pitch: 58)) }
+        if style == "F" { return .camera(MapCamera(centerCoordinate: center, distance: 2800, heading: 210, pitch: 55)) }
         return .region(MKCoordinateRegion(center: center, span: .init(latitudeDelta: 0.021, longitudeDelta: 0.021)))
     }
     private func loadRoute() async {

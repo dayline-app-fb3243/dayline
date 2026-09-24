@@ -21,6 +21,10 @@ struct TimelineScreen: View {
     /// snap = path snapped to streets with Apple directions, gps = precise GPS-style track.
     @AppStorage("route.style") private var routeStyle = "now"
     @State private var streetRoute: [CLLocationCoordinate2D] = []
+    /// Preview flag "map.3d" (awaiting David's pick): the full-screen map opens tilted in 3D with real buildings,
+    /// and gets a 2D/3D button. The route is drawn into the map, so it tilts with it.
+    @AppStorage("map.3d") private var map3DFlag = false
+    @State private var is3D = false
 
     private var interval: DateInterval {
         let cal = Calendar.current
@@ -69,7 +73,10 @@ struct TimelineScreen: View {
             .background(AppBackgroundView())
             .navigationTitle("Timeline")
             .tabRoot()
-            .fullScreenCover(isPresented: $expanded) { fullMap }
+            .fullScreenCover(isPresented: $expanded) {
+                fullMap.onAppear { if map3DFlag { set3D(true) } }
+                    .onDisappear { is3D = false; camera = .automatic }
+            }
             .onChange(of: range) { camera = .automatic }
             .onChange(of: anchor) { camera = .automatic }
         }
@@ -129,7 +136,8 @@ struct TimelineScreen: View {
                 }
             } }
         }
-        .mapStyle(.standard(emphasis: .muted, pointsOfInterest: .excludingAll))
+        .mapStyle(is3D && !showsControls ? .standard(elevation: .realistic, pointsOfInterest: .excludingAll)
+                                         : .standard(emphasis: .muted, pointsOfInterest: .excludingAll))
         .mapControls { MapCompass(); MapScaleView() }
         .mapControlVisibility(showsControls ? .automatic : .hidden)
         .onMapCameraChange(frequency: .onEnd) { context in region = context.region }
@@ -228,6 +236,16 @@ struct TimelineScreen: View {
                         }
                         .padding(4)
                         .glassEffect(.regular, in: .capsule)
+                        if map3DFlag {
+                            Button { withAnimation(.smooth(duration: 0.8)) { set3D(!is3D) } } label: {
+                                Text(is3D ? "2D" : "3D").font(.scaled(size: 17, weight: .semibold))
+                                    .foregroundStyle(Theme.accent).frame(width: 64, height: 64)
+                            }
+                            .buttonStyle(.plain)
+                            .glassEffect(.regular.interactive(), in: .circle)
+                            .accessibilityLabel(is3D ? "Show flat map" : "Show 3D map")
+                            .accessibilityIdentifier("toggle3D")
+                        }
                         Button { withAnimation(.snappy) { camera = .userLocation(fallback: .automatic) } } label: {
                             Image(systemName: "location.fill").font(.scaled(size: 20, weight: .semibold))
                                 .foregroundStyle(Theme.accent).frame(width: 64, height: 64)
@@ -246,6 +264,18 @@ struct TimelineScreen: View {
                     .glassEffect(.regular, in: .capsule)
                     .padding(.horizontal, 16).padding(.bottom, 6)
             }
+    }
+
+    /// Tilts the camera over the day's places (3D) or flattens it back (2D).
+    private func set3D(_ on: Bool) {
+        is3D = on
+        let pts = rangeVisits.map(\.coordinate)
+        guard !pts.isEmpty else { return }
+        let lat = pts.map(\.latitude), lon = pts.map(\.longitude)
+        let center = CLLocationCoordinate2D(latitude: (lat.min()! + lat.max()!) / 2, longitude: (lon.min()! + lon.max()!) / 2)
+        let spanM = max((lat.max()! - lat.min()!) * 111_000, (lon.max()! - lon.min()!) * 85_000, 600)
+        camera = on ? .camera(MapCamera(centerCoordinate: center, distance: spanM * 2.6, heading: 30, pitch: 60))
+                    : .automatic
     }
 
     private func mapToggle(_ title: String, _ symbol: String, _ on: Binding<Bool>) -> some View {

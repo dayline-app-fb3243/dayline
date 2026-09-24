@@ -612,7 +612,7 @@ final class DemoTourTests: XCTestCase {
 
     /// Splash with real Apple Maps and a street-following route: A standard, B muted + times, C 3D.
     func testSplashMapDemo() throws {
-        for v in ["A", "B", "C"] {
+        for v in ["C", "D", "E", "F"] {
             let app = XCUIApplication()
             app.launchArguments = ["-demo", "-onboarding", "-splash.map", v]
             app.launchEnvironment["TZ"] = Self.morningZone
@@ -626,7 +626,7 @@ final class DemoTourTests: XCTestCase {
         for v in ["icon", "blue", "ink", "sky", "duo"] {
             let app = XCUIApplication()
             var args = ["-demo", "-onboarding", "-signin.small", "YES"]
-            if v != "icon" { args += ["-mark.rings", v] }
+            args += ["-mark.rings", v == "icon" ? "" : v]
             app.launchArguments = args
             app.launchEnvironment["TZ"] = Self.morningZone
             app.launch(); pause(1.5)
@@ -640,6 +640,20 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Full-screen Timeline map: flat vs tilted 3D (preview flag map.3d), street-following route.
+    func testMap3DDemo() throws {
+        for v in ["NO", "YES"] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-route.style", "gps", "-map.3d", v]
+            app.launchEnvironment["TZ"] = Self.morningZone
+            app.launch(); pause(1.5)
+            tab(app, "Timeline"); pause(3)
+            tapID(app, "mapCard"); pause(8); shot("m3-\(v)")
+            if v == "YES" { app.swipeLeft(); pause(4); shot("m3-YES-turned") }
+            app.terminate()
+        }
+    }
+
     /// Timeline Day map route: now vs snapped to streets vs precise GPS track.
     func testRouteDemo() throws {
         for v in ["now", "snap", "gps"] {
@@ -648,6 +662,7 @@ final class DemoTourTests: XCTestCase {
             app.launchEnvironment["TZ"] = Self.morningZone
             app.launch(); pause(1.5)
             tab(app, "Timeline"); pause(6); shot("rt-\(v)")
+            tapID(app, "mapCard"); pause(6); shot("rt-\(v)-full")
             app.terminate()
         }
     }
