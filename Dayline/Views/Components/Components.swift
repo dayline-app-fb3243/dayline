@@ -58,7 +58,12 @@ enum Theme {
 /// (every 4 hours) so it doesn't feel canned, but never flickers while you look. "status.phrase" N (screenshots) forces one.
 enum StatusPhrase {
     static let onTrack = ["On track", "Good work", "Keep it up", "Nice pace", "Looking good"]
-    static let behind = ["Falling behind", "Pick it up", "Catch up", "Behind pace"]
+    /// "Pick it up" removed. "status.alt" 1-3 adds one of the new options below (preview).
+    static var behind: [String] {
+        let alt = UserDefaults.standard.integer(forKey: "status.alt")
+        return ["Falling behind", "Catch up", "Behind pace"] + (alt > 0 ? [altOptions[(alt - 1) % altOptions.count]] : [])
+    }
+    static let altOptions = ["Still time", "Let's go", "You've got this"]
     static func text(behind isBehind: Bool, score: Int, now: Date = .now) -> String {
         if !isBehind && score >= 90 { return "Crushing it" }
         let list = isBehind ? behind : onTrack
@@ -130,7 +135,31 @@ struct ScoreRing: View {
         default: return Color.orange.mix(with: Self.deepOrange, by: 0.3 + 0.7 * slip)
         }
     }
+    /// "ring.join" (preview, "" = today's look): how blue meets orange, all with a lighter orange that never gets very dark.
+    /// A = short soft fade, B = hard split with a small gap, C = a pale middle tone between them.
+    @AppStorage("ring.join") private var join = ""
+    private static let lightOrange = Color(red: 1.0, green: 0.76, blue: 0.48)
+    private static let capOrange = Color(red: 0.97, green: 0.55, blue: 0.2)   // darkest it ever gets
+    private var softStart: Color { Self.lightOrange.mix(with: Self.capOrange, by: 0.4 * slip) }
+    private var softEnd: Color { Self.lightOrange.mix(with: Self.capOrange, by: 0.45 + 0.55 * slip) }
+    /// Where along the fill orange takes over.
+    private var splitAt: Double { 0.74 - 0.12 * slip }
+    private var joining: Bool { behind && paceStyle == "B" && !join.isEmpty }
     private var gradient: Gradient {
+        if joining {
+            let a = splitAt
+            switch join {
+            case "A":
+                return Gradient(stops: [.init(color: Theme.ringStart, location: 0), .init(color: Theme.accent, location: a - 0.04),
+                                        .init(color: softStart, location: a + 0.04), .init(color: softEnd, location: 1)])
+            case "C":
+                return Gradient(stops: [.init(color: Theme.ringStart, location: 0), .init(color: Theme.accent, location: a - 0.14),
+                                        .init(color: Color(red: 0.93, green: 0.9, blue: 0.92), location: a),
+                                        .init(color: softStart, location: a + 0.1), .init(color: softEnd, location: 1)])
+            default:
+                return Gradient(colors: [Theme.ringStart, Theme.accent])
+            }
+        }
         guard behind, paceStyle == "B" else { return Gradient(colors: colors) }
         let c = colors
         switch blend {
@@ -164,12 +193,30 @@ struct ScoreRing: View {
             }
             // Gradient covers only the filled part, so the round start cap isn't painted
             // with the dark end color (that made a dark spot at the top).
+            if joining && join == "B" {
+                // Hard split: a blue arc, a small gap, then an orange arc.
+                let cut = progress * CGFloat(splitAt)
+                let gap = lineWidth / (.pi * size) + 0.012
+                Circle()
+                    .trim(from: 0, to: max(0.001, cut - gap / 2))
+                    .stroke(AngularGradient(gradient: gradient, center: .center,
+                                            startAngle: .zero, endAngle: .degrees(360 * max(cut, 0.01))),
+                            style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+                Circle()
+                    .trim(from: min(progress, cut + gap / 2), to: progress)
+                    .stroke(AngularGradient(colors: [softStart, softEnd], center: .center,
+                                            startAngle: .degrees(360 * (cut + gap / 2)), endAngle: .degrees(360 * max(progress, 0.01))),
+                            style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+            } else {
             Circle()
                 .trim(from: 0, to: progress)
                 .stroke(AngularGradient(gradient: gradient, center: .center,
                                         startAngle: .zero, endAngle: .degrees(360 * max(progress, 0.01))),
                         style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
                 .rotationEffect(.degrees(-90))
+            }
             if score > 0 {
                 Circle().fill(colors[0]).frame(width: lineWidth, height: lineWidth)
                     .offset(y: -size / 2)
@@ -347,6 +394,14 @@ struct RingSamplesView: View {
                         Spacer()
                     }
                     .padding(12).background(.background, in: .rect(cornerRadius: 20))
+                }
+                Text("New words instead of \u{201C}Pick it up\u{201D}").font(.headline).padding(.top, 6)
+                HStack(spacing: 8) {
+                    ForEach(StatusPhrase.altOptions.indices, id: \.self) { i in
+                        Text("\(i + 1). \(StatusPhrase.altOptions[i])").font(.subheadline.weight(.semibold))
+                            .foregroundStyle(Theme.bad).padding(.horizontal, 10).padding(.vertical, 6)
+                            .background(Theme.bad.opacity(0.14), in: .capsule)
+                    }
                 }
             }
             .padding(.horizontal, 16)

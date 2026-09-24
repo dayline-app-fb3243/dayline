@@ -1408,6 +1408,16 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Ring join preview: how blue meets orange, with a lighter orange capped short of dark. "" = now.
+    func testRingJoin() throws {
+        for v in ["", "A", "B", "C"] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-demo.rings", "-ring.join", v]
+            app.launch(); pause(2.5); shot("rj-\(v.isEmpty ? "now" : v)")
+            app.terminate()
+        }
+    }
+
     /// Ring shades: now (by points lost) vs B / C (by the best score still possible today).
     func testRingShades() throws {
         for v in ["", "B", "C"] {
