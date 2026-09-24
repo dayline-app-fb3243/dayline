@@ -21,20 +21,24 @@ struct JournalView: View {
     }
 
     @State private var composing = false
+    /// Preview flag "journal.search" (none picked yet): A = its own glass circle next to +,
+    /// B = one glass capsule holding search and +, C = a search field under the title.
+    @AppStorage("journal.search") private var searchStyle = ""
+    @AppStorage("journal.searchQuery") private var demoQuery = ""
+    @State private var searching = false
+    @State private var inlineQuery = ""
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 10) {
-                    TabTitle("Journal") {
-                        Button { composing = true } label: {
-                            Image(systemName: "plus").font(.title3.weight(.medium)).frame(width: 44, height: 44)
-                        }
-                        .buttonStyle(.plain).foregroundStyle(Theme.accent)
-                        .glassEffect(.regular.interactive(), in: .circle)
-                        .accessibilityLabel("New entry")
-                        .accessibilityIdentifier("newEntry")
+                    TabTitle("Journal") { titleButtons }
+                    if searchStyle == "C" {
+                        JournalSearchField(query: $inlineQuery).padding(.bottom, 4)
                     }
+                    if searchStyle == "C" && !inlineQuery.isEmpty {
+                        SearchResultsList(query: inlineQuery, entries: entries, visits: visits)
+                    } else {
                     if entries.isEmpty {
                         ContentUnavailableView("No journal yet", systemImage: "doc.text",
                                                description: Text("Tap + to add a note, photo or voice memo."))
@@ -48,14 +52,54 @@ struct JournalView: View {
                                 .accessibilityIdentifier("journalCard")
                         }
                     }
+                    }
                 }
                 .padding(.horizontal, 18).padding(.bottom, 30)
             }
             .background(AppBackgroundView())
             .navigationTitle("Journal")
             .tabRoot()
+            .navigationDestination(isPresented: $searching) { JournalSearchView(barAtBottom: false, query: demoQuery) }
+            .onAppear {
+                guard !demoQuery.isEmpty else { return }
+                if searchStyle == "C" { inlineQuery = demoQuery } else if !searchStyle.isEmpty { searching = true }
+            }
             .sheet(isPresented: $composing) { NavigationStack { NewEntryView(onDone: { composing = false }) } }
             .sheet(item: $editingGroup) { g in NavigationStack { NewEntryView(onDone: { editingGroup = nil }, editing: g) } }
+        }
+    }
+}
+
+extension JournalView {
+    private var plusButton: some View {
+        Button { composing = true } label: {
+            Image(systemName: "plus").font(.title3.weight(.medium)).frame(width: 44, height: 44)
+        }
+        .buttonStyle(.plain).foregroundStyle(Theme.accent)
+        .accessibilityLabel("New entry")
+        .accessibilityIdentifier("newEntry")
+    }
+    private var searchButton: some View {
+        Button { searching = true } label: {
+            Image(systemName: "magnifyingglass").font(.title3.weight(.medium)).frame(width: 44, height: 44)
+        }
+        .buttonStyle(.plain).foregroundStyle(Theme.accent)
+        .accessibilityLabel("Search")
+        .accessibilityIdentifier("journalSearch")
+    }
+    @ViewBuilder var titleButtons: some View {
+        switch searchStyle {
+        case "A":
+            HStack(spacing: 10) {
+                searchButton.glassEffect(.regular.interactive(), in: .circle)
+                plusButton.glassEffect(.regular.interactive(), in: .circle)
+            }
+        case "B":
+            HStack(spacing: 0) { searchButton; plusButton }
+                .padding(.horizontal, 4)
+                .glassEffect(.regular.interactive(), in: .capsule)
+        default:
+            plusButton.glassEffect(.regular.interactive(), in: .circle)
         }
     }
 }

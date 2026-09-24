@@ -307,7 +307,7 @@ struct TimelineScreen: View {
                                 .accessibilityIdentifier("toggle3D")
                                 Button { withAnimation(.snappy) { camera = .userLocation(fallback: .automatic) } } label: {
                                     // Outline arrow = not following; filled = on your current location (like Apple Maps).
-                                    Image(systemName: camera.followsUserLocation ? "location.north.line.fill" : "location.north.line")
+                                    Image(systemName: camera.followsUserLocation ? "location.fill" : "location")
                                         .font(.system(size: 20, weight: .semibold))
                                         .foregroundStyle(Theme.accent).frame(width: 54, height: 58).contentShape(.rect)
                                 }
@@ -331,7 +331,8 @@ struct TimelineScreen: View {
                         }
                     }
                 }
-                .padding(.trailing, 16).padding(.bottom, 72)
+                // Clear space above the range bar / the taller Find My style panel.
+                .padding(.trailing, 16).padding(.bottom, mapSheet == "G" ? 112 : 72)
             }
             .overlay(alignment: .bottom) {
                 if mapSheet.isEmpty {

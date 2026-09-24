@@ -872,6 +872,22 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Journal search button options (A/B/C) and the search screen with sample questions.
+    func testJournalSearchDemo() throws {
+        for v in ["A", "B", "C"] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-journal.search", v]
+            app.launch(); pause(1.5); tab(app, "Journal"); pause(2); shot("js-\(v)")
+            app.terminate()
+        }
+        for (i, q) in ["where was I 4 days ago", "the place I ate 4 days ago", "croissant"].enumerated() {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-journal.search", i == 2 ? "C" : "A", "-journal.searchQuery", q]
+            app.launch(); pause(1.5); tab(app, "Journal"); pause(3); shot("js-q\(i + 1)")
+            app.terminate()
+        }
+    }
+
     /// Find My style panel behind the range bar: closed (outline only), pull up, open, back down.
     func testBackSheetVideo() throws {
         let app = XCUIApplication()
