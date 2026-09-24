@@ -37,7 +37,7 @@ struct InsightsView: View {
     /// Preview flag: simple Health-style Day page (score + summary, then one clean list). Off until David approves.
     @AppStorage("insights.simpleDay") private var simpleDay = false
 
-    /// Preview flag "insights.dayStyle" (David picks, Sep 24 round 2): A = big score + list, B = ring + bars, C = ring + tiles.
+    /// Sep 24: David chose no change; Day view stays as "now". Old preview flag "insights.dayStyle": A = big score + list, B = ring + bars, C = ring + tiles.
     @AppStorage("insights.dayStyle") private var dayStyle = "now"
 
     @ViewBuilder private var dayView: some View {

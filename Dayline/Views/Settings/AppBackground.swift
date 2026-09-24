@@ -316,7 +316,7 @@ struct ProfileView: View {
     @ObservedObject private var location = LocationService.shared
     @AppStorage("background.preset") private var presetRaw = BackgroundPreset.system.rawValue
     /// Preview flag "notifications.style": now = opens iOS Settings (old); A/B/C = in-app page versions.
-    @AppStorage("notifications.style") private var notifStyle = "now"
+    @AppStorage("notifications.style") private var notifStyle = "B1"  // David picked A (sections, plain on/off), Sep 24
     @AppStorage("appearance") private var appearanceRaw = Appearance.system.rawValue
     @AppStorage(CheckInService.enabledKey) private var checkIns = false
     @Environment(\.openURL) private var openURL
@@ -807,7 +807,7 @@ extension View {
 /// Versions (preview flag "notifications.style"): A = Settings-style rows with icon tiles and a note under each group;
 /// B = plain switches, one group, one note; C = like iOS Settings > Notifications: Allow Notifications on top, then the types.
 struct NotificationsView: View {
-    @AppStorage("notifications.style") private var style = "A"
+    @AppStorage("notifications.style") private var style = "B1"  // David picked (demo-18 A)
     @AppStorage("notify.follows") private var follows = true
     @AppStorage("notify.score80") private var score80 = true
     @AppStorage(CheckInService.enabledKey) private var checkIns = false
@@ -894,13 +894,13 @@ struct NotificationsView: View {
     @ViewBuilder private func sectioned(_ v: String) -> some View {
         header("Questions")
         kindGroup(v, [Kind(symbol: "moon.fill", color: .indigo, title: "Going to Sleep?", sub: "A yes/no question at night", on: $sleepQ),
-                      Kind(symbol: "sun.max.fill", color: .orange, title: "Morning: Up Already?", sub: "A yes/no question in the morning", on: $morningQ)])
-        if v != "B2" { note("Press and hold the notification to answer Yes or No.") } else { Spacer().frame(height: 8) }
+                      Kind(symbol: "sun.max.fill", color: .orange, title: "Up Already?", sub: "A yes/no question in the morning", on: $morningQ)])
+        if v != "B2" { note("Press and hold a question to answer Yes or No.") } else { Spacer().frame(height: 8) }
         header("Day Score")
         kindGroup(v, [Kind(symbol: "star.fill", color: .green, title: "You Reached 80", sub: "When your day score hits 80", on: $score80),
                       Kind(symbol: "exclamationmark", color: .red, title: "Low Score Reminder", sub: "Around 5 PM if your score is still low", on: $lowScore),
                       Kind(symbol: "flame.fill", color: Theme.accent, title: "Streak Ending Soon", sub: "In the evening if you're not at 80 yet", on: $streakEnding)])
-        if v != "B2" { note("The reminder comes in the late afternoon if your score is still low.") } else { Spacer().frame(height: 8) }
+        if v == "B3" { note("The reminder comes in the late afternoon if your score is still low.") } else { Spacer().frame(height: 8) }
         header("Friends")
         kindGroup(v, [Kind(symbol: "person.badge.plus", color: Theme.accent, title: "Follow Requests", sub: "When someone asks to see your streak", on: $follows),
                       Kind(symbol: "arrow.up.right", color: .teal, title: "Friend Passed You", sub: "When a friend beats your streak", on: $friendPassed)])
