@@ -471,25 +471,23 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
-    /// Journal editor demo: keyboard down and up, with the separate glass buttons.
+    /// Journal editor demo: camera/photo button options with the keyboard up.
     func testEditorDemo() throws {
-        let app = XCUIApplication()
-        app.launchArguments = ["-demo"]
-        app.launchEnvironment["TZ"] = Self.morningZone
-        app.launch()
-        tab(app, "Journal"); pause(2)
-        tapID(app, "newEntry"); pause(2)
-        let scroll = app.scrollViews.firstMatch
-        scroll.swipeDown(); pause(1.5); shot("e1-editor-empty")
-        let title = app.descendants(matching: .any)["entryTitle"].firstMatch
-        if title.waitForExistence(timeout: 3) { title.tap(); pause(1); title.typeText("Morning walk") }
-        let body = app.descendants(matching: .any)["entryBody"].firstMatch
-        if body.waitForExistence(timeout: 3) { body.tap(); pause(1); body.typeText("Coffee at the park, then a slow loop around the lake") }
-        pause(1.5); shot("e2-editor-typing-keyboard")
-        scroll.swipeDown(); pause(1.5); shot("e3-editor-written")
-        let mic = app.descendants(matching: .any)["voiceMic"].firstMatch
-        if mic.waitForExistence(timeout: 3) { mic.tap(); pause(0.5); shot("e4-mic-quick-tap") }
-        app.terminate()
+        for v in ["B", "C"] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-editor.buttons", v]
+            app.launchEnvironment["TZ"] = Self.morningZone
+            app.launch()
+            tab(app, "Journal"); pause(2)
+            tapID(app, "newEntry"); pause(2)
+            let tip = app.buttons["Continue"]; if tip.waitForExistence(timeout: 2) { tip.tap(); pause(1) }
+            let title = app.descendants(matching: .any)["entryTitle"].firstMatch
+            if title.waitForExistence(timeout: 3) { title.tap(); pause(1); title.typeText("Morning walk") }
+            let body = app.descendants(matching: .any)["entryBody"].firstMatch
+            if body.waitForExistence(timeout: 3) { body.tap(); pause(1); body.typeText("Coffee at the park, then a slow loop around the lake") }
+            pause(1.5); shot("e\(v)-editor-typing")
+            app.terminate()
+        }
     }
 
     private func shot(_ name: String) {
