@@ -104,7 +104,7 @@ struct PlaceDetailData {
     }
 }
 
-struct PhotoStrip: View {
+struct PlacePhotoStrip: View {
     var data: PlaceDetailData
     var height: CGFloat = 130
     @State private var scene: MKLookAroundScene?
@@ -223,7 +223,7 @@ struct SinglePlaceResult: View {
                     HoursStatusLine(info: data.info)
                     Text("You were here \(data.visitText)").font(.subheadline).foregroundStyle(.secondary)
                 }
-                PhotoStrip(data: data, height: 110)
+                PlacePhotoStrip(data: data, height: 110)
                 PlaceActionButtons(data: data, showHours: $showHours)
                 if showHours { WeekHours(info: data.info).padding(.top, 2) }
             }
@@ -286,7 +286,7 @@ struct SinglePlaceResult: View {
                 }
                 .buttonStyle(.plain).foregroundStyle(.white).background(Theme.accent, in: .capsule)
                 .accessibilityIdentifier("placeDirections")
-                PhotoStrip(data: data, height: 100)
+                PlacePhotoStrip(data: data, height: 100)
                 VStack(spacing: 0) {
                     Button { withAnimation(.snappy) { showHours.toggle() } } label: {
                         infoRow("clock", "Hours") { HoursStatusLine(info: data.info) }
@@ -345,7 +345,7 @@ struct PlaceDetailScreen: View {
                 }
                 PlaceActionButtons(data: data, glass: true, showHours: $showHours)
                 if showHours { WeekHours(info: data.info) }
-                PhotoStrip(data: data, height: 140)
+                PlacePhotoStrip(data: data, height: 140)
                 if let note = data.note {
                     Text("\u{201C}\(note)\u{201D}").font(.body).padding(14).frame(maxWidth: .infinity, alignment: .leading)
                         .background(Color(.systemBackground).opacity(0.85), in: .rect(cornerRadius: 16))
@@ -377,7 +377,7 @@ struct PlaceDetailSheet: View {
             }
             PlaceActionButtons(data: data, glass: true, showHours: $showHours)
             if showHours { WeekHours(info: data.info) }
-            PhotoStrip(data: data, height: 120)
+            PlacePhotoStrip(data: data, height: 120)
             if let note = data.note { Text("\u{201C}\(note)\u{201D}").font(.subheadline).foregroundStyle(.secondary) }
             Spacer(minLength: 0)
         }

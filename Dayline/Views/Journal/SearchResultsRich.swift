@@ -350,10 +350,6 @@ struct GuidePlaceCard: View {
     }
 }
 
-private extension String {
-    var capitalizedFirst: String { prefix(1).uppercased() + dropFirst() }
-}
-
 
 struct SearchSuggestion { var query: String; var why: String?; var symbol: String }
 
@@ -418,7 +414,7 @@ struct InlinePlaceDetail: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HoursStatusLine(info: data.info)
-            PhotoStrip(data: data, height: 110)
+            PlacePhotoStrip(data: data, height: 110)
             PlaceActionButtons(data: data, showHours: $showHours)
             if showHours { WeekHours(info: data.info) }
         }
