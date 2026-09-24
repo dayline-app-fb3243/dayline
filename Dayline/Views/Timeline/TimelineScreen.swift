@@ -104,7 +104,7 @@ struct TimelineScreen: View {
         range = .day
         anchor = p.date
         DispatchQueue.main.async {
-            if let c = p.coordinate { camera = .camera(MapCamera(centerCoordinate: c, distance: 900)) }
+            if let c = p.coordinate { camera = .camera(MapCamera(centerCoordinate: c, distance: 2500)) }
             expanded = true
         }
     }
