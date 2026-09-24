@@ -28,6 +28,10 @@ struct TimelineScreen: View {
     /// Preview flag "pin.style" (awaiting David's pick): "" = current pins, A = big Apple pin with dot,
     /// B = compact Apple pin with tail, C = native Apple Maps marker.
     @AppStorage("pin.style") private var pinStyle = ""
+    /// Preview flag "map.sheet" (David 2:08, Find My reference): no floating toggles; a grabber on the range bar
+    /// pulls up a glass sheet with Journal / Photos / Route switches. A = Find My card, B = Settings-style icons, C = compact.
+    @AppStorage("map.sheet") private var mapSheet = ""
+    @State private var sheetOpen = UserDefaults.standard.bool(forKey: "map.sheetOpen")
 
     private var interval: DateInterval {
         let cal = Calendar.current
@@ -258,6 +262,7 @@ struct TimelineScreen: View {
             .overlay(alignment: .bottomTrailing) {
                 GlassEffectContainer(spacing: 14) {
                     VStack(spacing: 14) {
+                        if mapSheet.isEmpty {
                         VStack(spacing: 0) {
                             mapToggle("Route", "point.topleft.down.to.point.bottomright.curvepath", $showRoute)
                             mapToggle("Photos", "photo", $showPhotos)
@@ -265,6 +270,7 @@ struct TimelineScreen: View {
                         }
                         .padding(4)
                         .glassEffect(.regular, in: .capsule)
+                        }
                         Button {
                             // With map.3d on, the location button works like Apple Maps: tap to tilt into 3D, tap again for flat.
                             if map3DFlag { withAnimation(.smooth(duration: 0.8)) { set3D(!is3D) } }
@@ -282,11 +288,67 @@ struct TimelineScreen: View {
                 .padding(.trailing, 16).padding(.bottom, 72)
             }
             .overlay(alignment: .bottom) {
+                if mapSheet.isEmpty {
                 CapsuleSegmented(selection: $range, options: MapRange.allCases.map { ($0, $0.rawValue) }, plain: true)
                     .padding(4)
                     .glassEffect(.regular, in: .capsule)
                     .padding(.horizontal, 16).padding(.bottom, 6)
+                } else {
+                    pullUpBar
+                }
             }
+    }
+
+    /// Range bar with a grabber; pull up (or tap the grabber) to show the map layer switches, like Find My.
+    private var pullUpBar: some View {
+        VStack(spacing: 0) {
+            Capsule().fill(Color.secondary.opacity(0.5)).frame(width: 36, height: 5)
+                .padding(.top, 7).padding(.bottom, sheetOpen ? 10 : 2)
+                .frame(maxWidth: .infinity).contentShape(.rect)
+                .onTapGesture { withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) { sheetOpen.toggle() } }
+                .accessibilityIdentifier("mapGrabber")
+            if sheetOpen {
+                VStack(alignment: .leading, spacing: mapSheet == "C" ? 8 : 14) {
+                    if mapSheet != "C" {
+                        Text("Show on Map").font(.title2.weight(.bold)).padding(.horizontal, 20)
+                    }
+                    VStack(spacing: 0) {
+                        layerRow("Journal", "book.closed.fill", $showJournal)
+                        Divider().padding(.leading, mapSheet == "A" ? 20 : 58)
+                        layerRow("Photos", "photo.fill", $showPhotos)
+                        Divider().padding(.leading, mapSheet == "A" ? 20 : 58)
+                        layerRow("Route", "point.topleft.down.to.point.bottomright.curvepath", $showRoute)
+                    }
+                    .background(Color.primary.opacity(0.06), in: .rect(cornerRadius: 22))
+                    .padding(.horizontal, 12)
+                }
+                .padding(.bottom, 12)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+            CapsuleSegmented(selection: $range, options: MapRange.allCases.map { ($0, $0.rawValue) }, plain: true)
+                .padding(.horizontal, 4).padding(.bottom, 4)
+        }
+        .glassEffect(.regular, in: .rect(cornerRadius: sheetOpen ? 34 : 30))
+        .padding(.horizontal, 12).padding(.bottom, 6)
+        .gesture(DragGesture(minimumDistance: 12).onEnded { g in
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                if g.translation.height < -30 { sheetOpen = true } else if g.translation.height > 30 { sheetOpen = false }
+            }
+        })
+    }
+
+    private func layerRow(_ title: String, _ symbol: String, _ on: Binding<Bool>) -> some View {
+        HStack(spacing: 12) {
+            if mapSheet == "B" || mapSheet == "C" {
+                Image(systemName: symbol).font(.system(size: 15, weight: .semibold)).foregroundStyle(.white)
+                    .frame(width: 30, height: 30).background(Theme.accent, in: .rect(cornerRadius: 8))
+            }
+            Text(title).font(.body)
+            Spacer()
+            Toggle(title, isOn: on).labelsHidden().tint(Theme.accent)
+        }
+        .padding(.horizontal, mapSheet == "A" ? 20 : 14).padding(.vertical, 10)
+        .accessibilityIdentifier("layer\(title)")
     }
 
     /// Tilts the camera over the day's places (3D) or flattens it back (2D).

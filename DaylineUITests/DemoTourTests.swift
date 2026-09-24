@@ -659,6 +659,21 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Big map pull-up sheet (map.sheet A/B/C): collapsed bar with grabber, then pulled up with the three switches.
+    func testMapSheetDemo() throws {
+        for v in ["A", "B", "C"] {
+            for open in ["NO", "YES"] {
+                let app = XCUIApplication()
+                app.launchArguments = ["-demo", "-route.style", "snap", "-pin.style", "D", "-map.sheet", v, "-map.sheetOpen", open]
+                app.launchEnvironment["TZ"] = Self.morningZone
+                app.launch(); pause(1.5)
+                tab(app, "Timeline"); pause(3)
+                tapID(app, "mapCard"); pause(6); shot("ms-\(v)-\(open == "YES" ? "open" : "closed")")
+                app.terminate()
+            }
+        }
+    }
+
     /// Privacy Policy as a row in the Your data group (no footer), light and dark.
     func testPrivacyRowDemo() throws {
         for mode in ["Light", "Dark"] {
