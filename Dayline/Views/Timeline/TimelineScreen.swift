@@ -332,7 +332,10 @@ struct MostVisitedList: View {
     var clusters: [TimelineScreen.Cluster]
     /// Preview flag "visited.icon" (David picks, Sep 24): "tile" = blue tile (default, now);
     /// A = no icon; B = bold blue symbol, no tile; C = blue symbol in a light round circle (Maps style).
-    @AppStorage("visited.icon") private var iconStyle = "tile"
+    @AppStorage("visited.icon") private var visitedIcon = "C" // Sep 24: David picked C (round tint); B dropped
+    /// Global "Show Symbols" (Profile > Look). On = C (round tint), off = no symbol (option A).
+    @AppStorage("symbols.show") private var showSymbols = true
+    private var iconStyle: String { showSymbols ? visitedIcon : "A" }
     @ViewBuilder private func icon(_ c: TimelineScreen.Cluster) -> some View {
         switch iconStyle {
         case "A": EmptyView()

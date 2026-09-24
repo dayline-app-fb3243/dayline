@@ -319,6 +319,9 @@ struct ProfileView: View {
     @AppStorage("notifications.style") private var notifStyle = "B1"  // David picked A (sections, plain on/off), Sep 24
     @AppStorage("appearance") private var appearanceRaw = Appearance.system.rawValue
     @AppStorage(CheckInService.enabledKey) private var checkIns = false
+    /// Preview (awaiting David's OK): "Show Symbols" row appears only with -symbols.preview YES.
+    @AppStorage("symbols.preview") private var symbolsPreview = false
+    @AppStorage("symbols.show") private var showSymbols = true
     @Environment(\.openURL) private var openURL
 
     var body: some View {
@@ -377,7 +380,20 @@ struct ProfileView: View {
                         } label: {
                             ProfileRow(symbol: "circle.lefthalf.filled", title: "Appearance", value: appearanceRaw)
                         }
+                        if symbolsPreview {
+                            Divider().padding(.leading, 57)
+                            HStack(spacing: 13) {
+                                ProfileIcon(symbol: "star.fill")
+                                Toggle("Show Symbols", isOn: $showSymbols).font(.body.weight(.medium))
+                            }
+                            .padding(.horizontal, 14).padding(.vertical, 7)
+                            .accessibilityIdentifier("showSymbolsToggle")
+                        }
                     }
+                }
+                if symbolsPreview {
+                    Text("Shows the blue symbols next to places and score items.")
+                        .font(.footnote).helperText().padding(.horizontal, 16).padding(.top, 6)
                 }
                 SectionHeader("Tracking")
                 Card(padding: 0) {

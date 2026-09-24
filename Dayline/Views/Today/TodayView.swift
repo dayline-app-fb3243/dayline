@@ -124,7 +124,9 @@ struct LocationOffCard: View {
         if !DemoData.isDemo, location.authorization == .denied || location.authorization == .restricted {
             Card(padding: 14) {
                 HStack(alignment: .top, spacing: 12) {
-                    Image(systemName: "location.slash.fill").font(.title3).foregroundStyle(Theme.accent).frame(width: 28)
+                    if UserDefaults.standard.object(forKey: "symbols.show") as? Bool ?? true {
+                        Image(systemName: "location.slash.fill").font(.title3).foregroundStyle(Theme.accent).frame(width: 28)
+                    }
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Location Is Off").font(.headline)
                         Text("Dayline needs Location to build your timeline and score.").font(.subheadline).foregroundStyle(.secondary)

@@ -306,6 +306,7 @@ struct FactorRow: View {
     var factor: ScoreFactor
     /// Sep 24: David picked "blue" = bold blue symbol, no tile (demo-24). Old previews: icons.tile A/A2/A3/C/C2.
     @AppStorage("icons.tile") private var tile = "blue"
+    @AppStorage("symbols.show") private var showSymbols = true
     var body: some View {
         let st = Self.style(factor.title)
         let symbol = st.0
@@ -313,8 +314,11 @@ struct FactorRow: View {
         let color = ["A2", "A3", "C2"].contains(tile) ? st.1 : (bad ? Theme.bad : Theme.accent)
         HStack(spacing: 12) {
             if tile == "blue" {
-                Image(systemName: symbol).font(.title3.weight(.bold)).foregroundStyle(Theme.accent)
-                    .frame(width: 30, height: 30)
+                // Sep 24: David wants C (blue symbol in a light round circle) when Show Symbols is on, nothing when off.
+                if showSymbols {
+                    Image(systemName: symbol).font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.accent)
+                        .frame(width: 34, height: 34).background(Theme.accent.opacity(0.14), in: .circle)
+                }
             } else {
                 ProfileIcon(symbol: symbol, size: 30, color: color)
             }

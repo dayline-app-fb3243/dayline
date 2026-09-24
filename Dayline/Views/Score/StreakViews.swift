@@ -157,7 +157,15 @@ struct StreakView: View {
         .backgroundNavBar()
         .toolbarVisibility(.hidden, for: .tabBar)
         .navigationBarTitleDisplayMode(.inline)
-        .navigationDestination(item: $pickedDay) { StreakDayView(day: $0) }
+        .navigationDestination(item: $pickedDay) { d in
+            // Preview flag "streak.dayOpens" (awaiting David's OK): "score" opens the real Day score page for that day.
+            if UserDefaults.standard.string(forKey: "streak.dayOpens") == "score" {
+                ScoreDetailView(result: ScoreEngine.score(DayData.input(for: .now, context: context)),
+                                startBack: Calendar.current.dateComponents([.day], from: Calendar.current.startOfDay(for: d), to: Calendar.current.startOfDay(for: .now)).day ?? 0)
+            } else {
+                StreakDayView(day: d)
+            }
+        }
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 NavigationLink { PeopleView() } label: { Image(systemName: "person.2").foregroundStyle(.primary) }

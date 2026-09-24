@@ -70,7 +70,92 @@ struct SplashView: View {
     var email: () -> Void
     @State private var showSignIn = false
 
+    /// Preview flag "splash.style" (awaiting David's pick): "map" = faded map (now), A = clean white with the icon,
+    /// B = full color map with a glass card, C = soft blue gradient with a big icon.
+    @AppStorage("splash.style") private var style = "map"
+
     var body: some View {
+        Group {
+            switch style {
+            case "A": splashA
+            case "B": splashB
+            case "C": splashC
+            default: splashMap
+            }
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("splash")
+        .sheet(isPresented: $showSignIn) {
+            SignInSheet(next: { showSignIn = false; next() }, email: { showSignIn = false; email() })
+        }
+    }
+
+    private var title: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Your day,\nremembered.").font(.largeTitle.bold())
+            Text("Dayline builds your timeline from where you go. Low-power, so it\u{2019}s easy on your battery.")
+                .font(.body).foregroundStyle(.secondary)
+        }
+    }
+    private var continueButton: some View {
+        Button { showSignIn = true } label: { Text("Continue").font(.headline).frame(maxWidth: .infinity) }
+            .buttonStyle(.glassProminent).tint(Theme.accent).controlSize(.extraLarge)
+            .accessibilityIdentifier("splashContinue")
+    }
+    private var bigIcon: some View {
+        Image("AppIconImage").resizable().interpolation(.high).frame(width: 120, height: 120)
+            .clipShape(.rect(cornerRadius: 27, style: .continuous))
+            .shadow(color: .black.opacity(0.15), radius: 16, y: 8)
+    }
+
+    // A: clean white, icon on top, title under it.
+    private var splashA: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Spacer()
+            bigIcon.padding(.bottom, 28)
+            title
+            Spacer()
+            continueButton.padding(.bottom, 16)
+        }
+        .padding(.horizontal, 28)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(.systemBackground))
+    }
+
+    // B: full color map, no fade, text on a glass card.
+    private var splashB: some View {
+        ZStack(alignment: .bottom) {
+            Image("SplashMap").resizable().scaledToFill()
+                .frame(maxWidth: .infinity, maxHeight: .infinity).clipped().ignoresSafeArea()
+            VStack(alignment: .leading, spacing: 18) {
+                title
+                continueButton
+            }
+            .padding(22)
+            .glassEffect(.regular, in: .rect(cornerRadius: 34, style: .continuous))
+            .padding(.horizontal, 14).padding(.bottom, 10)
+        }
+    }
+
+    // C: soft blue gradient, big icon centered.
+    private var splashC: some View {
+        VStack(spacing: 0) {
+            Spacer()
+            bigIcon.padding(.bottom, 30)
+            VStack(spacing: 10) {
+                Text("Your day, remembered.").font(.largeTitle.bold()).multilineTextAlignment(.center)
+                Text("Dayline builds your timeline from where you go. Low-power, so it\u{2019}s easy on your battery.")
+                    .font(.body).foregroundStyle(.secondary).multilineTextAlignment(.center)
+            }
+            Spacer()
+            continueButton.padding(.bottom, 16)
+        }
+        .padding(.horizontal, 28)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(LinearGradient(colors: [Color(red: 0.86, green: 0.92, blue: 1.0), Color(.systemBackground)], startPoint: .top, endPoint: .bottom).ignoresSafeArea())
+    }
+
+    private var splashMap: some View {
         VStack(alignment: .leading, spacing: 0) {
             Color.clear.frame(maxWidth: .infinity).frame(height: 560)
                 .overlay(alignment: .top) { Image("SplashMap").resizable().scaledToFill() }
@@ -93,18 +178,13 @@ struct SplashView: View {
                 .accessibilityIdentifier("splashContinue")
         }
         .background(Color(.systemBackground))
-        .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("splash")
-        .sheet(isPresented: $showSignIn) {
-            SignInSheet(next: { showSignIn = false; next() }, email: { showSignIn = false; email() })
-                .presentationDetents([.height(500)])
-        }
     }
 }
 
 /// Sign-in sheet in the style of Apple's own "Sign in with Apple" sheet: pick one, then the blue button.
 struct SignInSheet: View {
     @AppStorage("signin.pinned") private var pinned = false
+    @State private var fitHeight: CGFloat = 0
     var next: () -> Void
     var email: () -> Void
     enum Option: String, CaseIterable { case apple = "Apple", google = "Google", email = "Email" }
@@ -143,10 +223,10 @@ struct SignInSheet: View {
             }
             // Preview flag "signin.pinned" (awaiting David's OK): full-width button pinned to the bottom.
             if pinned {
-                Spacer(minLength: 16)
                 Button(action: go) { Text("Continue with \(choice.rawValue)").font(.headline).frame(maxWidth: .infinity) }
                     .buttonStyle(.glassProminent).tint(Theme.accent).controlSize(.extraLarge)
                     .accessibilityIdentifier("signInContinue")
+                    .padding(.top, 20)
             } else {
                 Button(action: go) { Text("Continue with \(choice.rawValue)").font(.headline).padding(.horizontal, 10) }
                     .buttonStyle(.glassProminent).tint(Theme.accent).controlSize(.large)
@@ -156,7 +236,12 @@ struct SignInSheet: View {
             }
         }
         .padding(.horizontal, 20).padding(.top, 20).padding(.bottom, pinned ? 8 : 0)
+        .fixedSize(horizontal: false, vertical: pinned)
+        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { fitHeight = $0 }
+        .frame(maxHeight: .infinity, alignment: .top)
         .background(Color(.systemGroupedBackground))
+        // Preview "signin.pinned": the sheet is exactly as tall as its content, like Apple's own sheets.
+        .presentationDetents(pinned && fitHeight > 0 ? [.height(fitHeight + 12)] : [.height(500)])
         .sheet(isPresented: $showAppleDemo, onDismiss: {
             // Only move on once the Apple sheet is fully gone, so the sign-in sheet can close too.
             if appleDone { next() }
@@ -164,7 +249,6 @@ struct SignInSheet: View {
             AppleSignInDemoSheet {
                 Task { await auth.signInDemo(provider: .apple); appleDone = true; showAppleDemo = false }
             }
-            .presentationDetents([.height(520)])
         }
     }
 
@@ -234,6 +318,7 @@ final class AppleSignInRunner: NSObject, ASAuthorizationControllerDelegate, ASAu
 /// Laid out like the real iOS 26 sheet.
 struct AppleSignInDemoSheet: View {
     @AppStorage("signin.pinned") private var pinned = false
+    @State private var fitHeight: CGFloat = 0
     var onContinue: () -> Void
     @State private var hideEmail = true
     @Environment(\.dismiss) private var dismiss
@@ -267,19 +352,22 @@ struct AppleSignInDemoSheet: View {
             }
             .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 24, style: .continuous))
             .padding(.top, 10)
-            if pinned { Spacer(minLength: 16) }
             Button(action: onContinue) {
                 if pinned { Text("Continue").font(.headline).frame(maxWidth: .infinity) } else { Text("Continue").font(.headline).padding(.horizontal, 30) }
             }
                 .buttonStyle(.glassProminent).tint(Theme.accent).controlSize(pinned ? .extraLarge : .large)
-                .frame(maxWidth: .infinity).padding(.top, pinned ? 0 : 18)
+                .frame(maxWidth: .infinity).padding(.top, pinned ? 20 : 18)
                 .accessibilityIdentifier("appleDemoContinue")
             Text("Use a different Apple Account").font(.subheadline).foregroundStyle(Theme.accent)
                 .frame(maxWidth: .infinity).padding(.top, 12)
             if !pinned { Spacer(minLength: 0) }
         }
         .padding(.horizontal, 20).padding(.top, 20).padding(.bottom, pinned ? 8 : 0)
+        .fixedSize(horizontal: false, vertical: pinned)
+        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { fitHeight = $0 }
+        .frame(maxHeight: .infinity, alignment: .top)
         .background(Color(.systemGroupedBackground))
+        .presentationDetents(pinned && fitHeight > 0 ? [.height(fitHeight + 12)] : [.height(520)])
     }
 
     private func choice(_ title: String, _ detail: String, selected: Bool, _ action: @escaping () -> Void) -> some View {

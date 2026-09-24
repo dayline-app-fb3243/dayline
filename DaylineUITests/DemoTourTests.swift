@@ -515,6 +515,61 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// "Show Symbols" preview: Profile toggle, then every screen with bare symbols, on (C) and off (A).
+    func testSymbolsDemo() throws {
+        for on in ["YES", "NO"] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-symbols.preview", "YES", "-symbols.show", on]
+            app.launchEnvironment["TZ"] = Self.morningZone
+            app.launch(); pause(1.5)
+            tab(app, "Profile"); pause(1.5)
+            let t = app.descendants(matching: .any)["showSymbolsToggle"].firstMatch
+            for _ in 0..<4 where !(t.exists && t.isHittable) { app.swipeUp(); pause(1) }
+            pause(1); shot("sy\(on)-settings")
+            tab(app, "Today"); pause(1.5); tapID(app, "scoreCard"); pause(2); shot("sy\(on)-dayscore")
+            app.swipeUp(); pause(1.2); shot("sy\(on)-dayscore-2"); goBack(app)
+            tab(app, "Timeline"); pause(2)
+            for seg in ["Week", "Month", "Year"] {
+                tapSegment(app, seg); pause(2.5)
+                app.swipeUp(); pause(1.5); shot("sy\(on)-\(seg.lowercased())")
+                app.swipeDown(); pause(1.2)
+            }
+            app.terminate()
+        }
+    }
+
+    /// Previews for David: sign-in sheets sized to content, splash A/B/C, streak day opening the Day score page.
+    func testPreviewsDemo() throws {
+        var app = XCUIApplication()
+        app.launchArguments = ["-demo", "-onboarding", "-signin.pinned", "YES"]
+        app.launchEnvironment["TZ"] = Self.morningZone
+        app.launch(); pause(1.5)
+        tapID(app, "splashContinue"); pause(1.8); shot("pv-signin-fit")
+        tapID(app, "signInOption-Apple"); pause(0.5)
+        tapID(app, "signInContinue"); pause(1.8); shot("pv-apple-fit")
+        app.terminate()
+        for v in ["A", "B", "C"] {
+            app = XCUIApplication()
+            app.launchArguments = ["-demo", "-onboarding", "-splash.style", v]
+            app.launchEnvironment["TZ"] = Self.morningZone
+            app.launch(); pause(1.8); shot("pv-splash-\(v)")
+            app.terminate()
+        }
+        app = XCUIApplication()
+        app.launchArguments = ["-demo", "-streak.dayOpens", "score"]
+        app.launchEnvironment["TZ"] = Self.morningZone
+        app.launch()
+        tab(app, "Insights"); pause(1.5)
+        app.buttons["Month"].firstMatch.tap(); pause(1.2)
+        app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Streak'")).firstMatch.tap(); pause(2)
+        let hist = app.descendants(matching: .any)["streakHistory"].firstMatch
+        if hist.waitForExistence(timeout: 3) { hist.swipeUp(); pause(1) }
+        let d = Calendar.current.component(.day, from: Calendar.current.date(byAdding: .day, value: -3, to: .now)!)
+        let cell = app.descendants(matching: .any)["historyDay-\(d)"].firstMatch
+        if cell.waitForExistence(timeout: 3) { cell.tap(); pause(2); shot("pv-streak-score") }
+        app.terminate()
+    }
+
     /// Journal editor demo: camera/photo button options with the keyboard up.
     func testEditorDemo() throws {
         for v in ["B", "C"] {
