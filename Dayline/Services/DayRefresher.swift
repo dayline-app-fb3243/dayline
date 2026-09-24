@@ -13,6 +13,10 @@ enum DayRefresher {
     static func refresh(context: ModelContext) async {
         await DayBoundary.shared.refresh(context: context)
         let today = DayBoundary.shared.today
+        if !DemoData.isDemo {
+            await HealthService.shared.importWorkouts(context: context, since: DayBoundary.shared.window(for: today).start)
+            await CheckInService.evaluate(context: context)
+        }
         await PhotoService.shared.importPhotos(on: today, context: context)
         RoutineLearner.fillToday(context: context)
         RoutineLearner.autoComplete(context: context)

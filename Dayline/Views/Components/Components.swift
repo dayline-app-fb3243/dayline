@@ -47,7 +47,7 @@ enum Theme {
     static let photos = accent
     static let voice = accent
     static let route = accent
-    static let ring = AngularGradient(colors: [Color.blue.opacity(0.45), .blue], center: .center)
+    static let ring = AngularGradient(colors: [Theme.accent.opacity(0.45), .blue], center: .center)
     /// Solid (not see-through) version of the ring's light start color.
     static let ringStart = Color(red: 0.55, green: 0.76, blue: 1.0)
     /// Score label colour, used everywhere a score is shown.
@@ -67,7 +67,7 @@ struct ScoreRing: View {
             // with the dark end color (that made a dark spot at the top).
             Circle()
                 .trim(from: 0, to: progress)
-                .stroke(AngularGradient(colors: [Theme.ringStart, .blue], center: .center,
+                .stroke(AngularGradient(colors: [Theme.ringStart, Theme.accent], center: .center,
                                         startAngle: .zero, endAngle: .degrees(360 * max(progress, 0.01))),
                         style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
                 .rotationEffect(.degrees(-90))

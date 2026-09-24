@@ -77,7 +77,7 @@ struct TimelineScreen: View {
             if showRoute {
                 if range == .day {
                     MapPolyline(coordinates: rangeSamples.map(\.coordinate))
-                        .stroke(.blue, style: StrokeStyle(lineWidth: 5, lineCap: .round, lineJoin: .round))
+                        .stroke(Theme.accent, style: StrokeStyle(lineWidth: 5, lineCap: .round, lineJoin: .round))
                 } else {
                     // Full route for the whole range, thinned so a year stays fast.
                     MapPolyline(coordinates: thinnedRoute)

@@ -34,13 +34,10 @@ struct AppMark: View {
     var size: CGFloat = 96
     var shadow = true
     var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: size * 0.225, style: .continuous)
-                .fill(LinearGradient(colors: [Color(red: 0.29, green: 0.64, blue: 1), Color(red: 0.04, green: 0.36, blue: 0.9)],
-                                     startPoint: .top, endPoint: .bottom))
-            DayRings(size: size)
-        }
-        .frame(width: size, height: size)
+        // The exact app icon (#5), so every in-app logo matches the Home Screen icon.
+        Image("AppIconImage").resizable().interpolation(.high)
+            .clipShape(RoundedRectangle(cornerRadius: size * 0.225, style: .continuous))
+            .frame(width: size, height: size)
         .shadow(color: .blue.opacity(shadow ? 0.3 : 0), radius: size * 0.19, y: size * 0.08)
     }
 }
@@ -179,7 +176,7 @@ struct SignInSheet: View {
             }
             Spacer()
             Image(systemName: choice == o ? "checkmark.circle.fill" : "circle")
-                .font(.title3).foregroundStyle(choice == o ? Color.blue : Color(.tertiaryLabel))
+                .font(.title3).foregroundStyle(choice == o ? Theme.accent : Color(.tertiaryLabel))
         }
         .padding(.horizontal, 16).frame(minHeight: 62).contentShape(.rect)
     }
@@ -255,7 +252,7 @@ struct AppleSignInDemoSheet: View {
                 .buttonStyle(.glassProminent).controlSize(.large)
                 .frame(maxWidth: .infinity).padding(.top, 18)
                 .accessibilityIdentifier("appleDemoContinue")
-            Text("Use a different Apple Account").font(.subheadline).foregroundStyle(.blue)
+            Text("Use a different Apple Account").font(.subheadline).foregroundStyle(Theme.accent)
                 .frame(maxWidth: .infinity).padding(.top, 12)
             Spacer(minLength: 0)
         }
@@ -273,7 +270,7 @@ struct AppleSignInDemoSheet: View {
                 }
                 Spacer()
                 Image(systemName: selected ? "checkmark.circle.fill" : "circle").font(.title3)
-                    .foregroundStyle(selected ? Color.blue : Color(.tertiaryLabel))
+                    .foregroundStyle(selected ? Theme.accent : Color(.tertiaryLabel))
             }
             .padding(.horizontal, 16).frame(minHeight: 60).contentShape(.rect)
         }
@@ -324,6 +321,9 @@ struct PermissionsView: View {
         Page(kind: "motion", title: "Turning on Motion & Fitness lets Dayline:",
              rows: [("moon", "Tell when you fell asleep, so late nights count toward the right day"), ("sun.max", "Know when you woke up"), ("figure.walk", "Count steps and walks in your day")],
              note: "Motion stays on your iPhone. You can change this later in Settings."),
+        Page(kind: "health", title: "Turning on Apple Health lets Dayline:",
+             rows: [("figure.run", "Add your runs and walks to your timeline"), ("dumbbell", "Mark gym workouts done on your schedule"), ("heart", "Only read workouts. Dayline never writes to Health")],
+             note: "Health data stays on your iPhone. You can change this later in Settings."),
         Page(kind: "notifications", title: "Turning on Notifications lets Dayline:",
              rows: [("person.badge.plus", "Tell you when someone asks to follow you"), ("star", "Tell you when you hit 80")],
              note: "That\u{2019}s it, only those 2. You can change this later in Settings."),
@@ -335,7 +335,7 @@ struct PermissionsView: View {
             Text(page.title).font(.title.bold()).padding(.top, 60).padding(.bottom, 30)
             ForEach(page.rows, id: \.1) { r in
                 HStack(spacing: 16) {
-                    Image(systemName: r.0).font(.title2).foregroundStyle(.blue).frame(width: 36)
+                    Image(systemName: r.0).font(.title2).foregroundStyle(Theme.accent).frame(width: 36)
                     Text(r.1).font(.body)
                 }
                 .padding(.bottom, 24)
@@ -370,6 +370,7 @@ struct PermissionsView: View {
             }
         case "photos": _ = await PHPhotoLibrary.requestAuthorization(for: .readWrite)
         case "mic": _ = await AVAudioApplication.requestRecordPermission()
+        case "health": await HealthService.shared.requestAccess()
         case "motion":
             DayBoundary.shared.requestMotion()
             for _ in 0..<120 where DayBoundary.motionAvailable && CMMotionActivityManager.authorizationStatus() == .notDetermined {
@@ -406,7 +407,7 @@ struct SetupStep<Content: View>: View {
                 Spacer()
             }
             .frame(height: 44)
-            Image(systemName: symbol).font(.system(size: 60, weight: .light)).foregroundStyle(.blue)
+            Image(systemName: symbol).font(.system(size: 60, weight: .light)).foregroundStyle(Theme.accent)
                 .frame(maxWidth: .infinity).padding(.top, 20)
             Text(title).font(.title2.bold()).padding(.top, 26)
             Text(subtitle).font(.title3).foregroundStyle(.secondary).padding(.top, 4)
@@ -483,7 +484,7 @@ struct PhoneNumberView: View {
 private struct InfoLabelStyle: LabelStyle {
     func makeBody(configuration: Configuration) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
-            configuration.icon.foregroundStyle(.blue)
+            configuration.icon.foregroundStyle(Theme.accent)
             configuration.title
         }
     }
@@ -518,7 +519,7 @@ struct PhoneCodeView: View {
                                 .font(.title.weight(.medium))
                                 .frame(maxWidth: .infinity).frame(height: 58)
                                 .background(Color(.tertiarySystemFill), in: .rect(cornerRadius: 16))
-                                .overlay(RoundedRectangle(cornerRadius: 16).stroke(.blue, lineWidth: i == code.count && focused ? 2 : 0))
+                                .overlay(RoundedRectangle(cornerRadius: 16).stroke(Theme.accent, lineWidth: i == code.count && focused ? 2 : 0))
                         }
                     }
                     .allowsHitTesting(false)
@@ -583,7 +584,7 @@ struct EmailCodeView: View {
                                 .font(.title.weight(.medium))
                                 .frame(maxWidth: .infinity).frame(height: 58)
                                 .background(Color(.tertiarySystemFill), in: .rect(cornerRadius: 16))
-                                .overlay(RoundedRectangle(cornerRadius: 16).stroke(.blue, lineWidth: i == code.count && focused ? 2 : 0))
+                                .overlay(RoundedRectangle(cornerRadius: 16).stroke(Theme.accent, lineWidth: i == code.count && focused ? 2 : 0))
                         }
                     }
                     .allowsHitTesting(false)

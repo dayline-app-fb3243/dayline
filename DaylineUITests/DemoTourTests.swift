@@ -31,6 +31,44 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Check-in questions: banner, press-and-hold Yes / No, the answer, then the list.
+    func testZCheckIns() {
+        let spring = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        func allowAlert() {
+            let allow = spring.buttons["Allow"]
+            if allow.waitForExistence(timeout: 4) { allow.tap() }
+        }
+        func find(_ text: String) -> XCUIElement {
+            spring.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", text)).firstMatch
+        }
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo", "-demoCheckIn"]
+        app.launchEnvironment["TZ"] = Self.zone(localHour: 23)
+        app.launch()
+        allowAlert()
+        XCUIDevice.shared.press(.home)
+        let banner = find("Going to sleep")
+        if banner.waitForExistence(timeout: 10) {
+            pause(0.6); shot("80-checkin-banner")
+            banner.press(forDuration: 1.4); pause(1.2); shot("81-checkin-actions")
+            let yes = spring.buttons["Yes"]
+            if yes.waitForExistence(timeout: 3) { yes.tap() }
+            _ = find("Good night").waitForExistence(timeout: 8); pause(0.8); shot("82-checkin-answered")
+        }
+        app.terminate()
+        app.launchArguments = ["-demo", "-demoCheckInAll"]
+        app.launchEnvironment["TZ"] = Self.zone(localHour: 18)
+        app.launch()
+        allowAlert()
+        XCUIDevice.shared.press(.home)
+        _ = find("At the gym").waitForExistence(timeout: 15); pause(5)
+        // Notification Center: swipe down from the top-left corner.
+        let start = spring.coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.005))
+        start.press(forDuration: 0.1, thenDragTo: spring.coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.7)))
+        pause(1.5); shot("83-checkins-list")
+        XCUIDevice.shared.press(.home)
+    }
+
     override func setUp() {
         continueAfterFailure = true
         try? FileManager.default.createDirectory(atPath: Self.shotDir, withIntermediateDirectories: true)
@@ -58,6 +96,7 @@ final class DemoTourTests: XCTestCase {
         tapID(app, "permissionsContinue"); pause(1.2); shot("06b-permissions-photos")
         tapID(app, "permissionsContinue"); pause(1.2); shot("06c-permissions-mic")
         tapID(app, "permissionsContinue"); pause(1.2); shot("06c2-permissions-motion")
+        tapID(app, "permissionsContinue"); pause(1.2); shot("06c3-permissions-health")
         tapID(app, "permissionsContinue"); pause(1.2); shot("06d-permissions-notifications")
         tapID(app, "permissionsContinue"); pause(3); shot("07-today-after-sign-in")
     }

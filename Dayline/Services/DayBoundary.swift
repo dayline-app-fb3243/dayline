@@ -144,11 +144,44 @@ final class DayBoundary {
         return Night(sleep: b.s, wake: stillGoing ? nil : b.e, atHome: b.home)
     }
 
+    // MARK: answers from check-in questions (these win over what motion says)
+
+    private let manualKey = "dayBoundaryManual"
+    private var manual: [String: Night] {
+        get { UserDefaults.standard.data(forKey: manualKey).flatMap { try? JSONDecoder().decode([String: Night].self, from: $0) } ?? [:] }
+        set { if let d = try? JSONEncoder().encode(newValue) { UserDefaults.standard.set(d, forKey: manualKey) } }
+    }
+
+    /// The night a moment belongs to: evening or up to noon the next day counts as the night after that evening.
+    private func nightDay(for t: Date, calendar: Calendar) -> Date {
+        let d0 = calendar.startOfDay(for: t)
+        return calendar.component(.hour, from: t) < 12 ? calendar.date(byAdding: .day, value: -1, to: d0)! : d0
+    }
+
+    /// "Going to sleep now?" -> Yes.
+    func setManual(sleep t: Date, calendar: Calendar = .current) {
+        let k = Self.key(nightDay(for: t, calendar: calendar))
+        var m = manual; m[k] = Night(sleep: t, wake: m[k]?.wake, atHome: true); manual = m
+    }
+
+    /// "Already up?" -> Yes.
+    func setManual(wake t: Date, calendar: Calendar = .current) {
+        let k = Self.key(nightDay(for: t, calendar: calendar))
+        var m = manual
+        let sleep = m[k]?.sleep ?? nights[k]?.sleep ?? t.addingTimeInterval(-7 * 3600)
+        m[k] = Night(sleep: sleep, wake: t, atHome: true); manual = m
+    }
+
     // MARK: reading
 
     static func key(_ day: Date) -> String { day.formatted(.iso8601.year().month().day()) }
 
-    func night(after day: Date, calendar: Calendar = .current) -> Night? { nights[Self.key(calendar.startOfDay(for: day))] }
+    func night(after day: Date, calendar: Calendar = .current) -> Night? {
+        let k = Self.key(calendar.startOfDay(for: day))
+        guard let m = manual[k] else { return nights[k] }
+        // A "Yes" answer sets that time; motion can still fill in the other end.
+        return Night(sleep: m.sleep, wake: m.wake ?? nights[k]?.wake, atHome: true)
+    }
 
     /// When the day that ends on the night after `day` switches over to the next day.
     func switchTime(afterDay day: Date, calendar: Calendar = .current) -> Date {

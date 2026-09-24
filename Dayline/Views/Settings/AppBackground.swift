@@ -124,10 +124,10 @@ struct BackgroundPickerView: View {
                                 .fill(Color(.tertiarySystemFill))
                                 .aspectRatio(0.5, contentMode: .fit)
                                 .overlay {
-                                    Image(systemName: "plus").font(.system(size: 17, weight: .semibold)).foregroundStyle(.blue)
+                                    Image(systemName: "plus").font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.accent)
                                         .frame(width: 40, height: 40).background(Color(.systemBackground), in: .circle)
                                 }
-                            Text("Photo").font(.caption).foregroundStyle(.blue)
+                            Text("Photo").font(.caption).foregroundStyle(Theme.accent)
                         }
                     }
                     .buttonStyle(.plain)
@@ -207,11 +207,11 @@ struct BackgroundPickerView: View {
                 .overlay(alignment: .bottomTrailing) {
                     if on {
                         Image(systemName: "checkmark").font(.system(size: 11, weight: .bold)).foregroundStyle(.white)
-                            .frame(width: 22, height: 22).background(Color.blue, in: .circle).padding(6)
+                            .frame(width: 22, height: 22).background(Theme.accent, in: .circle).padding(6)
                     }
                 }
                 .padding(3)
-                .overlay(RoundedRectangle(cornerRadius: 17, style: .continuous).strokeBorder(on ? Color.blue : .clear, lineWidth: 2.5))
+                .overlay(RoundedRectangle(cornerRadius: 17, style: .continuous).strokeBorder(on ? Theme.accent : .clear, lineWidth: 2.5))
             Text(title).font(.caption).foregroundStyle(on ? .primary : .secondary).lineLimit(1)
         }
     }
@@ -270,6 +270,7 @@ struct ProfileView: View {
     @ObservedObject private var location = LocationService.shared
     @AppStorage("background.preset") private var presetRaw = BackgroundPreset.system.rawValue
     @AppStorage("appearance") private var appearanceRaw = Appearance.system.rawValue
+    @AppStorage(CheckInService.enabledKey) private var checkIns = false
     @Environment(\.openURL) private var openURL
 
     var body: some View {
@@ -319,8 +320,18 @@ struct ProfileView: View {
                         Button { openSettings() } label: { ProfileRow(symbol: "photo.fill", title: "Photos", value: "Added to timeline") }
                         Divider().padding(.leading, 57)
                         Button { openSettings() } label: { ProfileRow(symbol: "bell.fill", title: "Notifications", value: "Follows · 80 score") }
+                        Divider().padding(.leading, 57)
+                        HStack(spacing: 13) {
+                            ProfileIcon(symbol: "questionmark.bubble.fill")
+                            Toggle("Check-in Questions", isOn: $checkIns).font(.body.weight(.medium))
+                        }
+                        .padding(.horizontal, 14).padding(.vertical, 7)
+                        .accessibilityIdentifier("checkInsToggle")
+                        .onChange(of: checkIns) { _, on in if on { Task { await Notifications.requestPermission() } } }
                     }
                 }
+                Text("Dayline asks quick yes/no questions, like \u{201C}Going to sleep now?\u{201D}, when it isn\u{2019}t sure. Answer right from the notification. Off by default.")
+                    .font(.footnote).foregroundStyle(.secondary).padding(.horizontal, 16).padding(.top, 6)
                 if SiriSupport.isAvailable {
                     SectionHeader("Siri")
                     Card(padding: 0) {
@@ -337,7 +348,7 @@ struct ProfileView: View {
                         .accessibilityIdentifier("yourDataRow")
                 }
                 Text("Your places and photos stay on your iPhone. See our [Privacy Policy](dayline://privacy).")
-                    .font(.footnote).foregroundStyle(.secondary).tint(.blue)
+                    .font(.footnote).foregroundStyle(.secondary).tint(Theme.accent)
                     .padding(.horizontal, 4).padding(.top, -3)
                     .environment(\.openURL, OpenURLAction { _ in showPolicy = true; return .handled })
                     .accessibilityIdentifier("privacyPolicyLink")
@@ -484,7 +495,7 @@ struct CheckLocationView: View {
                                     }
                                     Spacer()
                                     if minutes == o.0 {
-                                        Image(systemName: "checkmark").font(.body.weight(.semibold)).foregroundStyle(.blue)
+                                        Image(systemName: "checkmark").font(.body.weight(.semibold)).foregroundStyle(Theme.accent)
                                     }
                                 }
                                 .padding(.horizontal, 18).padding(.vertical, 11)

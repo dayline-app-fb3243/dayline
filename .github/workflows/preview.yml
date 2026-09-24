@@ -55,7 +55,7 @@ jobs:
           mkdir -p preview /tmp/dayline-shots
           for MODE in light dark; do
             xcrun simctl ui "${{ steps.sim.outputs.udid }}" appearance $MODE
-            for TEST in testOnboarding testOnboardingEmail testTour testZGreetingByTime; do
+            for TEST in testOnboarding testOnboardingEmail testTour testZGreetingByTime testZCheckIns; do
               xcrun simctl io "${{ steps.sim.outputs.udid }}" recordVideo --codec=h264 --force preview/dayline-$MODE-$TEST.mp4 &
               REC=$!
               sleep 2

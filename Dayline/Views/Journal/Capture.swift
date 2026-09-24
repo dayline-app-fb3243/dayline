@@ -72,9 +72,9 @@ private struct VoiceCaptureSheet: View {
                 Text(Duration.seconds(voice.elapsed).formatted(.time(pattern: .minuteSecond)))
                     .font(.system(size: 48, weight: .semibold)).monospacedDigit()
                 Circle()
-                    .fill(.blue.opacity(0.15))
+                    .fill(Theme.accent.opacity(0.15))
                     .frame(width: 120 + CGFloat(voice.level) * 60, height: 120 + CGFloat(voice.level) * 60)
-                    .overlay { Image(systemName: "mic.fill").font(.system(size: 40)).foregroundStyle(.blue) }
+                    .overlay { Image(systemName: "mic.fill").font(.system(size: 40)).foregroundStyle(Theme.accent) }
                     .animation(.easeOut(duration: 0.1), value: voice.level)
                 Button {
                     Task {

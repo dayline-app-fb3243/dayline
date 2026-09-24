@@ -23,6 +23,7 @@ targets:
       properties:
         com.apple.security.application-groups: [group.app.dayline.shared]
         com.apple.developer.applesignin: [Default]
+        com.apple.developer.healthkit: true
     info:
       path: Dayline/Info.plist
       properties:
@@ -36,6 +37,8 @@ targets:
         NSCameraUsageDescription: Dayline opens your camera so you can add a photo to your journal at the place you took it.
         NSPhotoLibraryUsageDescription: Dayline adds your photos to your timeline at the place they were taken.
         NSMotionUsageDescription: Dayline uses motion to tell when you fell asleep and woke up, so late nights count toward the right day. It stays on your iPhone.
+        NSHealthShareUsageDescription: Dayline adds your runs, walks and workouts to your timeline and ticks off gym time on your schedule. It only reads workouts.
+        NSHealthUpdateUsageDescription: Dayline never writes to Apple Health.
         NSMicrophoneUsageDescription: Dayline records voice notes for your journal.
         NSSpeechRecognitionUsageDescription: Dayline turns your voice notes into text on your device.
         UIBackgroundModes: [fetch, processing, location]

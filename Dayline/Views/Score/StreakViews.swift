@@ -387,7 +387,7 @@ private struct LinkRow: View {
     var title: String
     var top = true
     var body: some View {
-        Text(title).font(.body.weight(.semibold)).foregroundStyle(.blue)
+        Text(title).font(.body.weight(.semibold)).foregroundStyle(Theme.accent)
             .frame(maxWidth: .infinity, minHeight: 50, alignment: .leading).padding(.horizontal, 16)
             .overlay(alignment: .top) { if top { Divider().padding(.leading, 16) } }
             .contentShape(.rect)
@@ -405,9 +405,9 @@ private struct PillButton: View {
     var body: some View {
         Button { on.toggle() } label: {
             Text(on ? done : title).font(.subheadline.weight(.semibold))
-                .foregroundStyle(on ? Color.secondary : Color.blue)
+                .foregroundStyle(on ? Color.secondary : Theme.accent)
                 .padding(.horizontal, 14).padding(.vertical, 6)
-                .background(on ? Color(.tertiarySystemFill) : Color.blue.opacity(0.12), in: .capsule)
+                .background(on ? Color(.tertiarySystemFill) : Theme.accent.opacity(0.12), in: .capsule)
         }
         .buttonStyle(.plain)
     }
@@ -422,9 +422,9 @@ private struct InviteButton: View {
         Button {
             if MFMessageComposeViewController.canSendText() { showMessages = true } else { showShare = true }
         } label: {
-            Text("Invite").font(.subheadline.weight(.semibold)).foregroundStyle(.blue)
+            Text("Invite").font(.subheadline.weight(.semibold)).foregroundStyle(Theme.accent)
                 .padding(.horizontal, 14).padding(.vertical, 6)
-                .background(Color.blue.opacity(0.12), in: .capsule)
+                .background(Theme.accent.opacity(0.12), in: .capsule)
         }
         .buttonStyle(.plain)
         .sheet(isPresented: $showMessages) { MessageCompose(recipient: recipient, text: PeopleStore.inviteText).ignoresSafeArea() }
@@ -652,8 +652,8 @@ struct AskToShareView: View {
                     ForEach(Array(PeopleStore.notOnDayline.enumerated()), id: \.offset) { i, c in
                         PersonRow(name: c.0, subtitle: c.1, last: i == PeopleStore.notOnDayline.count - 1) {
                             ShareLink(item: PeopleStore.inviteText) {
-                                Text("Invite").font(.subheadline.weight(.semibold)).foregroundStyle(.blue)
-                                    .padding(.horizontal, 14).padding(.vertical, 6).background(Color.blue.opacity(0.12), in: .capsule)
+                                Text("Invite").font(.subheadline.weight(.semibold)).foregroundStyle(Theme.accent)
+                                    .padding(.horizontal, 14).padding(.vertical, 6).background(Theme.accent.opacity(0.12), in: .capsule)
                             }
                         }
                     }
