@@ -36,6 +36,7 @@ struct TimelineScreen: View {
     /// Preview flag "map.grabber": where the grabber sits so the range words stay centered.
     /// A = grabber drawn over the top edge (takes no space), B = grabber just above the bar, C = even space above and below the words.
     @AppStorage("map.grabber") private var grabber = "C"
+    @AppStorage("map.sheetRows") private var sheetRows = "D"
     @State private var sheetOpen = UserDefaults.standard.bool(forKey: "map.sheetOpen")
 
     private var interval: DateInterval {
@@ -360,15 +361,25 @@ struct TimelineScreen: View {
                         Text("\(title) · \(daySummary)").font(.body.weight(.medium)).foregroundStyle(.secondary)
                     }
                     .padding(.horizontal, 20)
-                    VStack(spacing: 0) {
-                        findMyRow("Journal", nil, $showJournal)
-                        Divider().padding(.leading, 20)
-                        findMyRow("Photos", nil, $showPhotos)
-                        Divider().padding(.leading, 20)
-                        findMyRow("Route", nil, $showRoute)
+                    // Preview flag "map.sheetRows" inside panel G: D = one card, E = separate cards with a line, F = one card with a line.
+                    if sheetRows == "E" {
+                        VStack(spacing: 10) {
+                            findMyRow("Journal", "Notes you wrote today", $showJournal).findMyCard()
+                            findMyRow("Photos", "Photos you took today", $showPhotos).findMyCard()
+                            findMyRow("Route", "The way you went", $showRoute).findMyCard()
+                        }
+                        .padding(.horizontal, 12)
+                    } else {
+                        VStack(spacing: 0) {
+                            findMyRow("Journal", sheetRows == "F" ? "Notes you wrote today" : nil, $showJournal)
+                            Divider().padding(.leading, 20)
+                            findMyRow("Photos", sheetRows == "F" ? "Photos you took today" : nil, $showPhotos)
+                            Divider().padding(.leading, 20)
+                            findMyRow("Route", sheetRows == "F" ? "The way you went" : nil, $showRoute)
+                        }
+                        .findMyCard()
+                        .padding(.horizontal, 12)
                     }
-                    .findMyCard()
-                    .padding(.horizontal, 12)
                 }
                 .padding(.bottom, 14)
                 .frame(maxWidth: .infinity, alignment: .leading)

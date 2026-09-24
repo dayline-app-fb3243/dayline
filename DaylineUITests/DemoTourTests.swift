@@ -904,6 +904,20 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Switch styles D/E/F inside the Find My style panel (map.sheet G), open; plus closed once.
+    func testBackSheetRowsDemo() throws {
+        for v in ["D", "E", "F"] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-map.3d", "YES", "-map.sheet", "G", "-map.sheetRows", v, "-map.sheetOpen", "YES"]
+            app.launchEnvironment["TZ"] = Self.morningZone
+            app.launch(); pause(1.5)
+            tab(app, "Timeline"); pause(3)
+            tapID(app, "mapCard"); pause(6); shot("gs-\(v)")
+            if v == "D" { tapID(app, "mapGrabber"); pause(3); shot("gs-closed") }
+            app.terminate()
+        }
+    }
+
     /// Splash G/H/I: C's 3D look, new pins, closer and more top-down.
     func testSplashPinDemo() throws {
         for v in ["G", "H", "I"] {
