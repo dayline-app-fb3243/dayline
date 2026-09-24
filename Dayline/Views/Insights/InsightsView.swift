@@ -37,8 +37,120 @@ struct InsightsView: View {
     /// Preview flag: simple Health-style Day page (score + summary, then one clean list). Off until David approves.
     @AppStorage("insights.simpleDay") private var simpleDay = false
 
+    /// Preview flag "insights.dayStyle" (David picks, Sep 24 round 2): A = big score + list, B = ring + bars, C = ring + tiles.
+    @AppStorage("insights.dayStyle") private var dayStyle = "now"
+
     @ViewBuilder private var dayView: some View {
-        if simpleDay { simpleDayView } else { classicDayView }
+        switch dayStyle {
+        case "A": dayA
+        case "B": dayB
+        case "C": dayC
+        default: if simpleDay { simpleDayView } else { classicDayView }
+        }
+    }
+
+    private func pts(_ f: ScoreFactor) -> String { f.points > 0 ? "+\(f.points)" : "\(f.points)" }
+    private func isBad(_ f: ScoreFactor) -> Bool { f.effect == .pending || f.points <= 0 }
+
+    private var dayA: some View {
+        let r = todayResult
+        return VStack(alignment: .leading, spacing: 12) {
+            Card {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Day Score").font(.subheadline.weight(.semibold)).foregroundStyle(Theme.accent)
+                    HStack(alignment: .firstTextBaseline, spacing: 4) {
+                        Text("\(r.score)").font(.largeTitle.bold()).monospacedDigit()
+                        Text("of 100").font(.body).foregroundStyle(.secondary)
+                    }
+                    Text(r.tip ?? r.summary).font(.subheadline).foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            Text("Points today").font(.subheadline.weight(.semibold)).helperText().padding(.leading, 16)
+            VStack(spacing: 0) {
+                ForEach(Array(r.factors.enumerated()), id: \.element.id) { i, f in
+                    if i > 0 { Divider().padding(.leading, 58) }
+                    FactorRow(factor: f)
+                }
+            }
+            .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: Theme.cardRadius, style: .continuous))
+        }
+        .accessibilityIdentifier("insightsDayA")
+    }
+
+    private var dayB: some View {
+        let r = todayResult
+        let top = max(20, r.factors.map(\.points).max() ?? 20)
+        return VStack(alignment: .leading, spacing: 12) {
+            Card {
+                HStack(spacing: 18) {
+                    ScoreRing(score: r.score, size: 110)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(r.label).font(.title2.bold())
+                        Text("\(r.score) of 100 points").font(.subheadline).foregroundStyle(.secondary)
+                        if let tip = r.tip { Text(tip).font(.subheadline).foregroundStyle(Theme.accent) }
+                    }
+                    Spacer(minLength: 0)
+                }
+            }
+            Text("Where points came from").font(.subheadline.weight(.semibold)).helperText().padding(.leading, 16)
+            Card {
+                VStack(spacing: 14) {
+                    ForEach(r.factors) { f in
+                        HStack(spacing: 12) {
+                            Text(f.chip ?? f.title).font(.subheadline).lineLimit(1).frame(width: 110, alignment: .leading)
+                            GeometryReader { g in
+                                ZStack(alignment: .leading) {
+                                    Capsule().fill(Color(.systemFill))
+                                    if f.points > 0 {
+                                        Capsule().fill(Theme.accent).frame(width: g.size.width * CGFloat(f.points) / CGFloat(top))
+                                    }
+                                }
+                            }
+                            .frame(height: 8)
+                            Text(pts(f)).font(.subheadline.weight(.semibold)).monospacedDigit()
+                                .foregroundStyle(isBad(f) ? Color.secondary : Color.primary).frame(width: 36, alignment: .trailing)
+                        }
+                    }
+                }
+            }
+        }
+        .accessibilityIdentifier("insightsDayB")
+    }
+
+    private var dayC: some View {
+        let r = todayResult
+        return VStack(alignment: .leading, spacing: 12) {
+            Card {
+                HStack(spacing: 14) {
+                    ScoreRing(score: r.score, size: 64)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(r.label).font(.title3.bold())
+                        Text(r.tip ?? r.summary).font(.subheadline).foregroundStyle(.secondary)
+                    }
+                    Spacer(minLength: 0)
+                }
+            }
+            LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
+                ForEach(r.factors) { f in
+                    let st = FactorRow.style(f.title)
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack(spacing: 8) {
+                            ProfileIcon(symbol: st.0, size: 26, color: isBad(f) ? Theme.bad : Theme.accent)
+                            Text(f.chip ?? f.title).font(.subheadline.weight(.semibold)).foregroundStyle(.secondary).lineLimit(1)
+                        }
+                        HStack(alignment: .firstTextBaseline, spacing: 3) {
+                            Text(pts(f)).font(.title.bold()).monospacedDigit().foregroundStyle(isBad(f) ? Color.secondary : Color.primary)
+                            Text("pts").font(.footnote).foregroundStyle(.secondary)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(14)
+                    .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: Theme.cardRadius, style: .continuous))
+                }
+            }
+        }
+        .accessibilityIdentifier("insightsDayC")
     }
 
     private var simpleDayView: some View {

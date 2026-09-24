@@ -373,13 +373,21 @@ struct DayPhotoCards: View {
                 let voice = items.first { $0.kind == .voice }
                 VStack(alignment: .leading, spacing: 0) {
                     if !photos.isEmpty {
-                        HStack(spacing: 3) {
-                            ForEach(Array(photos.prefix(2).enumerated()), id: \.offset) { _, img in
-                                Color.clear.frame(maxWidth: .infinity).frame(height: 120)
-                                    .overlay { Image(uiImage: img).resizable().scaledToFill() }
-                                    .clipped()
+                        // Same as the Journal cards (David, Sep 24): photos inside the card with a white border,
+                        // a big photo and a narrow one side by side.
+                        GeometryReader { g in
+                            let shown = Array(photos.prefix(2)); let gap: CGFloat = 6
+                            HStack(spacing: gap) {
+                                ForEach(Array(shown.enumerated()), id: \.offset) { i, img in
+                                    let w = shown.count == 1 ? g.size.width : (i == 0 ? (g.size.width - gap) * 0.62 : (g.size.width - gap) * 0.38)
+                                    Color.clear.frame(width: w, height: g.size.height)
+                                        .overlay { Image(uiImage: img).resizable().scaledToFill() }
+                                        .clipShape(.rect(cornerRadius: 16, style: .continuous))
+                                }
                             }
                         }
+                        .frame(height: 140)
+                        .padding([.horizontal, .top], 10)
                     }
                     VStack(alignment: .leading, spacing: 10) {
                         HStack(alignment: .center) {

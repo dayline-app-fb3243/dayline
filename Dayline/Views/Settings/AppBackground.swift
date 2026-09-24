@@ -808,6 +808,11 @@ struct NotificationsView: View {
     @AppStorage("notify.score80") private var score80 = true
     @AppStorage(CheckInService.enabledKey) private var checkIns = false
     @AppStorage("notify.all") private var all = true
+    @AppStorage("notify.sleepQ") private var sleepQ = true
+    @AppStorage("notify.morningQ") private var morningQ = true
+    @AppStorage("notify.lowScore") private var lowScore = true
+    @AppStorage("notify.streakEnding") private var streakEnding = false
+    @AppStorage("notify.friendPassed") private var friendPassed = false
     @Environment(\.openURL) private var openURL
 
     var body: some View {
@@ -816,6 +821,7 @@ struct NotificationsView: View {
                 switch style {
                 case "B": versionB
                 case "C": versionC
+                case "B1", "B2", "B3": sectioned(style)
                 default: versionA
                 }
             }
@@ -856,6 +862,45 @@ struct NotificationsView: View {
         VStack(spacing: 0) { tileRow("questionmark.bubble.fill", "Check-in Questions", $checkIns) }
             .background(Color(.secondarySystemGroupedBackground), in: group)
         note("Quick yes/no questions, like \u{201C}Going to sleep now?\u{201D}, when Dayline isn't sure. Answer right from the notification.")
+    }
+
+    /// Round 3 (David: only on/off per kind, sounds and banners stay in the Settings app). B1 plain, B2 with a line under each, B3 with icons.
+    private struct Kind { var symbol: String; var color: Color; var title: String; var sub: String; var on: Binding<Bool> }
+    private func header(_ t: String) -> some View {
+        Text(t).font(.subheadline.weight(.semibold)).helperText().padding(.horizontal, 16).padding(.top, 4)
+    }
+    private func kindGroup(_ v: String, _ kinds: [Kind]) -> some View {
+        VStack(spacing: 0) {
+            ForEach(Array(kinds.enumerated()), id: \.offset) { i, k in
+                if i > 0 { Divider().padding(.leading, v == "B3" ? 57 : 16) }
+                HStack(spacing: 13) {
+                    if v == "B3" { ProfileIcon(symbol: k.symbol, color: k.color) }
+                    Toggle(isOn: k.on) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(k.title).font(.body)
+                            if v == "B2" { Text(k.sub).font(.footnote).foregroundStyle(.secondary) }
+                        }
+                    }
+                }
+                .padding(.horizontal, v == "B3" ? 14 : 16).padding(.vertical, v == "B2" ? 9 : 7)
+            }
+        }
+        .background(Color(.secondarySystemGroupedBackground), in: group)
+    }
+    @ViewBuilder private func sectioned(_ v: String) -> some View {
+        header("Questions")
+        kindGroup(v, [Kind(symbol: "moon.fill", color: .indigo, title: "Going to Sleep?", sub: "A yes/no question at night", on: $sleepQ),
+                      Kind(symbol: "sun.max.fill", color: .orange, title: "Morning: Up Already?", sub: "A yes/no question in the morning", on: $morningQ)])
+        if v != "B2" { note("Press and hold the notification to answer Yes or No.") } else { Spacer().frame(height: 8) }
+        header("Day Score")
+        kindGroup(v, [Kind(symbol: "star.fill", color: .green, title: "You Reached 80", sub: "When your day score hits 80", on: $score80),
+                      Kind(symbol: "exclamationmark", color: .red, title: "Low Score Reminder", sub: "Around 5 PM if your score is still low", on: $lowScore),
+                      Kind(symbol: "flame.fill", color: Theme.accent, title: "Streak Ending Soon", sub: "In the evening if you're not at 80 yet", on: $streakEnding)])
+        if v != "B2" { note("The reminder comes in the late afternoon if your score is still low.") } else { Spacer().frame(height: 8) }
+        header("Friends")
+        kindGroup(v, [Kind(symbol: "person.badge.plus", color: Theme.accent, title: "Follow Requests", sub: "When someone asks to see your streak", on: $follows),
+                      Kind(symbol: "arrow.up.right", color: .teal, title: "Friend Passed You", sub: "When a friend beats your streak", on: $friendPassed)])
+        note("Sounds and banners are in the Settings app.")
     }
 
     @ViewBuilder private var versionB: some View {
