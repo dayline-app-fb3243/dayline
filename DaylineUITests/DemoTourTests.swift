@@ -6,13 +6,29 @@ final class DemoTourTests: XCTestCase {
     static let shotDir = "/tmp/dayline-shots"
 
     /// A time zone where the local time is about 9:30 AM right now, so the demo day looks like the design.
-    static var morningZone: String {
+    static var morningZone: String { zone(localHour: 9) }
+
+    /// A POSIX zone where the local hour is about `localHour` right now.
+    static func zone(localHour: Int) -> String {
         var utc = Calendar(identifier: .gregorian); utc.timeZone = TimeZone(identifier: "UTC")!
         let hour = utc.component(.hour, from: .now)
-        var offset = (9 - hour + 24) % 24
+        var offset = (localHour - hour + 24) % 24
         if offset > 14 { offset -= 24 }
         // POSIX Etc zones have the sign flipped: Etc/GMT-8 is UTC+8.
         return offset == 0 ? "UTC" : "Etc/GMT\(offset > 0 ? "-" : "+")\(abs(offset))"
+    }
+
+    /// Today greeting follows the clock: evening and night versions.
+    func testZGreetingByTime() {
+        for (hour, name) in [(19, "10e-today-evening"), (23, "10n-today-night")] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo"]
+            app.launchEnvironment["TZ"] = Self.zone(localHour: hour)
+            app.launch()
+            _ = app.descendants(matching: .any)["todayGreeting"].waitForExistence(timeout: 8)
+            pause(2); shot(name)
+            app.terminate()
+        }
     }
 
     override func setUp() {

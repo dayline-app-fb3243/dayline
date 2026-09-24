@@ -39,19 +39,26 @@ struct TodayView: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(Date.now.formatted(.dateTime.weekday(.wide).month(.abbreviated).day()))
-                .font(.subheadline.weight(.medium)).foregroundStyle(.secondary)
-            Text(greeting).font(.largeTitle.bold())
+        // Re-checks every minute so the greeting flips on its own while the app is open.
+        TimelineView(.everyMinute) { ctx in
+            VStack(alignment: .leading, spacing: 2) {
+                Text(ctx.date.formatted(.dateTime.weekday(.wide).month(.abbreviated).day()))
+                    .font(.subheadline.weight(.medium)).foregroundStyle(.secondary)
+                Text(Self.greeting(at: ctx.date)).font(.largeTitle.bold())
+                    .contentTransition(.opacity)
+                    .accessibilityIdentifier("todayGreeting")
+            }
+            .padding(.top, 4)
         }
-        .padding(.top, 4)
     }
 
-    private var greeting: String {
-        switch Calendar.current.component(.hour, from: .now) {
-        case 4..<12: "Good morning"
+    /// Morning 5-12, afternoon 12-17, evening 17-21, night 21-5.
+    static func greeting(at date: Date) -> String {
+        switch Calendar.current.component(.hour, from: date) {
+        case 5..<12: "Good morning"
         case 12..<17: "Good afternoon"
-        default: "Good evening"
+        case 17..<21: "Good evening"
+        default: "Good night"
         }
     }
 
