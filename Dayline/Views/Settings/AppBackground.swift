@@ -480,7 +480,17 @@ struct ProfileIcon: View {
     /// Preview flag "icons.tile" (David picks): A = flat solid tile, white glyph (default, like iOS Settings);
     /// B = light tint tile, colored glyph; C = colored glyph only, no tile.
     @AppStorage("icons.tile") private var tile = "A"
+    /// Preview flag "profile.tile" (David picks, Sep 24 demo): A = colored tile (default); "blue" = bold blue symbol, no tile (like Day score).
+    @AppStorage("profile.tile") private var profileTile = "A"
     var body: some View {
+        if profileTile == "blue" {
+            Image(systemName: symbol).font(.title3.weight(.bold)).foregroundStyle(Theme.accent)
+                .frame(width: size, height: size)
+        } else {
+            tiled
+        }
+    }
+    @ViewBuilder private var tiled: some View {
         switch tile {
         case "B":
             Image(systemName: symbol).font(.scaled(size: size * 0.5, weight: .semibold)).minimumScaleFactor(0.5).lineLimit(1).foregroundStyle(color)

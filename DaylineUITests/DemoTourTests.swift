@@ -471,6 +471,19 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Profile rows demo for David: A = colored tiles, blue = bold blue symbols with no tile.
+    func testProfileDemo() throws {
+        for v in ["A", "blue"] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-profile.tile", v]
+            app.launchEnvironment["TZ"] = Self.morningZone
+            app.launch(); pause(1.5)
+            tab(app, "Profile"); pause(2); shot("p\(v)-profile-top")
+            app.swipeUp(); pause(1.5); shot("p\(v)-profile-rows")
+            app.terminate()
+        }
+    }
+
     /// Journal editor demo: camera/photo button options with the keyboard up.
     func testEditorDemo() throws {
         for v in ["B", "C"] {
