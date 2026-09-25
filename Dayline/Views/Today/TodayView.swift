@@ -119,10 +119,7 @@ struct ScoreCard: View {
     /// Status color follows the theme: blue while keeping pace with your own habits (ScoreEngine.Pace), orange when not.
     private var behind: Bool { result.pace?.behind ?? false }
     private var labelColor: Color { behind ? .orange : Theme.accent }
-    private var statusLabel: String {
-        guard !paceStyle.isEmpty else { return result.label }
-        return StatusPhrase.text(behind: behind, score: result.score)
-    }
+    private var statusLabel: String { StatusPhrase.text(behind: behind, score: result.score) }
 }
 
 

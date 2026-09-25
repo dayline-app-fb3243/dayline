@@ -130,6 +130,7 @@ struct ScoreRing: View {
         .animation(.spring(duration: 0.8), value: score)
         .accessibilityElement()
         .accessibilityLabel("Day score \(score) out of 100")
+    }
 }
 
 struct FactorChip: View {
