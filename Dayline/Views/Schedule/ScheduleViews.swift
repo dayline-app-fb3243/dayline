@@ -127,7 +127,7 @@ struct YourScheduleView: View {
         }
         .sheet(isPresented: $pickingGym) {
             NavigationStack {
-                AddPlaceView(title: "Your Gym", prompt: "Search for your gym") { item in setGym(item) }
+                AddPlaceView(title: "Your Gym", prompt: "Search for your gym", categories: [.fitnessCenter]) { item in setGym(item) }
             }
         }
         .onChange(of: s) { _, new in UserSchedule.current = new }
@@ -250,7 +250,8 @@ struct PlacesView: View {
         .onAppear { s = UserSchedule.current }
         .sheet(item: Binding(get: { adding.map { KindBox(kind: $0) } }, set: { adding = $0?.kind })) { box in
             NavigationStack {
-                AddPlaceView(title: box.kind == "home" ? "Home" : box.kind == "work" ? "Work" : box.kind == "gym" ? "Gym" : "Add Place") { item in
+                AddPlaceView(title: box.kind == "home" ? "Home" : box.kind == "work" ? "Work" : box.kind == "gym" ? "Gym" : "Add Place",
+                             categories: box.kind == "gym" ? [.fitnessCenter] : nil) { item in
                     let place = SavedPlace(kind: box.kind, name: box.kind == "home" ? "Home" : box.kind == "work" ? "Work" : (item.name ?? (box.kind == "gym" ? "Gym" : "Place")),
                                            address: AddPlaceView.address(item), latitude: item.location.coordinate.latitude,
                                            longitude: item.location.coordinate.longitude)
@@ -300,17 +301,81 @@ final class PlaceSearch: NSObject, ObservableObject, MKLocalSearchCompleterDeleg
     nonisolated func completer(_ c: MKLocalSearchCompleter, didFailWithError error: Error) {}
 }
 
+/// Apple Maps place search limited to one kind of place (for example gyms): real businesses with their
+/// addresses, ranked near you, the way Apple Maps lists them. Streets and addresses are left out.
+@MainActor
+final class PlaceKindSearch: ObservableObject {
+    @Published var items: [MKMapItem] = []
+    var categories: [MKPointOfInterestCategory]
+    private var task: Task<Void, Never>?
+    init(categories: [MKPointOfInterestCategory]) { self.categories = categories }
+    /// Near the user: current location, else saved home, else (demo) midtown Manhattan.
+    static var nearCenter: CLLocationCoordinate2D? {
+        if let c = CLLocationManager().location?.coordinate { return c }
+        if let h = UserSchedule.current.places.first(where: { $0.kind == "home" }) {
+            return CLLocationCoordinate2D(latitude: h.latitude, longitude: h.longitude)
+        }
+        return DemoData.isDemo ? CLLocationCoordinate2D(latitude: 40.7536, longitude: -73.9838) : nil
+    }
+    func search(_ q: String, categories: [MKPointOfInterestCategory]) { self.categories = categories; update(q) }
+    func update(_ q: String) {
+        task?.cancel()
+        guard !q.trimmingCharacters(in: .whitespaces).isEmpty else { items = []; return }
+        task = Task {
+            try? await Task.sleep(for: .milliseconds(250))
+            if Task.isCancelled { return }
+            let r = MKLocalSearch.Request()
+            r.naturalLanguageQuery = q
+            r.resultTypes = .pointOfInterest
+            r.pointOfInterestFilter = MKPointOfInterestFilter(including: categories)
+            if let c = Self.nearCenter { r.region = MKCoordinateRegion(center: c, latitudinalMeters: 20_000, longitudinalMeters: 20_000) }
+            let found = (try? await MKLocalSearch(request: r).start().mapItems) ?? []
+            if Task.isCancelled { return }
+            if let c = Self.nearCenter {
+                let here = CLLocation(latitude: c.latitude, longitude: c.longitude)
+                items = found.sorted { $0.location.distance(from: here) < $1.location.distance(from: here) }
+            } else { items = found }
+        }
+    }
+    func distanceText(_ item: MKMapItem) -> String? {
+        guard let c = Self.nearCenter else { return nil }
+        let m = item.location.distance(from: CLLocation(latitude: c.latitude, longitude: c.longitude))
+        return Measurement(value: m, unit: UnitLength.meters).formatted(.measurement(width: .abbreviated, usage: .road))
+    }
+}
+
 struct AddPlaceView: View {
     var title: String
     var prompt = "Search Maps"
     var dismissOnPick = true
+    /// Only these kinds of places (gyms: [.fitnessCenter]). nil = any place or address.
+    var categories: [MKPointOfInterestCategory]? = nil
     var onPick: (MKMapItem) -> Void
     @StateObject private var search = PlaceSearch()
+    @StateObject private var kindSearch = PlaceKindSearch(categories: [])
     @State private var query = ""
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         List {
+            if let cats = categories {
+                ForEach(kindSearch.items, id: \.self) { item in
+                    Button { onPick(item); if dismissOnPick { dismiss() } } label: {
+                        HStack(spacing: 12) {
+                            let g = kindGlyph(cats)
+                            Image(systemName: g.0).font(.footnote.weight(.bold)).foregroundStyle(.white)
+                                .frame(width: 32, height: 32).background(g.1, in: .circle)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(item.name ?? "").foregroundStyle(.primary)
+                                let sub = [kindSearch.distanceText(item), Self.address(item)].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " \u{00B7} ")
+                                if !sub.isEmpty { Text(sub).font(.subheadline).foregroundStyle(.secondary).lineLimit(1) }
+                            }
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("placeResult")
+                }
+            } else {
             ForEach(search.results, id: \.self) { r in
                 Button { pick(r) } label: {
                     HStack(spacing: 12) {
@@ -326,13 +391,22 @@ struct AddPlaceView: View {
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("placeResult")
             }
+            }
         }
         .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: prompt)
-        .onChange(of: query) { _, q in search.update(q) }
+        .onChange(of: query) { _, q in
+            if let cats = categories { kindSearch.search(q, categories: cats) } else { search.update(q) }
+        }
         .navigationTitle(title)
         .backgroundNavBar()
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { ToolbarItem(placement: .cancellationAction) { Button(role: .cancel) { dismiss() } } }
+    }
+
+    private func kindGlyph(_ cats: [MKPointOfInterestCategory]) -> (String, Color) {
+        if cats.contains(.fitnessCenter) { return ("dumbbell.fill", .purple) }
+        if cats.contains(.university) || cats.contains(.school) { return ("graduationcap.fill", .brown) }
+        return ("mappin", .red)
     }
 
     /// Maps-style glyphs: red pin for addresses, gray building, orange cup for coffee, and so on.
@@ -380,7 +454,7 @@ struct GymAskSheet: View {
 
     var body: some View {
         NavigationStack {
-            AddPlaceView(title: "Where\u{2019}s Your Gym?", prompt: "Search for your gym", dismissOnPick: false) { item in
+            AddPlaceView(title: "Where\u{2019}s Your Gym?", prompt: "Search for your gym", dismissOnPick: false, categories: [.fitnessCenter]) { item in
                 s.setGym(item)
                 if style == "C" { picked = true } else { dismiss() }
             }

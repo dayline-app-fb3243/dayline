@@ -1,4 +1,5 @@
 import SwiftUI
+import MapKit
 
 /// Profile > Your Schedule, picking between layouts. "settings.layout" "" = today's screen; 1-8 = sample layouts
 /// for the redesign: Places (Home first, a place only for habits that are on), Times, and Habits
@@ -145,7 +146,8 @@ struct ScheduleSettingsSamples: View {
             if school && schoolPlace == nil { school = false }
         }) { a in
             NavigationStack {
-                AddPlaceView(title: "Your \(a.id)", prompt: "Search for your \(a.id.lowercased())") { item in
+                AddPlaceView(title: "Your \(a.id)", prompt: "Search for your \(a.id.lowercased())",
+                             categories: a.id == "Gym" ? [.fitnessCenter] : nil) { item in
                     let name = item.name ?? a.id
                     withAnimation {
                         switch a.id { case "Gym": gymPlace = name; case "Work": workPlace = name; default: schoolPlace = name }
