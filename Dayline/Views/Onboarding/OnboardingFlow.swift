@@ -1010,8 +1010,10 @@ final class SplashPinTrack {
     var route: [CLLocationCoordinate2D] = [] { didSet { measure() } }
     var hero: CLLocationCoordinate2D?
     var start = Date()
-    /// Seconds to glide from ~300 m back along the line to the place.
-    let glide: Double = 5
+    /// Seconds to glide from a short way back along the line to the place. Kept short (120 m) so the pin stays on
+    /// the part of the line you can see; farther back it can pass behind 3D buildings where the line is hidden.
+    let glide: Double = 4
+    static let glideMeters: Double = 120
     private var cum: [Double] = []
     private var heroIndex = 0
     private func measure() {
@@ -1050,7 +1052,7 @@ final class SplashPinTrack {
     func coordinate(now: Date) -> CLLocationCoordinate2D? {
         guard route.count > 1, heroIndex < cum.count else { return nil }
         let end = cum[heroIndex]
-        let begin = max(0, end - 300)
+        let begin = max(0, end - Self.glideMeters)
         let raw = min(1, max(0, now.timeIntervalSince(start) / glide))
         let t = 1 - pow(1 - raw, 3)
         return coordinate(at: begin + (end - begin) * t)
@@ -1060,7 +1062,7 @@ final class SplashPinTrack {
     func point(at now: Date) -> CGPoint? {
         guard let convert, route.count > 1, heroIndex < cum.count else { return nil }
         let end = cum[heroIndex]
-        let begin = max(0, end - 300)
+        let begin = max(0, end - Self.glideMeters)
         let raw = min(1, max(0, now.timeIntervalSince(start) / glide))
         let t = 1 - pow(1 - raw, 3)  // ease out: slows as it arrives
         guard let c = coordinate(at: begin + (end - begin) * t) else { return nil }
