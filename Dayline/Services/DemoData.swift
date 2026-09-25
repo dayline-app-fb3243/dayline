@@ -7,10 +7,13 @@ enum SampleMode {
     /// Screenshot runs pass "-no.lookaround" so search screens skip Look Around imagery (heavy on CI Macs).
     static let noLookAround = ProcessInfo.processInfo.arguments.contains("-no.lookaround")
     static let on: Bool = {
+        let args = ProcessInfo.processInfo.arguments
+        if args.contains("-demo") { return true }
         #if DAYLINE_DEMO_BUILD
+        // The demo Xcode project seeds automatically when Run starts it normally.
         return true
         #else
-        return ProcessInfo.processInfo.arguments.contains("-demo")
+        return false
         #endif
     }()
 }
