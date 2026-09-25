@@ -248,7 +248,7 @@ struct SplashView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             .padding(.horizontal, 28)
-            .padding(.bottom, 62)
+            .padding(.bottom, 28)
             Button { showSignIn = true } label: { Text("Continue").font(.headline).frame(maxWidth: .infinity) }
                 .buttonStyle(.glassProminent).tint(Theme.accent).controlSize(.extraLarge)
                 .padding(.horizontal, 24).padding(.bottom, 16)
@@ -546,25 +546,10 @@ struct GoogleSignInDemoSheet: View {
     }
 }
 
-/// The four-color Google "G", drawn so no image asset is needed.
+/// Google-provided blended gradient G, from the current brand asset; on a plain surface.
 struct GoogleG: View {
     var body: some View {
-        Canvas { ctx, size in
-            let w = min(size.width, size.height), c = CGPoint(x: size.width / 2, y: size.height / 2), r = w * 0.38
-            let line = w * 0.2
-            func arc(_ from: Double, _ to: Double, _ color: Color) {
-                var p = Path()
-                p.addArc(center: c, radius: r, startAngle: .degrees(from), endAngle: .degrees(to), clockwise: false)
-                ctx.stroke(p, with: .color(color), lineWidth: line)
-            }
-            arc(-40, 45, Color(red: 0.26, green: 0.52, blue: 0.96))   // blue
-            arc(45, 135, Color(red: 0.2, green: 0.66, blue: 0.33))    // green
-            arc(135, 200, Color(red: 0.98, green: 0.74, blue: 0.02))  // yellow
-            arc(200, 320, Color(red: 0.92, green: 0.26, blue: 0.21))  // red
-            var bar = Path()
-            bar.addRect(CGRect(x: c.x, y: c.y - line / 2, width: r + line / 2, height: line))
-            ctx.fill(bar, with: .color(Color(red: 0.26, green: 0.52, blue: 0.96)))
-        }
+        Image("GoogleG").resizable().scaledToFit().accessibilityHidden(true)
     }
 }
 

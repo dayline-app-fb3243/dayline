@@ -1,0 +1,3 @@
+Google G full-color gradient image downloaded September 25, 2026 from Google's Partner Marketing Hub branding guidelines:
+https://partnermarketinghub.withgoogle.com/brands/google/branding-guidelines/how-to-show-googles-brand/
+The original PNG is named GoogleG_FullColor_RGB.png. This asset is a cropped 180-pixel derivative preserving the original pixels and colors. Google requires the gradient version on white or black, not a modified mark. Replace with the Google Identity SDK's official button when real OAuth is integrated.
