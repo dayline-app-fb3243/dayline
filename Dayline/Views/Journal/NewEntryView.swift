@@ -169,7 +169,7 @@ struct NewEntryView: View {
             }
         }
         .safeAreaInset(edge: .bottom) {
-            VoiceRecorderBar(voice: voice, onSend: { await stopVoice() }) { addBar }
+            VoiceRecorderBar(voice: voice, onSend: { await stopVoice() }, leading: { addMediaButton }) { addBar }
         }
         .photosPicker(isPresented: $showLibrary, selection: $picks, maxSelectionCount: 10,
                       matching: .any(of: [.images, .videos]))
@@ -210,31 +210,30 @@ struct NewEntryView: View {
     /// Messages-like plus button and one full-width recording field. Camera and library stay in the plus menu.
     private var cameraOK: Bool { UIImagePickerController.isSourceTypeAvailable(.camera) || ProcessInfo.processInfo.arguments.contains("-demo") }
 
+    private var addMediaButton: some View {
+        Menu {
+            Button("Take Photo", systemImage: "camera.fill") { camera = .photo }
+                .disabled(!cameraOK)
+            Button("Photo and Video Library", systemImage: "photo.fill") { showLibrary = true }
+        } label: {
+            Image(systemName: "plus").font(.title2.weight(.medium)).foregroundStyle(.primary)
+                .frame(width: 48, height: 48)
+                .glassEffect(.regular.interactive(), in: .circle)
+        }
+        .accessibilityLabel("Add photo or video")
+    }
+
     private var addBar: some View {
         HStack(spacing: 10) {
-            Menu {
-                Button("Take Photo", systemImage: "camera.fill") { camera = .photo }
-                    .disabled(!cameraOK)
-                Button("Photo and Video Library", systemImage: "photo.fill") { showLibrary = true }
-            } label: {
-                Image(systemName: "plus").font(.title2.weight(.medium)).foregroundStyle(.primary)
-                    .frame(width: 48, height: 48)
-                    .glassEffect(.regular.interactive(), in: .circle)
-            }
-            .accessibilityLabel("Add photo or video")
-            HStack(spacing: 10) {
-                Text("Tap and hold to record audio")
-                    .font(.subheadline).foregroundStyle(.secondary).lineLimit(1).minimumScaleFactor(0.78)
-                Spacer(minLength: 0)
-                Image(systemName: "waveform")
-                    .font(.body.weight(.medium)).foregroundStyle(.secondary)
-                    .frame(width: 42, height: 48)
-            }
-            .padding(.leading, 16).padding(.trailing, 6)
-            .frame(height: 48)
-            .glassEffect(.regular, in: .capsule)
-            .accessibilityIdentifier("audioHoldBar")
+            Text("Tap and hold to record audio")
+                .font(.subheadline).foregroundStyle(.secondary).lineLimit(1).minimumScaleFactor(0.78)
+            Spacer(minLength: 0)
+            Image(systemName: "waveform")
+                .font(.body.weight(.medium)).foregroundStyle(.secondary)
+                .frame(width: 42, height: 48)
         }
+        .padding(.leading, 16).padding(.trailing, 6)
+        .frame(height: 48)
     }
 
     @ViewBuilder private var cameraMenu: some View {

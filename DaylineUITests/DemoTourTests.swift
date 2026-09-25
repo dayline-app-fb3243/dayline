@@ -792,19 +792,21 @@ final class DemoTourTests: XCTestCase {
         shot("journal-audio-bar")
     }
 
-    /// Quick mic tap shows an option's hint, without creating a recording.
-    func testVoiceHintOptions() throws {
-        for n in 1...4 {
-            let app = XCUIApplication()
-            app.launchArguments = ["-demo", "-voiceHint", "\(n)"]
-            app.launch(); pause(1)
-            tab(app, "Journal"); pause(1)
-            tapID(app, "newEntry"); pause(1)
-            let mic = app.descendants(matching: .any)["voiceMic"].firstMatch
-            if mic.waitForExistence(timeout: 4) { mic.tap(); pause(0.3) }
-            shot("vh\(n)")
-            app.terminate()
-        }
+    /// Hold, slide up to lock, and capture the same bar in its live recording state.
+    func testJournalAudioBarRecording() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo"]
+        app.launch(); pause(1)
+        tab(app, "Journal"); pause(1)
+        tapID(app, "newEntry"); pause(1)
+        let bar = app.descendants(matching: .any)["audioHoldBar"].firstMatch
+        let start = bar.coordinate(withNormalizedOffset: CGVector(dx: 0.82, dy: 0.5))
+        let lock = bar.coordinate(withNormalizedOffset: CGVector(dx: 0.82, dy: -1.7))
+        start.press(forDuration: 1.2, thenDragTo: lock)
+        pause(1.5)
+        shot("journal-audio-bar-recording")
+        let stop = app.buttons["Stop recording"]
+        if stop.exists { stop.tap(); pause(0.6); shot("journal-audio-bar-review") }
     }
 
     /// Day/Week/Month/Year: press and slide across the switcher (recorded as video).
