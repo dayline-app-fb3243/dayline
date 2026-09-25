@@ -15,6 +15,8 @@ final class LocationService: NSObject, ObservableObject {
 
     @Published private(set) var authorization: CLAuthorizationStatus = .notDetermined
     @Published private(set) var lastSample: Date?
+    /// In-session path for immediate map feedback; durable samples still follow the chosen interval.
+    @Published private(set) var liveRoute: [CLLocationCoordinate2D] = []
     /// Last known location (cached by iOS, no new GPS fix).
     var lastLocation: CLLocation? { manager.location }
 
@@ -156,7 +158,15 @@ extension LocationService: CLLocationManagerDelegate {
 
     nonisolated func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         Task { @MainActor in
-            for location in locations { self.record(location, source: "change") }
+            for location in locations {
+                guard location.horizontalAccuracy >= 0, location.horizontalAccuracy < 1500 else { continue }
+                if let last = self.liveRoute.last {
+                    let moved = CLLocation(latitude: last.latitude, longitude: last.longitude).distance(from: location)
+                    if moved >= 15 { self.liveRoute.append(location.coordinate) }
+                } else { self.liveRoute.append(location.coordinate) }
+                if self.liveRoute.count > 1000 { self.liveRoute.removeFirst(self.liveRoute.count - 1000) }
+                self.record(location, source: "change")
+            }
         }
     }
 

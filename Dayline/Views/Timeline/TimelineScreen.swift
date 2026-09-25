@@ -13,8 +13,8 @@ struct TimelineScreen: View {
     @Query(sort: \JournalEntry.date) private var journal: [JournalEntry]
     @State private var range: MapRange = .day
     @State private var anchor = Date.now
-    // Never display a guessed city as the owner's location. The empty map card stays
-    // in an honest waiting state until Core Location supplies a fresh fix.
+    // Never display a guessed city as the owner's location. A real map stays visible
+    // while waiting for a location fix, and centers at neighborhood scale once it arrives.
     @State private var camera: MapCameraPosition = .automatic
     @ObservedObject private var location = LocationService.shared
     @State private var showRoute = true
@@ -148,10 +148,10 @@ struct TimelineScreen: View {
     }
     /// Day: map, title, captioned photos in a row, then stops grouped by part of day.
     @ViewBuilder private var dayPage: some View {
-        if hasMapAnchor { mapCard(height: 170, hint: true) }
+        mapCard(height: 250, hint: true)
         if !DemoData.isDemo && visits.isEmpty && samples.isEmpty && journal.isEmpty {
-            ContentUnavailableView("No timeline yet", systemImage: "mappin.and.ellipse",
-                                   description: Text("Your places and photos will appear here as Dayline learns your day."))
+            ContentUnavailableView("Not enough data yet", systemImage: "mappin.and.ellipse",
+                                   description: Text("Dayline saves location checks as you move. Your route appears on this map as it learns your day; places and photos follow."))
                 .accessibilityIdentifier("timelineEmptyState")
         }
         if DemoData.isDemo || !visits.isEmpty || !samples.isEmpty || !journal.isEmpty {
@@ -170,10 +170,10 @@ struct TimelineScreen: View {
     }
     /// Week / Month / Year: map, title, the range's photos in a row, then the places card.
     @ViewBuilder private var rangePage: some View {
-        if hasMapAnchor { mapCard(height: 200, hint: false) }
+        mapCard(height: 250, hint: false)
         if !DemoData.isDemo && visits.isEmpty && samples.isEmpty && journal.isEmpty {
-            ContentUnavailableView("No timeline yet", systemImage: "mappin.and.ellipse",
-                                   description: Text("Your places and photos will appear here as Dayline learns your day."))
+            ContentUnavailableView("Not enough data yet", systemImage: "mappin.and.ellipse",
+                                   description: Text("Dayline saves location checks as you move. Your route appears on this map as it learns your day; places and photos follow."))
                 .accessibilityIdentifier("timelineEmptyState")
         }
         if DemoData.isDemo || !visits.isEmpty || !samples.isEmpty || !journal.isEmpty {
@@ -202,8 +202,7 @@ struct TimelineScreen: View {
 
     private var map: some View { mapView(interactive: true) }
 
-    private var hasMapAnchor: Bool {
-        if !rangeVisits.isEmpty || !rangeSamples.isEmpty { return true }
+    private var hasFreshFix: Bool {
         guard let fix = location.lastLocation else { return false }
         return fix.horizontalAccuracy >= 0 && abs(fix.timestamp.timeIntervalSinceNow) < 15 * 60
     }
@@ -212,6 +211,10 @@ struct TimelineScreen: View {
         Map(position: $camera, interactionModes: interactive ? .all : []) {
             UserAnnotation()
             if showRoute {
+                if range == .day && location.liveRoute.count > 1 {
+                    MapPolyline(coordinates: location.liveRoute)
+                        .stroke(Theme.accent, style: StrokeStyle(lineWidth: 5, lineCap: .round, lineJoin: .round))
+                }
                 if range == .day && streetRoute.count > 1 {
                     MapPolyline(coordinates: streetRoute)
                         .stroke(Theme.accent, style: StrokeStyle(lineWidth: 5, lineCap: .round, lineJoin: .round))
@@ -388,6 +391,15 @@ struct TimelineScreen: View {
             .frame(height: height)
             .clipShape(.rect(cornerRadius: Theme.cardRadius, style: .continuous))
             .contentShape(.rect(cornerRadius: Theme.cardRadius))
+            .overlay(alignment: .bottomLeading) {
+                if !hasFreshFix && rangeVisits.isEmpty && rangeSamples.isEmpty {
+                    Text("Waiting for your location")
+                        .font(.caption).foregroundStyle(.primary)
+                        .padding(.horizontal, 12).padding(.vertical, 7)
+                        .glassEffect(.regular, in: .capsule)
+                        .padding(10)
+                }
+            }
             .onTapGesture { expanded = true }
             .overlay(alignment: .topTrailing) {
                 Button { expanded = true } label: {

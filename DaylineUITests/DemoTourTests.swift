@@ -316,7 +316,11 @@ final class DemoTourTests: XCTestCase {
         for tab in ["Timeline", "Insights", "Journal", "Profile"] {
             let button = app.tabBars.buttons[tab]
             XCTAssertTrue(button.waitForExistence(timeout: 5), "Missing \(tab) tab")
-            button.tap(); pause(2)
+            button.tap(); pause(3)
+            if tab == "Timeline" {
+                XCTAssertTrue(app.descendants(matching: .any)["mapCard"].firstMatch.exists, "Fresh Timeline always has a real map")
+                XCTAssertTrue(app.descendants(matching: .any)["timelineEmptyState"].firstMatch.exists, "Explain what data is still needed")
+            }
             shot("empty-\(tab.lowercased())-\(scheme.lowercased())")
         }
     }
