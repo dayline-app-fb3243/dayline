@@ -50,6 +50,13 @@ struct TodayView: View {
                 .padding(.horizontal, 18)
                 .padding(.bottom, 24)
             }
+            // Keep scrolling rows out of the floating tab bar's glass. Mask only
+            // scroll content; the page background continues behind the bar.
+            .mask {
+                GeometryReader { viewport in
+                    Rectangle().frame(height: max(0, viewport.size.height - 76), alignment: .top)
+                }
+            }
             .background(AppBackgroundView())
             .tabRoot()
             .sheet(item: $capture) { mode in CaptureSheet(mode: mode) }
