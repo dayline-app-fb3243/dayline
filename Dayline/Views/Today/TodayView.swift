@@ -22,10 +22,10 @@ struct TodayView: View {
                     header
                     LocationOffCard()
                     if TodayStepsNextTiles.ringStyle != 5 { scoreLink }
-                    if FriendsEntry.style == 3 { TodayStreakCard() }
-                    TodayStepsNextTiles(result: result)
-                    if FriendsEntry.style == 2 { TodayFriendsRow() }
                     if FriendsEntry.style == 0 { TodayFriendsCircleCard() }
+                    if FriendsEntry.style == 3 { TodayStreakCard() }
+                    if FriendsEntry.style == 2 { TodayFriendsRow() }
+                    TodayStepsNextTiles(result: result)
                     scheduleSection
                 }
                 .padding(.horizontal, 18)
@@ -250,6 +250,8 @@ struct TodayStepsNextTiles: View {
             .buttonStyle(.plain).accessibilityIdentifier("nextTile")
             .disabled(n.title != "Gym" && n.title != "Walk")
     }
+    /// Only legacy screenshot tours can expose Next; the real Today page never shows it.
+    private var showNextPreview: Bool { ProcessInfo.processInfo.arguments.contains("-detailVariant") }
     var body: some View {
         let n = next
         let style = Self.ringStyle
@@ -258,7 +260,7 @@ struct TodayStepsNextTiles: View {
             case 1, 2:
                 VStack(spacing: 12) {
                     ringCard(style == 2 ? "blue" : "orange")
-                    GlassEffectContainer { nextLink(n) }
+                    if showNextPreview { GlassEffectContainer { nextLink(n) } }
                 }
             case 3:
                 GlassEffectContainer(spacing: 12) {
@@ -272,7 +274,7 @@ struct TodayStepsNextTiles: View {
                             .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 22, style: .continuous))
                         }
                         .buttonStyle(.plain).accessibilityIdentifier("stepsTile")
-                        nextLink(n)
+                        if showNextPreview { nextLink(n) }
                     }
                 }
             case 4:
@@ -288,7 +290,7 @@ struct TodayStepsNextTiles: View {
                             .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 22, style: .continuous))
                         }
                         .buttonStyle(.plain).accessibilityIdentifier("stepsTile")
-                        nextLink(n).frame(maxHeight: .infinity)
+                        if showNextPreview { nextLink(n).frame(maxHeight: .infinity) }
                     }
                     .fixedSize(horizontal: false, vertical: true)
                 }
@@ -315,7 +317,7 @@ struct TodayStepsNextTiles: View {
                         }
                         .padding(.vertical, 6)
                     }
-                    GlassEffectContainer { nextLink(n) }
+                    if showNextPreview { GlassEffectContainer { nextLink(n) } }
                 }
             default:
                 GlassEffectContainer(spacing: 12) {
@@ -324,7 +326,7 @@ struct TodayStepsNextTiles: View {
                             tile("Steps", steps.map { $0.formatted() } ?? "–", "figure.walk")
                         }
                         .buttonStyle(.plain).accessibilityIdentifier("stepsTile")
-                        nextLink(n)
+                        if showNextPreview { nextLink(n) }
                     }
                 }
             }
