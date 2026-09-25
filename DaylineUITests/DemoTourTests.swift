@@ -759,7 +759,7 @@ final class DemoTourTests: XCTestCase {
             shot("widget-home-\(mode.lowercased())-customize")
             // A modal Customize sheet obscures the Home Screen. Dismiss it
             // before taking the picture David will actually review.
-            sb.coordinate(withNormalizedOffset: CGVector(dx: 0.74, dy: 0.55)).tap()
+            sb.coordinate(withNormalizedOffset: CGVector(dx: 0.74, dy: 0.25)).tap()
             pause(0.6)
             let finish = sb.buttons["Done"].firstMatch
             if finish.exists { finish.tap() }
@@ -1532,8 +1532,12 @@ final class DemoTourTests: XCTestCase {
             mic.press(forDuration: 1.2)
         }
         pause(1.5)
+        XCTAssertTrue(app.descendants(matching: .any)["audioHoldBar"].firstMatch.exists,
+                      "Hold did not start recording; do not label an idle-mic screenshot as red")
         shot("journal-voice-recording-red")
         tapID(app, "voiceStop"); pause(0.5)
+        XCTAssertTrue(app.descendants(matching: .any)["audioReadyBar"].firstMatch.exists,
+                      "Stop did not enter review; do not label an idle-mic screenshot as blue")
         shot("journal-voice-ready-blue")
     }
 

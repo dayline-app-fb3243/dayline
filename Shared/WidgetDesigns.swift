@@ -70,7 +70,7 @@ struct SeamlessWidgetScoreRing: View {
         let radius = diameter / 2
         let angle = (-90 + 360 * progress) * CGFloat.pi / 180
         ZStack {
-            Circle().stroke(Color(red: 0.89, green: 0.91, blue: 0.94), lineWidth: width)
+            Circle().stroke(Color(red: 0.89, green: 0.91, blue: 0.94).opacity(renderingMode == .accented ? 0.25 : 1), lineWidth: width)
                 .frame(width: diameter, height: diameter)
             Circle().trim(from: 0, to: progress)
                 .stroke(AngularGradient(stops: [
@@ -81,7 +81,14 @@ struct SeamlessWidgetScoreRing: View {
                         style: StrokeStyle(lineWidth: width, lineCap: .round))
                 .rotationEffect(.degrees(-90))
                 .frame(width: diameter, height: diameter)
-            if score > 0 {
+                .opacity(renderingMode == .accented ? 0.75 : 1)
+            if renderingMode == .accented {
+                // In tinted/clear widgets iOS flattens colored views to white.
+                // Place the score in the open center rather than on a white stroke.
+                Text("\(score)")
+                    .font(.system(size: size * 0.27, weight: .semibold, design: .rounded))
+                    .monospacedDigit()
+            } else if score > 0 {
                 Text("\(score)")
                     .font(.system(size: width * 0.47, weight: .bold, design: .rounded))
                     .minimumScaleFactor(0.7).lineLimit(1).monospacedDigit()
