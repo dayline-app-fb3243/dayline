@@ -21,6 +21,6 @@ brew install xcodegen
 xcodegen generate
 open Dayline.xcodeproj
 ```
-Run with the `-demo` launch argument to load sample data. `.github/workflows/preview.yml` builds on a GitHub macOS runner, runs a UI tour in the simulator and uploads screen recordings (light and dark).
+The standard project opens onboarding with an empty persistent data store. Run with the `-demo` launch argument for a seeded, in-memory simulator preview. For a separate seeded build without launch arguments, add `DAYLINE_DEMO_BUILD` to the Dayline target's `SWIFT_ACTIVE_COMPILATION_CONDITIONS` in `project.yml` before running `xcodegen generate`. Keep the two variants in separate project copies so their settings do not overwrite one another. `.github/workflows/preview.yml` builds on a GitHub macOS runner, runs a UI tour in the simulator and uploads screen recordings (light and dark).
 
 Publishing to the App Store / TestFlight needs an Apple Developer Program membership and a team ID in `project.yml`.

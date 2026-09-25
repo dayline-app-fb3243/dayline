@@ -2,12 +2,12 @@ import Foundation
 import SwiftData
 import UIKit
 
-/// Sample data is on for `-demo` runs and always in the simulator, so the full experience shows right away.
+/// Empty builds start with onboarding; explicit demo builds and -demo UI tests seed sample data.
 enum SampleMode {
     /// Screenshot runs pass "-no.lookaround" so search screens skip Look Around imagery (heavy on CI Macs).
     static let noLookAround = ProcessInfo.processInfo.arguments.contains("-no.lookaround")
     static let on: Bool = {
-        #if targetEnvironment(simulator)
+        #if DAYLINE_DEMO_BUILD
         return true
         #else
         return ProcessInfo.processInfo.arguments.contains("-demo")

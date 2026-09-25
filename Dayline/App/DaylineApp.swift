@@ -12,14 +12,14 @@ struct DaylineApp: App {
         let args = ProcessInfo.processInfo.arguments
         // Yes / No actions for check-in questions; answers arrive even when the app isn't open.
         MainActor.assumeIsolated { CheckInService.registerCategories() }
-        // Demo runs skip onboarding unless -onboarding is passed (used to record the first-launch flow).
-        if args.contains("-demo") { UserDefaults.standard.set(!args.contains("-onboarding"), forKey: "onboarding.done") }
+        // Seeded demo build opens the reviewed sample, while -onboarding forces the first-launch tour.
+        if SampleMode.on { UserDefaults.standard.set(!args.contains("-onboarding"), forKey: "onboarding.done") }
         // Every demo run starts on the default Dayline background (the tour picks Sunset later on).
-        if args.contains("-demo") { UserDefaults.standard.removeObject(forKey: "background.preset") }
+        if SampleMode.on { UserDefaults.standard.removeObject(forKey: "background.preset") }
         if let i = args.firstIndex(of: "-background"), i + 1 < args.count { UserDefaults.standard.set(args[i + 1], forKey: "background.preset") }
         if let i = args.firstIndex(of: "-factorIcons"), i + 1 < args.count { UserDefaults.standard.set(args[i + 1], forKey: "factorIcons") }
         // Demo tour runs as a signed-in sample user (so Sign Out shows); onboarding runs start signed out.
-        if args.contains("-demo") {
+        if SampleMode.on {
             let d = UserDefaults.standard
             if args.contains("-onboarding") { ["auth.userID", "auth.name", "auth.email", "auth.provider"].forEach { d.removeObject(forKey: $0) } }
             else { d.set("demo", forKey: "auth.userID"); d.set("Alex Kim", forKey: "auth.name"); d.set("alex@example.com", forKey: "auth.email"); d.set("apple", forKey: "auth.provider") }
