@@ -29,7 +29,7 @@ struct SiriCommandsView: View {
                     VStack(alignment: .leading, spacing: 0) {
                         ForEach(Array(SiriExamples.all.enumerated()), id: \.offset) { i, p in
                             if i > 0 { Divider().padding(.leading, 16) }
-                            Text(p).font(.subheadline).foregroundStyle(.primary)
+                            Text("\u{201C}\(p)\u{201D}").font(.subheadline).foregroundStyle(.primary)
                                 .lineLimit(1).minimumScaleFactor(0.78)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding(.horizontal, 16).padding(.vertical, 13)

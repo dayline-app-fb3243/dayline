@@ -120,6 +120,16 @@ final class DemoTourTests: XCTestCase {
         shot("auth-returning-restored")
     }
 
+    func testQuotedSiriExamples() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo", "-appearance", "light"]
+        app.launch(); pause(1)
+        tab(app, "Profile"); pause(1)
+        tapID(app, "useWithSiriRow"); pause(1)
+        XCTAssertTrue(app.staticTexts["“Hey Siri, take me back with Dayline”"].exists)
+        shot("siri-quoted-examples-light")
+    }
+
     func testNewAccountSplashPaths() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-demo", "-onboarding"]
