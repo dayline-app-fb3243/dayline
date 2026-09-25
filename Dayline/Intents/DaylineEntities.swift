@@ -41,10 +41,10 @@ struct DaylineVisitQuery: EntityStringQuery, IndexedEntityQuery {
         try await MainActor.run { Array(try all().sorted { $0.arrived > $1.arrived }.prefix(30)) }
     }
     func reindexEntities(for identifiers: [String], indexDescription: CSSearchableIndexDescription) async throws {
-        try await CSSearchableIndex(name: EntityIndex.name).indexAppEntities(entities(for: identifiers))
+        try await CSSearchableIndex(name: EntityIndex.name).indexAppEntities(try await entities(for: identifiers))
     }
     func reindexAllEntities(indexDescription: CSSearchableIndexDescription) async throws {
-        try await CSSearchableIndex(name: EntityIndex.name).indexAppEntities(suggestedEntities())
+        try await CSSearchableIndex(name: EntityIndex.name).indexAppEntities(try await suggestedEntities())
     }
 }
 
@@ -79,10 +79,10 @@ struct DaylineJournalQuery: EntityStringQuery, IndexedEntityQuery {
         try await MainActor.run { Array(try all().sorted { $0.date > $1.date }.prefix(30)) }
     }
     func reindexEntities(for identifiers: [String], indexDescription: CSSearchableIndexDescription) async throws {
-        try await CSSearchableIndex(name: EntityIndex.name).indexAppEntities(entities(for: identifiers))
+        try await CSSearchableIndex(name: EntityIndex.name).indexAppEntities(try await entities(for: identifiers))
     }
     func reindexAllEntities(indexDescription: CSSearchableIndexDescription) async throws {
-        try await CSSearchableIndex(name: EntityIndex.name).indexAppEntities(suggestedEntities())
+        try await CSSearchableIndex(name: EntityIndex.name).indexAppEntities(try await suggestedEntities())
     }
 }
 
@@ -115,10 +115,10 @@ struct DaylinePlanQuery: EntityStringQuery, IndexedEntityQuery {
         try await MainActor.run { Array(try all().sorted { $0.starts > $1.starts }.prefix(30)) }
     }
     func reindexEntities(for identifiers: [String], indexDescription: CSSearchableIndexDescription) async throws {
-        try await CSSearchableIndex(name: EntityIndex.name).indexAppEntities(entities(for: identifiers))
+        try await CSSearchableIndex(name: EntityIndex.name).indexAppEntities(try await entities(for: identifiers))
     }
     func reindexAllEntities(indexDescription: CSSearchableIndexDescription) async throws {
-        try await CSSearchableIndex(name: EntityIndex.name).indexAppEntities(suggestedEntities())
+        try await CSSearchableIndex(name: EntityIndex.name).indexAppEntities(try await suggestedEntities())
     }
 }
 
@@ -147,10 +147,10 @@ struct DaylinePastScoreQuery: EntityQuery, IndexedEntityQuery {
         try await MainActor.run { Array(try all().sorted { $0.date > $1.date }.prefix(30)) }
     }
     func reindexEntities(for identifiers: [String], indexDescription: CSSearchableIndexDescription) async throws {
-        try await CSSearchableIndex(name: EntityIndex.name).indexAppEntities(entities(for: identifiers))
+        try await CSSearchableIndex(name: EntityIndex.name).indexAppEntities(try await entities(for: identifiers))
     }
     func reindexAllEntities(indexDescription: CSSearchableIndexDescription) async throws {
-        try await CSSearchableIndex(name: EntityIndex.name).indexAppEntities(suggestedEntities())
+        try await CSSearchableIndex(name: EntityIndex.name).indexAppEntities(try await suggestedEntities())
     }
 }
 
