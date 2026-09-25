@@ -41,10 +41,10 @@ struct TodayView: View {
                         .accessibilityIdentifier("todayEmptyState")
                     }
                     if TodayStepsNextTiles.ringStyle != 5 { scoreLink }
+                    TodayStepsNextTiles(result: result, showEmpty: isFreshStart)
                     if FriendsEntry.style == 0 { TodayFriendsCircleCard() }
                     if FriendsEntry.style == 3 { TodayStreakCard() }
                     if FriendsEntry.style == 2 { TodayFriendsRow() }
-                    TodayStepsNextTiles(result: result, showEmpty: isFreshStart)
                     scheduleSection
                 }
                 .padding(.horizontal, 18)

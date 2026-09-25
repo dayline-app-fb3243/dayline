@@ -1356,14 +1356,14 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
-    /// Friends sits above Steps, and Next is absent from the real Today page.
-    func testTodayFriendsBeforeStepsNoNext() throws {
+    /// Day Score, Steps, Friends is the selected Today order; Next stays absent.
+    func testTodayScoreStepsFriendsNoNext() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-demo"]
         app.launch(); pause(1.5)
         XCTAssertTrue(app.descendants(matching: .any)["friendsCircleCard"].firstMatch.exists)
         XCTAssertFalse(app.descendants(matching: .any)["nextTile"].firstMatch.exists)
-        shot("today-friends-before-steps")
+        shot("today-score-steps-friends")
     }
 
     /// Picked Friends card on Today and full Streak page on tap.
