@@ -9,11 +9,14 @@ jobs:
     timeout-minutes: 50
     steps:
       - uses: actions/checkout@v4
-      - name: Generate both projects and compile both modes
+      - name: Generate both projects, compile, and capture first launch
         run: |
           set -euo pipefail
           brew install xcodegen
-          mkdir -p /tmp/out
+          mkdir -p /tmp/out /tmp/first-launch
+          UDID=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin)["devices"]; print(next(x["udid"] for k in sorted(d,reverse=True) if "iOS" in k for x in d[k] if "iPhone" in x["name"] and "Pro" in x["name"] and "Max" not in x["name"]))')
+          xcrun simctl boot "$UDID" || true
+          xcrun simctl bootstatus "$UDID" -b
           for MODE in Empty Demo; do
             mkdir -p "/tmp/out/Dayline-${MODE}"
             rsync -a --exclude .git --exclude .github ./ "/tmp/out/Dayline-${MODE}/"
@@ -24,10 +27,21 @@ jobs:
             xcodegen generate
             xcodebuild -project Dayline.xcodeproj -scheme Dayline -destination 'generic/platform=iOS Simulator' -derivedDataPath "/tmp/dd-${MODE}" build > "/tmp/build-${MODE}.log" 2>&1 || { grep -E 'error:' "/tmp/build-${MODE}.log" | sort -u | head -60; exit 1; }
             if [ "$MODE" = Demo ]; then grep -q DAYLINE_DEMO_BUILD project.yml; else ! grep -q DAYLINE_DEMO_BUILD project.yml; fi
+            xcrun simctl terminate "$UDID" app.dayline 2>/dev/null || true
+            xcrun simctl uninstall "$UDID" app.dayline 2>/dev/null || true
+            APP=$(find "/tmp/dd-${MODE}/Build/Products" -maxdepth 2 -name Dayline.app -path '*iphonesimulator*' | head -1)
+            xcrun simctl install "$UDID" "$APP"
+            xcrun simctl launch "$UDID" app.dayline
+            sleep 5
+            xcrun simctl io "$UDID" screenshot "/tmp/first-launch/${MODE}.png"
             cd /tmp/out
             zip -qry "Dayline-${MODE}.zip" "Dayline-${MODE}"
             echo "$MODE project ready: $(du -h "Dayline-${MODE}.zip")"
           done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: first-launch-empty-and-demo
+          path: /tmp/first-launch/*.png
       - uses: actions/upload-artifact@v4
         with:
           name: Dayline-empty-and-demo-xcode
