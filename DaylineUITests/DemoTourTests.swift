@@ -76,7 +76,10 @@ final class DemoTourTests: XCTestCase {
         app.launchArguments = ["-demo", "-demoAllNotifications"]
         app.launch()
         let allow = spring.buttons["Allow"]
-        if allow.waitForExistence(timeout: 6) { allow.tap() }
+        XCTAssertTrue(allow.waitForExistence(timeout: 15), "Native notification permission prompt did not appear")
+        shot("notification-permission-system-prompt")
+        allow.tap()
+        XCTAssertFalse(allow.waitForExistence(timeout: 5), "Notification permission prompt did not dismiss")
         XCUIDevice.shared.press(.home)
         pause(10)
         let start = spring.coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.005))
