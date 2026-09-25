@@ -594,12 +594,29 @@ final class DemoTourTests: XCTestCase {
 
     private func pause(_ seconds: TimeInterval) { Thread.sleep(forTimeInterval: seconds) }
 
-    /// Compare UIKit's actual preferred text font on the same simulator with the app screenshot.
+    /// Capture the simulator's resolved Apple system font families, including the score ring's exact 25.2pt bold.
     func testSystemFontName() throws {
-        let regular = UIFont.preferredFont(forTextStyle: .body)
-        let title = UIFont.preferredFont(forTextStyle: .largeTitle)
-        NSLog("DAYLINE_FONT_PROOF body=\(regular.fontName) family=\(regular.familyName) title=\(title.fontName) family=\(title.familyName)")
-        XCTAssertTrue(regular.fontName.contains("SF") || regular.fontName.contains("System"), "Unexpected system font: \(regular.fontName)")
+        let styles: [(String, UIFont.TextStyle)] = [
+            ("largeTitle", .largeTitle), ("title1", .title1), ("title2", .title2),
+            ("title3", .title3), ("headline", .headline), ("body", .body),
+            ("callout", .callout), ("subheadline", .subheadline), ("footnote", .footnote),
+            ("caption1", .caption1), ("caption2", .caption2)
+        ]
+        var rows: [String] = []
+        for (name, style) in styles {
+            let font = UIFont.preferredFont(forTextStyle: style)
+            rows.append("\(name): \(font.fontName) | family=\(font.familyName) | size=\(font.pointSize)")
+            XCTAssertTrue(font.fontName.contains("SF") || font.fontName.contains("System"), "Unexpected font: \(font.fontName)")
+        }
+        let scoreSize = UIFontMetrics(forTextStyle: .largeTitle).scaledValue(for: 84 * 0.3)
+        let score = UIFont.systemFont(ofSize: scoreSize, weight: .bold)
+        let scoreRounded = score.fontDescriptor.withDesign(.rounded).map { UIFont(descriptor: $0, size: scoreSize) }
+        let scoreMono = UIFont.monospacedSystemFont(ofSize: scoreSize, weight: .bold)
+        rows.append("ScoreRing actual .scaled(size:84*0.3, weight:.bold, design:nil): \(score.fontName) | family=\(score.familyName) | size=\(score.pointSize)")
+        rows.append("score rounded system variant (not applied): \(scoreRounded?.fontName ?? "unavailable") | family=\(scoreRounded?.familyName ?? "unavailable")")
+        rows.append("score monospaced system variant (not applied): \(scoreMono.fontName) | family=\(scoreMono.familyName)")
+        XCTAssertTrue(score.fontName.contains("SF") || score.fontName.contains("System"))
+        try rows.joined(separator: "\n").write(to: URL(fileURLWithPath: "\(Self.shotDir)/font-proof.txt"), atomically: true, encoding: .utf8)
         let app = XCUIApplication()
         app.launchArguments = ["-demo"]
         app.launch(); pause(1)
