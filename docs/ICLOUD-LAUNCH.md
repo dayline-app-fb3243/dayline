@@ -9,3 +9,10 @@ This source still runs a local SwiftData store. Do not set `DAYLINE_CLOUDKIT_ENA
 5. Only then enable Account's backup status UI and update the privacy and account copy. Current UI deliberately says "Not configured".
 
 CI simulator builds and unsigned Xcode project zips do not prove iCloud sync.
+
+## Other release dependencies
+
+- Configure Google Cloud Places API and billing/restrictions for real place opening hours; the current build shows only clearly labeled demo hours or "Hours unavailable" without a key.
+- Replace `PeopleStore.inviteText`'s `https://dayline.app/invite` placeholder with a live, tested invite URL/domain. Native Messages composition is wired on capable iPhones; simulator fallback may be a share sheet.
+- Enroll in the Apple Developer Program (verify the current membership price and region with Apple), then supply the Team ID and CloudKit container/capabilities above.
+- Verify native notification delivery, reminders, and permission persistence on a signed real device, including install/reinstall and Settings changes.
