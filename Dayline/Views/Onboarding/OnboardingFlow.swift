@@ -625,7 +625,8 @@ struct PermissionsView: View {
     }
 
     @MainActor private func request(_ kind: String) async {
-        guard !isDemo else { return }
+        // Even the seeded build shows the genuine Contacts permission choice.
+        guard !isDemo || kind == "contacts" else { return }
         switch kind {
         case "location":
             LocationService.shared.requestPermission()

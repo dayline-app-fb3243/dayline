@@ -162,7 +162,10 @@ final class DemoTourTests: XCTestCase {
         codeField.typeText("13"); tapID(app, "setupPrimary"); pause(1.5); shot("06-permissions")
         tapID(app, "permissionsContinue"); pause(1.2); shot("06b-permissions-photos")
         tapID(app, "permissionsContinue"); pause(1.2); shot("06b2-permissions-contacts")
-        tapID(app, "permissionsContinue"); pause(1.2); shot("06c-permissions-mic")
+        tapID(app, "permissionsContinue")
+        let contactsAllow = XCUIApplication(bundleIdentifier: "com.apple.springboard").buttons["Allow Full Access"]
+        if contactsAllow.waitForExistence(timeout: 4) { shot("06b3-contacts-system-prompt"); contactsAllow.tap() }
+        pause(1.2); shot("06c-permissions-mic")
         tapID(app, "permissionsContinue"); pause(1.2); shot("06c2-permissions-motion")
         tapID(app, "permissionsContinue"); pause(1.2); shot("06c3-permissions-health")
         tapID(app, "permissionsContinue"); pause(1.2); shot("06c4-permissions-reminders")
