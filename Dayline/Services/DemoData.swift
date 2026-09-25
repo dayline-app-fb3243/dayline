@@ -242,7 +242,7 @@ enum DemoData {
         context.insert(cafePhoto)
         }
         // Photos from earlier this month, placed where they were taken.
-        for (i, name) in ["demo-park", "demo-sunset", "demo-coffee"].enumerated() {
+        for (i, name) in ["demo-park", "demo-sunset", "demo-danish"].enumerated() {
             let day = calendar.date(byAdding: .day, value: -(i * 3 + 6), to: today)!
             let p = [park, food, cafe][i]
             context.insert(JournalEntry(date: at(day, 12 + i * 3, 0), kind: .photo, thumbnail: photo(name), latitude: p.0, longitude: p.1))
