@@ -124,12 +124,16 @@ struct WidgetScoreOption: View {
                 }
             } else {
                 VStack(spacing: 5) {
-                    if d.titlePlacement != 1 { Text("Day score").font(.subheadline.weight(.semibold)).frame(maxWidth: .infinity, alignment: .leading) }
+                    if d.titlePlacement != 1 {
+                        Text("Day score").font(.subheadline.weight(.semibold))
+                            .frame(maxWidth: .infinity, alignment: .center)
+                    }
                     Spacer(minLength: 0)
                     DaylineWidgetScoreRing(score: score, size: d.scoreSize, width: d.ringWidth)
                     Spacer(minLength: 0)
                     Text(d.titlePlacement == 1 ? "Day score" : "On track")
                         .font(.footnote).foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .center)
                 }
             }
         }

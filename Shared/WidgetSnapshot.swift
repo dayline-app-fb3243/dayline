@@ -42,17 +42,16 @@ enum SharedStore {
     static let appGroup = "group.app.dayline.shared"
     private static let key = "widgetSnapshot"
 
-    static var defaults: UserDefaults {
-        UserDefaults(suiteName: appGroup) ?? .standard
-    }
+    /// No fallback to a process-local default: that would show stale data as if synced.
+    static var defaults: UserDefaults? { UserDefaults(suiteName: appGroup) }
 
     static func save(_ snapshot: WidgetSnapshot) {
         guard let data = try? JSONEncoder().encode(snapshot) else { return }
-        defaults.set(data, forKey: key)
+        defaults?.set(data, forKey: key)
     }
 
     static func load() -> WidgetSnapshot? {
-        guard let data = defaults.data(forKey: key) else { return nil }
+        guard let data = defaults?.data(forKey: key) else { return nil }
         return try? JSONDecoder().decode(WidgetSnapshot.self, from: data)
     }
 }

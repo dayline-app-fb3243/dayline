@@ -8,12 +8,17 @@ struct DayEntry: TimelineEntry {
 }
 
 struct DayProvider: TimelineProvider {
+    private func current() -> WidgetSnapshot {
+        guard let snapshot = SharedStore.load(),
+              Calendar.current.isDate(snapshot.date, inSameDayAs: .now) else { return .placeholder }
+        return snapshot
+    }
     func placeholder(in context: Context) -> DayEntry { DayEntry(date: .now, snapshot: .placeholder) }
     func getSnapshot(in context: Context, completion: @escaping (DayEntry) -> Void) {
-        completion(DayEntry(date: .now, snapshot: SharedStore.load() ?? .placeholder))
+        completion(DayEntry(date: .now, snapshot: current()))
     }
     func getTimeline(in context: Context, completion: @escaping (Timeline<DayEntry>) -> Void) {
-        let entry = DayEntry(date: .now, snapshot: SharedStore.load() ?? .placeholder)
+        let entry = DayEntry(date: .now, snapshot: current())
         // The app reloads widgets whenever the score changes; this is just a fallback refresh.
         completion(Timeline(entries: [entry], policy: .after(.now.addingTimeInterval(30 * 60))))
     }
