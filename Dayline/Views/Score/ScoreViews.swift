@@ -145,14 +145,7 @@ struct ScoreDetailView: View {
                     }
                     if !r.factors.isEmpty {
                         SectionHeader(b == 0 ? "What shaped today" : "What shaped \(title(b).lowercased() == "yesterday" ? "yesterday" : title(b))")
-                        Card(padding: 0) {
-                            VStack(spacing: 0) {
-                                ForEach(Array(r.factors.enumerated()), id: \.element.id) { i, f in
-                                    FactorRow(factor: f)
-                                    if i < r.factors.count - 1 { Divider().padding(.leading, 62) }
-                                }
-                            }
-                        }
+                        FactorGlassList(factors: r.factors)
                     }
                 } else {
                     Card {
@@ -428,6 +421,50 @@ struct DayActivityList: View {
     }
 }
 
+/// Reference from Find My: a translucent sheet around rows with circular symbol icons.
+/// Variations only affect this list, not the score or the rest of the page.
+enum FactorGlassStyle {
+    static var chosen: Int {
+        let a = ProcessInfo.processInfo.arguments
+        guard let i = a.firstIndex(of: "-factorGlass"), i + 1 < a.count else { return 0 }
+        return Int(a[i + 1]) ?? 0
+    }
+}
+
+struct FactorGlassList: View {
+    let factors: [ScoreFactor]
+    private var style: Int { FactorGlassStyle.chosen }
+    var body: some View {
+        Group {
+            if style == 0 {
+                Card(padding: 0) { rows }
+            } else if style == 1 {
+                rows.padding(.vertical, 3)
+                    .glassEffect(.regular, in: .rect(cornerRadius: 28))
+            } else if style == 2 {
+                rows.padding(.vertical, 6)
+                    .background(.thinMaterial, in: .rect(cornerRadius: 28))
+                    .overlay(RoundedRectangle(cornerRadius: 28).stroke(.white.opacity(0.35), lineWidth: 0.5))
+            } else {
+                VStack(spacing: 8) {
+                    ForEach(factors) { f in
+                        FactorRow(factor: f)
+                            .background(.regularMaterial, in: .rect(cornerRadius: 22))
+                    }
+                }
+            }
+        }
+    }
+    private var rows: some View {
+        VStack(spacing: 0) {
+            ForEach(Array(factors.enumerated()), id: \.element.id) { i, f in
+                FactorRow(factor: f)
+                if i < factors.count - 1 { Divider().padding(.leading, 62).padding(.trailing, 16) }
+            }
+        }
+    }
+}
+
 struct FactorRow: View {
     var factor: ScoreFactor
     @AppStorage("symbols.show") private var showSymbols = true
@@ -440,9 +477,19 @@ struct FactorRow: View {
             // orange when it took points away. factorIcons = "bare" (preview): the symbol alone, no circle.
             if showSymbols {
                 let tint = factor.points < 0 ? Theme.bad : Theme.accent
-                Image(systemName: symbol).font(.subheadline.weight(.semibold)).foregroundStyle(tint)
-                    .frame(width: 34, height: 34)
-                    .background(iconStyle == "bare" ? Color.clear : tint.opacity(0.14), in: .circle)
+                Group {
+                    if FactorGlassStyle.chosen > 0 {
+                        Image(systemName: symbol).font(.subheadline.weight(.semibold)).foregroundStyle(tint)
+                            .frame(width: FactorGlassStyle.chosen == 3 ? 42 : 38,
+                                   height: FactorGlassStyle.chosen == 3 ? 42 : 38)
+                            .background(tint.opacity(0.13), in: .circle)
+                            .glassEffect(FactorGlassStyle.chosen == 2 ? .clear : .regular, in: .circle)
+                    } else {
+                        Image(systemName: symbol).font(.subheadline.weight(.semibold)).foregroundStyle(tint)
+                            .frame(width: 34, height: 34)
+                            .background(iconStyle == "bare" ? Color.clear : tint.opacity(0.14), in: .circle)
+                    }
+                }
             }
             VStack(alignment: .leading, spacing: 1) {
                 Text(factor.title).font(.body)

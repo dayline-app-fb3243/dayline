@@ -45,14 +45,7 @@ struct InsightsView: View {
             ScoreCard(result: r)
             if !r.factors.isEmpty {
                 SectionHeader("What shaped today")
-                Card(padding: 0) {
-                    VStack(spacing: 0) {
-                        ForEach(Array(r.factors.enumerated()), id: \.element.id) { i, f in
-                            FactorRow(factor: f)
-                            if i < r.factors.count - 1 { Divider().padding(.leading, 62) }
-                        }
-                    }
-                }
+                FactorGlassList(factors: r.factors)
             }
         }
     }

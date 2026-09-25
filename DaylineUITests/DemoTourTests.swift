@@ -713,6 +713,21 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Find My inspired frosted factor-list options, in light and dark mode.
+    func testFactorGlass() throws { factorGlassShots("light") }
+    func testFactorGlassDark() throws { factorGlassShots("dark") }
+    private func factorGlassShots(_ mode: String) {
+        for n in 1...3 {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-factorGlass", "\(n)"]
+            app.launch(); pause(1.2)
+            tapID(app, "scoreCard"); pause(1.8)
+            app.swipeUp(); pause(1)
+            shot("fg\(n)-\(mode)")
+            app.terminate()
+        }
+    }
+
     /// Full map: panel 8pt from the screen edges, Maps logo just above it.
     func testFullMapEdges() throws {
         let app = XCUIApplication()
