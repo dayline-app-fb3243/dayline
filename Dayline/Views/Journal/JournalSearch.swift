@@ -139,7 +139,7 @@ enum JournalSearch {
         // One result per place per day.
         var seen = Set<String>()
         hits = hits.filter { seen.insert("\($0.place)|\(cal.startOfDay(for: $0.date).timeIntervalSince1970)").inserted }
-        return hits.sorted { $0.date > $1.date }
+        return Array(hits.sorted { $0.date > $1.date }.prefix(generic && day == nil && !lastWeek ? 20 : 200))
     }
 }
 
@@ -228,7 +228,7 @@ enum SearchSuggestions {
                 tokens.contains { distance(String($0.prefix(word.count)), word) <= (word.count > 5 ? 2 : 1) }
             }
             return !direct.contains(item) && !starts.contains(item) && partial.count >= 3 &&
-                (lastMatches || prefixMatches)
+                lastMatches && (typed.count == 1 || prefixMatches)
         }
         return Array((direct + starts + fuzzy).prefix(5))
     }
