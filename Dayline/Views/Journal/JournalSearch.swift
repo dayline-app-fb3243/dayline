@@ -127,43 +127,26 @@ enum JournalSearch {
     }
 }
 
-/// Search screen. Preview flag "journal.search": A = bar at the top (pushed screen), B = bar at the bottom,
-/// C = field always showing under the Journal title (results replace the list).
+/// Search screen, pushed from the Journal: the search bar at the top, results under it.
 struct JournalSearchView: View {
-    var barAtBottom = false
     @State var query: String
     /// What the results show: set when you press Search on the keyboard (or tap a suggestion).
     @State private var submitted: String?
     @Query(sort: \JournalEntry.date, order: .reverse) var entries: [JournalEntry]
     @Query var visits: [Visit]
-    @Environment(\.dismiss) var dismiss
 
     var body: some View {
         VStack(spacing: 0) {
-            if !barAtBottom { bar.padding(.horizontal, 16).padding(.top, 8).padding(.bottom, 6) }
+            JournalSearchField(query: $query, onSubmit: { submitted = query })
+                .padding(.horizontal, 16).padding(.top, 8).padding(.bottom, 6)
             ScrollView {
                 SearchResultsList(query: query.isEmpty ? "" : (submitted ?? ""), entries: entries, visits: visits, onPick: { query = $0; submitted = $0 }).padding(.horizontal, 16).padding(.top, 8)
             }
-            if barAtBottom { bar.padding(.horizontal, 16).padding(.vertical, 10) }
         }
         .background(AppBackgroundView())
-        .navigationTitle(barAtBottom ? "Search" : "")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear { if submitted == nil && !query.isEmpty { submitted = query } }
         .toolbarVisibility(.hidden, for: .tabBar)
-    }
-
-    private var bar: some View {
-        HStack(spacing: 10) {
-            JournalSearchField(query: $query, onSubmit: { submitted = query })
-            if barAtBottom {
-                Button { dismiss() } label: {
-                    Image(systemName: "xmark").font(.system(size: 16, weight: .semibold)).foregroundStyle(.primary)
-                        .frame(width: 48, height: 48)
-                }
-                .buttonStyle(.plain).glassEffect(.regular.interactive(), in: .circle).accessibilityLabel("Close")
-            }
-        }
     }
 }
 
@@ -194,16 +177,8 @@ struct SearchResultsList: View {
     var query: String
     var entries: [JournalEntry]
     var visits: [Visit]
-    @AppStorage("search.results") private var resultsStyle = ""
     var onPick: (String) -> Void = { _ in }
     var body: some View {
-        if resultsStyle == "rich" {
-            RichSearchResults(query: query, entries: entries, visits: visits, onPick: onPick)
-        } else {
-            plainList
-        }
-    }
-    @ViewBuilder private var plainList: some View {
         let hits = query.trimmingCharacters(in: .whitespaces).isEmpty ? [] : JournalSearch.run(query, entries: entries, visits: visits)
         VStack(alignment: .leading, spacing: 10) {
             if query.isEmpty {

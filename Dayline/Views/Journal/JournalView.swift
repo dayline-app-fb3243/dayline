@@ -20,34 +20,20 @@ struct JournalView: View {
             .map { day, items in (day, JournalGroup.make(items.sorted { $0.date > $1.date }, visits: visits)) }
     }
 
-    /// Preview "journal.page" 1-5: Journal layouts ("" = the current cards). Sample-only until one is picked.
-    @AppStorage("journal.page") private var jPage = ""
     @State private var composing = false
-    /// Search button style "journal.search": B (default) = one glass capsule holding search and +.
-    /// A = its own glass circle next to +, C = a search field under the title (kept as preview options).
-    @AppStorage("journal.search") private var searchStyle = "B"
+    /// Screenshot hook: opens search with this query.
     @AppStorage("journal.searchQuery") private var demoQuery = ""
     @State private var searching = false
-    @State private var inlineQuery = ""
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 10) {
                     TabTitle("Journal") { titleButtons }
-                    if searchStyle == "C" {
-                        JournalSearchField(query: $inlineQuery).padding(.bottom, 4)
-                    }
-                    if searchStyle == "C" && !inlineQuery.isEmpty {
-                        SearchResultsList(query: inlineQuery, entries: entries, visits: visits, onPick: { inlineQuery = $0 })
-                    } else {
                     if entries.isEmpty {
                         ContentUnavailableView("No journal yet", systemImage: "doc.text",
                                                description: Text("Tap + to write, add a photo or record a voice memo."))
                     }
-                    if !jPage.isEmpty {
-                        JournalPageSample(page: jPage, days: days) { editingGroup = $0 }
-                    } else {
                     ForEach(days, id: \.0) { day, groups in
                         Text(Calendar.current.isDateInToday(day) ? "Today" : day.formatted(.dateTime.weekday(.wide).month(.abbreviated).day()))
                             .font(.subheadline.weight(.semibold)).helperText()
@@ -57,19 +43,17 @@ struct JournalView: View {
                                 .accessibilityIdentifier("journalCard")
                         }
                     }
-                    }
-                    }
                 }
                 .padding(.horizontal, 18).padding(.bottom, 30)
             }
             .background(AppBackgroundView())
             .navigationTitle("Journal")
             .tabRoot()
-            .navigationDestination(isPresented: $searching) { JournalSearchView(barAtBottom: false, query: demoQuery) }
+            .navigationDestination(isPresented: $searching) { JournalSearchView(query: demoQuery) }
             .onReceive(NotificationCenter.default.publisher(for: .showOnMap)) { _ in searching = false }
             .onAppear {
                 guard !demoQuery.isEmpty else { return }
-                if searchStyle == "C" { inlineQuery = demoQuery } else if !searchStyle.isEmpty { searching = true }
+                searching = true
             }
             .sheet(isPresented: $composing) { NavigationStack { NewEntryView(onDone: { composing = false }) } }
             .sheet(item: $editingGroup) { g in NavigationStack { NewEntryView(onDone: { editingGroup = nil }, editing: g) } }
@@ -94,20 +78,11 @@ extension JournalView {
         .accessibilityLabel("Search")
         .accessibilityIdentifier("journalSearch")
     }
-    @ViewBuilder var titleButtons: some View {
-        switch searchStyle {
-        case "A":
-            HStack(spacing: 10) {
-                searchButton.glassEffect(.regular.interactive(), in: .circle)
-                plusButton.glassEffect(.regular.interactive(), in: .circle)
-            }
-        case "B":
-            HStack(spacing: 0) { searchButton; plusButton }
-                .padding(.horizontal, 4)
-                .glassEffect(.regular.interactive(), in: .capsule)
-        default:
-            plusButton.glassEffect(.regular.interactive(), in: .circle)
-        }
+    /// Search and + in one glass capsule.
+    var titleButtons: some View {
+        HStack(spacing: 0) { searchButton; plusButton }
+            .padding(.horizontal, 4)
+            .glassEffect(.regular.interactive(), in: .capsule)
     }
 }
 
@@ -163,30 +138,13 @@ struct JournalGroup: Identifiable {
     }
 }
 
-/// One card in the Journal. Preview flag "journal.cardStyle" (David picks):
-/// A = icon + title (place under it), photos, text, voice; B = photos on top like Apple Journal, then title, text, voice, place · time at the bottom;
-/// C = no icon: title, place · time, then text, photos, voice.
+/// One card in the Journal: photos inside the card (a big one and a narrow one side by side),
+/// then the heading with the time top-right, the place under it, text and voice memo.
 struct JournalCard: View {
     let group: JournalGroup
-    /// Photos inside the card with a white border, a big photo and a narrow one side by side.
-    @AppStorage("journal.cardStyle") private var style = "inset"
-    /// "journal.near": A (default) = time top right of each card. "" = the card before that; B/C = other takes.
-    /// A = time top-right next to the heading, place under it, taller photos. B = photos run edge to edge at the top.
-    /// C = place with a pin and time on one line under the heading, slightly smaller photos.
-    @AppStorage("journal.near") private var near = "A"
     private var heading: String { group.title ?? group.place ?? (group.kind == .voice ? "Voice memo" : group.kind == .photo ? "Photo" : "Journal") }
-    private var meta: String { [group.title != nil ? group.place : nil, group.date.shortTime].compactMap { $0 }.joined(separator: " · ") }
 
     var body: some View {
-        switch style {
-        case "A": styleA
-        case "B": styleB
-        case "C": styleC
-        default: styleInset
-        }
-    }
-
-    private var styleInset: some View {
         VStack(alignment: .leading, spacing: 0) {
             if !group.photos.isEmpty {
                 GeometryReader { g in
@@ -197,7 +155,7 @@ struct JournalCard: View {
                             let w = images.count == 1 ? g.size.width : (i == 0 ? (g.size.width - gap) * 0.62 : (g.size.width - gap) * 0.38)
                             Color.clear.frame(width: w, height: g.size.height)
                                 .overlay { Image(uiImage: image).resizable().scaledToFill() }
-                                .clipShape(.rect(cornerRadius: near == "B" ? 0 : 16, style: .continuous))
+                                .clipShape(.rect(cornerRadius: 16, style: .continuous))
                                 .overlay {
                                     if group.videos.contains(i) {
                                         Image(systemName: "play.fill").font(.caption).foregroundStyle(.white)
@@ -207,116 +165,24 @@ struct JournalCard: View {
                         }
                     }
                 }
-                .frame(height: near == "A" ? 180 : near == "C" ? 130 : 150)
-                .padding([.horizontal, .top], near == "B" ? 0 : 10)
+                .frame(height: 180)
+                .padding([.horizontal, .top], 10)
             }
             VStack(alignment: .leading, spacing: 6) {
-                switch near {
-                case "A":
-                    HStack(alignment: .firstTextBaseline) {
-                        Text(heading).font(.headline)
-                        Spacer()
-                        Text(group.date.shortTime).font(.caption).foregroundStyle(.secondary)
-                    }
-                    if group.title != nil, let place = group.place { Text(place).font(.caption).foregroundStyle(.secondary) }
-                    textBlock
-                    voiceBlock
-                case "C":
+                HStack(alignment: .firstTextBaseline) {
                     Text(heading).font(.headline)
-                    Label(meta, systemImage: "mappin").font(.caption).foregroundStyle(.secondary)
-                    textBlock
-                    voiceBlock
-                default:
-                    Text(heading).font(.headline)
-                    textBlock
-                    voiceBlock
-                    Text(meta).font(.caption).foregroundStyle(.secondary)
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(14)
-        }
-        .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: Theme.cardRadius, style: .continuous))
-        .clipShape(.rect(cornerRadius: Theme.cardRadius, style: .continuous))
-    }
-
-    private var styleA: some View {
-        Card(padding: 14) {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack(spacing: 10) {
-                    Image(systemName: group.kind == .voice ? "mic" : group.kind == .photo ? "photo" : "pencil")
-                        .font(.scaled(size: 14, weight: .semibold)).foregroundStyle(.white)
-                        .frame(width: 29, height: 29).background(Theme.accent, in: .rect(cornerRadius: 7, style: .continuous))
-                    VStack(alignment: .leading, spacing: 0) {
-                        Text(heading).font(.subheadline.weight(.semibold))
-                        if group.title != nil, let place = group.place { Text(place).font(.caption).foregroundStyle(.secondary) }
-                    }
                     Spacer()
                     Text(group.date.shortTime).font(.caption).foregroundStyle(.secondary)
                 }
-                photoRow(size: 96)
+                if group.title != nil, let place = group.place { Text(place).font(.subheadline).foregroundStyle(.secondary) }
                 textBlock
                 voiceBlock
             }
-        }
-    }
-
-    private var styleB: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            if !group.photos.isEmpty {
-                HStack(spacing: 2) {
-                    ForEach(Array(group.photos.prefix(2).enumerated()), id: \.offset) { _, data in
-                        if let image = UIImage(data: data) {
-                            Color.clear.frame(maxWidth: .infinity).frame(height: 150)
-                                .overlay { Image(uiImage: image).resizable().scaledToFill() }.clipped()
-                        }
-                    }
-                }
-            }
-            VStack(alignment: .leading, spacing: 8) {
-                Text(heading).font(.headline)
-                textBlock
-                voiceBlock
-                Text(meta).font(.caption).foregroundStyle(.secondary)
-            }
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(14)
         }
         .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: Theme.cardRadius, style: .continuous))
         .clipShape(.rect(cornerRadius: Theme.cardRadius, style: .continuous))
-    }
-
-    private var styleC: some View {
-        Card(padding: 14) {
-            VStack(alignment: .leading, spacing: 8) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(heading).font(.headline)
-                    Text(meta).font(.subheadline).foregroundStyle(.secondary)
-                }
-                textBlock
-                photoRow(size: 72)
-                voiceBlock
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-    }
-
-    @ViewBuilder private func photoRow(size: CGFloat) -> some View {
-        if !group.photos.isEmpty {
-            HStack(spacing: 8) {
-                ForEach(Array(group.photos.prefix(3).enumerated()), id: \.offset) { i, data in
-                    if let image = UIImage(data: data) {
-                        Image(uiImage: image).resizable().scaledToFill()
-                            .frame(width: size, height: size).clipShape(.rect(cornerRadius: 12, style: .continuous))
-                            .overlay {
-                                if group.videos.contains(i) {
-                                    Image(systemName: "play.fill").font(.caption).foregroundStyle(.white)
-                                        .frame(width: 30, height: 30).background(.black.opacity(0.35), in: .circle)
-                                }
-                            }
-                    }
-                }
-            }
-        }
     }
 
     @ViewBuilder private var textBlock: some View {
