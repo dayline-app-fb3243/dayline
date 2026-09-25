@@ -33,7 +33,7 @@ struct SearchHit: Identifiable, Hashable {
 /// On phones with Apple Intelligence the on-device model can take over free-form questions (planned).
 @MainActor
 enum JournalSearch {
-    private static let stop: Set<String> = ["where", "was", "were", "i", "the", "place", "take", "me", "to", "did", "have", "had",
+    private static let stop: Set<String> = ["where", "was", "were", "i", "the", "place", "places", "take", "me", "to", "did", "have", "had",
         "a", "an", "at", "in", "my", "what", "days", "day", "ago", "last", "week", "yesterday", "today", "go", "went", "eat", "ate",
         "eating", "show", "find", "of", "on", "that", "this", "when", "is", "it", "some", "for", "with", "and", "get", "got"]
     private static let eatWords: Set<String> = ["ate", "eat", "eating", "dinner", "lunch", "breakfast", "food"]
@@ -58,19 +58,25 @@ enum JournalSearch {
 
     static func run(_ query: String, entries: [JournalEntry], visits: [Visit], now: Date = .now) -> [SearchHit] {
         let q = query.lowercased()
-        let words = q.split(whereSeparator: { !$0.isLetter && !$0.isNumber }).map(String.init)
+        let normalized = q.replacingOccurrences(of: "two days", with: "2 days")
+            .replacingOccurrences(of: "three days", with: "3 days")
+            .replacingOccurrences(of: "four days", with: "4 days")
+        let words = normalized.split(whereSeparator: { !$0.isLetter && !$0.isNumber }).map(String.init)
         let cal = Calendar.current
         // Date words
         var day: Date?
-        if let r = q.range(of: #"(\d+) days? ago"#, options: .regularExpression),
-           let n = Int(q[r].split(separator: " ").first ?? "") {
+        if let r = normalized.range(of: #"(\d+) days? ago"#, options: .regularExpression),
+           let n = Int(normalized[r].split(separator: " ").first ?? "") {
             day = cal.date(byAdding: .day, value: -n, to: cal.startOfDay(for: now))
         } else if words.contains("yesterday") { day = cal.date(byAdding: .day, value: -1, to: cal.startOfDay(for: now)) }
         else if words.contains("today") { day = cal.startOfDay(for: now) }
         let lastWeek = q.contains("last week")
         let wantsFood = !eatWords.isDisjoint(with: words)
+        let wantsPhotos = words.contains("photos") || words.contains("photo")
+        let wantsJournal = words.contains("journal") || words.contains("notes")
+        let generic = words.contains("where") || words.contains("place") || words.contains("places")
         // Plural to singular, so "danishes" finds "danish".
-        let keys = words.filter { !stop.contains($0) && !eatWords.contains($0) && Int($0) == nil }.map { w -> String in
+        let keys = words.filter { !stop.contains($0) && !eatWords.contains($0) && !["photos", "photo", "journal", "notes"].contains($0) && Int($0) == nil }.map { w -> String in
             if w.count > 5 && w.hasSuffix("es") { return String(w.dropLast(2)) }
             if w.count > 4 && w.hasSuffix("s") && !w.hasSuffix("ss") { return String(w.dropLast()) }
             return w
@@ -92,25 +98,32 @@ enum JournalSearch {
                 let v = nearestVisit(e)
                 let place = e.placeName ?? v?.placeName ?? "Journal"
                 let text = [e.text, e.title ?? "", place].joined(separator: " ").lowercased()
-                if let k = keys.first(where: { text.contains($0) }) {
+                if let k = keys.first(where: { SearchSuggestions.matches($0, in: text) }) {
                     let why = e.kind == .voice ? "Voice memo: \u{201C}\(e.text.prefix(48))\u{201D}" : (place.lowercased().contains(k) ? "Place name" : "Journal: \u{201C}\(e.text.prefix(48))\u{201D}")
                     hits.append(SearchHit(place: place, date: e.date, reason: why, symbol: v?.category.symbol ?? "doc.text.fill", thumbnail: e.thumbnail, coordinate: e.coordinate ?? v?.coordinate))
                     continue
                 }
                 if e.kind == .photo {
                     let labels = labels(for: e)
-                    if let k = keys.first(where: { key in labels.contains { $0.contains(key) || key.contains($0) } }) {
+                    if let k = keys.first(where: { key in labels.contains { SearchSuggestions.matches(key, in: $0) } }) {
                         let shown = labels.filter { !$0.isEmpty }.prefix(3).joined(separator: ", ")
                         hits.append(SearchHit(place: place, date: e.date, reason: "Photo shows \(shown.isEmpty ? k : shown)", symbol: v?.category.symbol ?? "photo.fill", thumbnail: e.thumbnail, coordinate: e.coordinate ?? v?.coordinate))
                     }
                 }
             }
-            for v in visits where inRange(v.arrival) && keys.contains(where: { v.placeName.lowercased().contains($0) }) {
+            for v in visits where inRange(v.arrival) && keys.contains(where: { SearchSuggestions.matches($0, in: v.placeName) }) {
                 if !hits.contains(where: { $0.place == v.placeName && cal.isDate($0.date, inSameDayAs: v.arrival) }) {
                     hits.append(SearchHit(place: v.placeName, date: v.arrival, reason: "You were here", symbol: v.category.symbol, coordinate: v.coordinate))
                 }
             }
-        } else if day != nil || lastWeek {
+        } else if wantsPhotos || wantsJournal {
+            for e in entries where inRange(e.date) && ((wantsPhotos && e.kind == .photo) || (wantsJournal && e.kind != .photo)) {
+                let v = nearestVisit(e)
+                hits.append(SearchHit(place: e.placeName ?? v?.placeName ?? "Journal", date: e.date,
+                                      reason: e.kind == .photo ? "Photo" : "Journal entry", symbol: e.kind == .photo ? "photo.fill" : "doc.text.fill",
+                                      thumbnail: e.thumbnail, coordinate: e.coordinate ?? v?.coordinate))
+            }
+        } else if day != nil || lastWeek || generic {
             // "Where was I 4 days ago" / "the place I ate 4 days ago": the visits that day.
             for v in visits where inRange(v.arrival) && v.category != .home && (!wantsFood || v.category == .food) {
                 let mins = v.departure.map { Int($0.timeIntervalSince(v.arrival) / 60) }
@@ -130,8 +143,7 @@ enum JournalSearch {
 /// Search screen, pushed from the Journal: the search bar at the top, results under it.
 struct JournalSearchView: View {
     @State var query: String
-    /// What the results show: set when you press Search on the keyboard (or tap a suggestion).
-    @State private var submitted: String?
+    @FocusState private var searchFocused: Bool
     private var previewStyle: Int {
         let args = ProcessInfo.processInfo.arguments
         guard let i = args.firstIndex(of: "-searchDesign"), i + 1 < args.count else { return 1 }
@@ -142,21 +154,23 @@ struct JournalSearchView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            JournalSearchField(query: $query, onSubmit: { submitted = query })
+            JournalSearchField(query: $query, focused: $searchFocused, onSubmit: { searchFocused = false })
                 .padding(.horizontal, 16).padding(.top, 8).padding(.bottom, 6)
             ScrollView {
-                if query.isEmpty && submitted == nil {
-                    SearchLandingOption(style: previewStyle) { selected in query = selected; submitted = selected }
+                if query.isEmpty {
+                    SearchLandingOption(style: previewStyle) { selected in query = selected; searchFocused = false }
                         .padding(.horizontal, 16).padding(.top, 8)
                 } else {
-                    SearchResultsList(query: query.isEmpty ? "" : (submitted ?? ""), entries: entries, visits: visits, onPick: { query = $0; submitted = $0 })
+                    SearchResultsList(query: query, entries: entries, visits: visits, onPick: { query = $0; searchFocused = false })
                         .padding(.horizontal, 16).padding(.top, 8)
                 }
             }
         }
         .background(AppBackgroundView())
         .navigationBarTitleDisplayMode(.inline)
-        .onAppear { if submitted == nil && !query.isEmpty { submitted = query } }
+        .onAppear {
+            if ProcessInfo.processInfo.arguments.contains("-searchKeyboard") { searchFocused = true }
+        }
         .toolbarVisibility(.hidden, for: .tabBar)
     }
 }
@@ -164,6 +178,7 @@ struct JournalSearchView: View {
 struct JournalSearchField: View {
     @Binding var query: String
     /// Return key ("Search") runs the search.
+    var focused: FocusState<Bool>.Binding
     var onSubmit: () -> Void = {}
     var body: some View {
         HStack(spacing: 8) {
@@ -171,8 +186,9 @@ struct JournalSearchField: View {
             // No mic here: the keyboard has its own dictation key.
             TextField("Search places, journal, photos\u{2026}", text: $query)
                 .submitLabel(.search)
+                .focused(focused)
                 .onSubmit(onSubmit)
-                .autocorrectionDisabled()
+                .autocorrectionDisabled(false)
                 .accessibilityIdentifier("searchField")
             if !query.isEmpty {
                 Button { query = "" } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(.tertiary) }.buttonStyle(.plain)
@@ -184,6 +200,56 @@ struct JournalSearchField: View {
     }
 }
 
+/// Typeahead uses actual saved places and journal words, plus relative-day questions.
+/// It never invents a visit or journal entry; suggestions only complete the query.
+@MainActor
+enum SearchSuggestions {
+    static func candidates(_ query: String, entries: [JournalEntry], visits: [Visit]) -> [String] {
+        let q = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !q.isEmpty else { return [] }
+        let places = Array(Set(visits.map(\.placeName) + entries.compactMap(\.placeName)))
+            .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+        let context = ["Where was I yesterday?", "Where was I 2 days ago?", "Where was I last week?",
+                       "Where did I eat yesterday?", "Photos from yesterday", "Journal from last week"]
+        let words = Array(Set(entries.flatMap { $0.text.split(whereSeparator: { !$0.isLetter && !$0.isNumber }).map(String.init) }
+            .filter { $0.count > 3 })).sorted()
+        let all = context + places + words
+        let direct = all.filter { $0.lowercased().hasPrefix(q) }
+        let starts = all.filter { $0.lowercased().contains(q) && !direct.contains($0) }
+        let fuzzy = all.filter { item in
+            let tokens = item.lowercased().split(separator: " ").map(String.init)
+            let typed = q.split(separator: " ").map(String.init)
+            let partial = typed.last ?? q
+            let lastMatches = tokens.contains { distance(String($0.prefix(partial.count)), partial) <= (partial.count > 5 ? 2 : 1) }
+            let prefixMatches = typed.count > 1 && typed.dropLast().allSatisfy { word in
+                tokens.contains { distance(String($0.prefix(word.count)), word) <= (word.count > 5 ? 2 : 1) }
+            }
+            return !direct.contains(item) && !starts.contains(item) && partial.count >= 3 &&
+                (lastMatches || prefixMatches)
+        }
+        return Array((direct + starts + fuzzy).prefix(5))
+    }
+    private static func distance(_ a: String, _ b: String) -> Int {
+        let x = Array(a), y = Array(b)
+        var prev = Array(0...y.count)
+        for (i, c) in x.enumerated() {
+            var next = [i + 1] + Array(repeating: 0, count: y.count)
+            for (j, d) in y.enumerated() {
+                next[j + 1] = min(prev[j + 1] + 1, next[j] + 1, prev[j] + (c == d ? 0 : 1))
+            }
+            prev = next
+        }
+        return prev[y.count]
+    }
+    static func matches(_ search: String, in text: String) -> Bool {
+        let q = search.lowercased(), t = text.lowercased()
+        if t.contains(q) { return true }
+        guard q.count >= 3 else { return false }
+        return t.split(whereSeparator: { !$0.isLetter && !$0.isNumber })
+            .contains { word in distance(String(word), q) <= (q.count > 5 ? 2 : 1) }
+    }
+}
+
 struct SearchResultsList: View {
     var query: String
     var entries: [JournalEntry]
@@ -191,14 +257,35 @@ struct SearchResultsList: View {
     var onPick: (String) -> Void = { _ in }
     var body: some View {
         let hits = query.trimmingCharacters(in: .whitespaces).isEmpty ? [] : JournalSearch.run(query, entries: entries, visits: visits)
+        let suggestions = SearchSuggestions.candidates(query, entries: entries, visits: visits)
         VStack(alignment: .leading, spacing: 10) {
+            if !query.isEmpty && !suggestions.isEmpty {
+                Text("Suggestions").font(.subheadline.weight(.semibold)).foregroundStyle(.secondary).padding(.leading, 4)
+                Card(padding: 0) {
+                    VStack(spacing: 0) {
+                        ForEach(Array(suggestions.enumerated()), id: \.offset) { i, suggestion in
+                            Button { onPick(suggestion) } label: {
+                                HStack(spacing: 12) {
+                                    Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
+                                    Text(suggestion).foregroundStyle(.primary)
+                                    Spacer()
+                                    Image(systemName: "arrow.up.left").foregroundStyle(.tertiary)
+                                }.font(.body).padding(.horizontal, 16).padding(.vertical, 12)
+                            }.buttonStyle(.plain)
+                            if i < suggestions.count - 1 { Divider().padding(.leading, 46) }
+                        }
+                    }
+                }
+            }
             if query.isEmpty {
                 Text("Try").font(.subheadline.weight(.semibold)).foregroundStyle(.secondary).padding(.leading, 4)
                 ForEach(["Where was I 4 days ago?", "The place I ate 4 days ago", "Croissant"], id: \.self) { s in
                     Label(s, systemImage: "magnifyingglass").font(.body).foregroundStyle(Theme.accent).padding(.leading, 4).padding(.vertical, 4)
                 }
-            } else if hits.isEmpty {
+            } else if hits.isEmpty && suggestions.isEmpty {
                 ContentUnavailableView.search(text: query)
+            } else if hits.isEmpty {
+                Text("Choose a suggestion or keep typing").font(.footnote).foregroundStyle(.secondary).padding(.leading, 4)
             } else {
                 Text(hits.count == 1 ? "1 place" : "\(hits.count) places").font(.subheadline.weight(.semibold)).foregroundStyle(.secondary).padding(.leading, 4)
                 ForEach(hits) { h in
@@ -228,7 +315,7 @@ struct SearchHitRow: View {
             Image(systemName: "map").font(.body.weight(.semibold)).foregroundStyle(Theme.accent)
         }
         .padding(12)
-        .background(Color(.systemBackground).opacity(0.85), in: .rect(cornerRadius: 20))
+        .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 20))
         .accessibilityIdentifier("searchHit")
     }
 }

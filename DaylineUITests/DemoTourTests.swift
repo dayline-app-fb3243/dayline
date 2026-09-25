@@ -601,15 +601,25 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
-    /// Five search landing designs. Each suggestion is an actual search action.
+    /// Five landing options on an actual phone keyboard; live autocomplete and typo recovery.
     func testSearchDesigns() throws {
         for n in 1...5 {
             let app = XCUIApplication()
-            app.launchArguments = ["-demo", "-searchDesign", "\(n)"]
+            app.launchArguments = ["-demo", "-searchDesign", "\(n)", "-searchKeyboard"]
             app.launch(); pause(1.2)
             tab(app, "Journal"); pause(1)
             tapID(app, "journalSearch"); pause(1.5)
+            let field = app.textFields["searchField"]
+            if field.waitForExistence(timeout: 5) { field.tap(); pause(0.8) }
             shot("search-\(n)")
+            if n == 1 {
+                field.typeText("where was I")
+                pause(1.2); shot("search-autocomplete")
+                field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 11) + "Blue Dor Coffee")
+                pause(1.2); shot("search-typo")
+                field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 15) + "Blue Door Coffee")
+                pause(1.2); shot("search-results")
+            }
             app.terminate()
         }
     }
