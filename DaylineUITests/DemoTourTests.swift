@@ -787,6 +787,21 @@ final class DemoTourTests: XCTestCase {
         shot("search-back-results")
     }
 
+    func testPlaceDesigns() throws {
+        for n in 1...3 {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-journalSearch", "Blue Door Coffee", "-placeDesign", "\(n)"]
+            app.launch(); tab(app, "Journal"); pause(0.5)
+            tapID(app, "journalSearch"); pause(0.7)
+            let field = app.textFields["searchField"]
+            if field.waitForExistence(timeout: 4) { field.tap(); field.typeText("Blue Door Coffee") }
+            pause(0.8)
+            let hit = app.descendants(matching: .any)["searchHit"].firstMatch
+            if hit.waitForExistence(timeout: 4) { hit.tap(); pause(4); shot("place-design-\(n)") }
+            app.terminate()
+        }
+    }
+
     /// Steps page (picked: Health-style chart), opened from the Steps tile: D and W.
     func testStepsPage() throws {
         let app = XCUIApplication()

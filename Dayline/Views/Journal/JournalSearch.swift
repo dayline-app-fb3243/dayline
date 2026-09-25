@@ -450,41 +450,91 @@ struct SearchPlaceView: View {
                                  .init(name: "q", value: hit.place), .init(name: "dirflg", value: "d")]
         return components.url
     }
+    private var design: Int {
+        let args = ProcessInfo.processInfo.arguments
+        guard let i = args.firstIndex(of: "-placeDesign"), i + 1 < args.count else { return 1 }
+        return Int(args[i + 1]) ?? 1
+    }
+    private var visitLabel: String { "Visited \(hit.date.formatted(.dateTime.weekday(.wide).month(.abbreviated).day().hour().minute()))" }
+    @ViewBuilder private var placeMap: some View {
+        if let coordinate = location {
+            Map(initialPosition: .camera(MapCamera(centerCoordinate: coordinate, distance: 1000))) {
+                Marker(hit.place, coordinate: coordinate).tint(Theme.accent)
+            }
+            .mapStyle(.standard)
+            .environment(\.colorScheme, SystemMapAppearance.scheme)
+            .frame(height: design == 3 ? 160 : 205)
+            .clipShape(.rect(cornerRadius: Theme.cardRadius))
+            .allowsHitTesting(false)
+        } else if let data = hit.thumbnail, let image = UIImage(data: data) {
+            Image(uiImage: image).resizable().scaledToFill().frame(height: 205).clipped()
+                .clipShape(.rect(cornerRadius: Theme.cardRadius))
+        }
+    }
+    @ViewBuilder private var directions: some View {
+        if let mapsURL {
+            Link(destination: mapsURL) {
+                Label("Directions in Apple Maps", systemImage: "arrow.triangle.turn.up.right.diamond")
+            }.font(.body).foregroundStyle(Theme.accent)
+        }
+    }
+    @ViewBuilder private var photos: some View {
+        if let recalled, !recalled.photos.isEmpty {
+            Text("Photos").font(.headline).padding(.leading, 4)
+            PhotoStrip(photos: recalled.photos, height: 140)
+        } else if let data = hit.thumbnail, let image = UIImage(data: data) {
+            Text("Photo").font(.headline).padding(.leading, 4)
+            Image(uiImage: image).resizable().scaledToFit().clipShape(.rect(cornerRadius: 16))
+        }
+    }
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                if let coordinate = location {
-                    Map(initialPosition: .camera(MapCamera(centerCoordinate: coordinate, distance: 1000))) {
-                        Marker(hit.place, coordinate: coordinate).tint(Theme.accent)
-                    }
-                    .mapStyle(.standard)
-                    .environment(\.colorScheme, SystemMapAppearance.scheme)
-                    .frame(height: 220)
-                    .clipShape(.rect(cornerRadius: Theme.cardRadius))
-                    .allowsHitTesting(false)
-                } else if let data = hit.thumbnail, let image = UIImage(data: data) {
-                    Image(uiImage: image).resizable().scaledToFill().frame(height: 220).clipped()
-                        .clipShape(.rect(cornerRadius: Theme.cardRadius))
-                }
-                Card {
+                switch design {
+                case 2:
+                    // A place-first page: name and visit context, then a calm map card.
                     VStack(alignment: .leading, spacing: 8) {
-                        Text(hit.place).font(.title2.weight(.semibold))
-                        Text(hit.reason).font(.body).foregroundStyle(.secondary)
-                        Text("Visited \(hit.date.formatted(.dateTime.weekday(.wide).month(.abbreviated).day().hour().minute()))")
-                            .font(.subheadline).foregroundStyle(.secondary)
+                        Text(hit.place).font(.largeTitle.weight(.regular))
+                        Text(visitLabel).font(.subheadline).foregroundStyle(.secondary)
+                    }.padding(.horizontal, 4).padding(.top, 8)
+                    placeMap
+                    Card {
+                        VStack(alignment: .leading, spacing: 12) {
+                            if let recalled { Text("\(recalled.timesVisited) visits").font(.subheadline).foregroundStyle(.secondary) }
+                            Text(hit.reason).font(.body)
+                            directions
+                        }.frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    photos
+                case 3:
+                    // A visits-first card, with a lower compact map.
+                    Card {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text(hit.place).font(.title2)
+                            Divider()
+                            Label(visitLabel, systemImage: "calendar").font(.subheadline).foregroundStyle(.secondary)
+                            if let recalled { Label("\(recalled.timesVisited) visits", systemImage: "clock.arrow.circlepath").font(.subheadline).foregroundStyle(.secondary) }
+                            Text(hit.reason).font(.body)
+                            directions
+                        }.frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    photos
+                    placeMap
+                default:
+                    // Map-first, with a lighter information block below.
+                    placeMap
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(hit.place).font(.title2)
+                        Text(visitLabel).font(.subheadline).foregroundStyle(.secondary)
                         if let recalled { Text("\(recalled.timesVisited) visits").font(.subheadline).foregroundStyle(.secondary) }
-                        if let mapsURL {
-                            Link(destination: mapsURL) { Label("Directions in Apple Maps", systemImage: "arrow.triangle.turn.up.right.diamond.fill") }
-                                .font(.body.weight(.semibold)).padding(.top, 8)
-                        }
-                    }.frame(maxWidth: .infinity, alignment: .leading)
-                }
-                if let recalled, !recalled.photos.isEmpty {
-                    Text("Photos").font(.headline).padding(.leading, 4)
-                    PhotoStrip(photos: recalled.photos, height: 140)
-                } else if let data = hit.thumbnail, let image = UIImage(data: data) {
-                    Text("Photo").font(.headline).padding(.leading, 4)
-                    Image(uiImage: image).resizable().scaledToFit().clipShape(.rect(cornerRadius: 16))
+                    }.padding(.horizontal, 4)
+                    Card {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text(hit.reason).font(.body)
+                            directions
+                        }.frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    photos
                 }
             }.padding(.horizontal, 18).padding(.vertical, 12)
         }
