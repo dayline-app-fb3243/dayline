@@ -576,6 +576,20 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Steps and Gym tile pages: five options each.
+    func testTileDetailOptions() throws {
+        for v in 1...5 {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-detailVariant", "\(v)"]
+            app.launch(); pause(1.5)
+            tapID(app, "stepsTile"); pause(2); shot("td-steps-\(v)")
+            app.swipeUp(); pause(1); shot("td-steps-\(v)b"); goBack(app); pause(1)
+            tapID(app, "nextTile"); pause(2.5); shot("td-gym-\(v)")
+            app.swipeUp(); pause(1); shot("td-gym-\(v)b")
+            app.terminate()
+        }
+    }
+
     /// White background: should look like Settings (light gray page, white cards).
     func testWhiteBackground() throws {
         let app = XCUIApplication()

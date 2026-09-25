@@ -184,8 +184,12 @@ struct TodayStepsNextTiles: View {
         let n = next
         GlassEffectContainer(spacing: 12) {
             HStack(spacing: 12) {
-                tile("Steps", steps.map { $0.formatted() } ?? "–", "figure.walk", "of \(goal.formatted()) on a usual day")
-                tile("Next", n.title, n.symbol, n.when)
+                NavigationLink { StepsDetailView() } label: {
+                    tile("Steps", steps.map { $0.formatted() } ?? "–", "figure.walk", "of \(goal.formatted()) on a usual day")
+                }
+                .buttonStyle(.plain).accessibilityIdentifier("stepsTile")
+                NavigationLink { GymDetailView() } label: { tile("Next", n.title, n.symbol, n.when) }
+                    .buttonStyle(.plain).accessibilityIdentifier("nextTile")
             }
         }
         .task {
