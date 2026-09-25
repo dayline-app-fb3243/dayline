@@ -1397,6 +1397,26 @@ final class DemoTourTests: XCTestCase {
         shot("journal-mic-composer")
     }
 
+    /// Capture the short-tap hint and return to the balanced two-circle composer.
+    func testJournalAudioTapHintVideo() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo"]
+        app.launch(); pause(1)
+        tab(app, "Journal"); pause(1)
+        tapID(app, "newEntry"); pause(1)
+        let mic = app.descendants(matching: .any)["voiceMic"].firstMatch
+        XCTAssertTrue(mic.waitForExistence(timeout: 4))
+        shot("journal-mic-circles-before")
+        mic.tap(); pause(0.2)
+        XCTAssertTrue(app.descendants(matching: .any)["voiceHoldHint"].firstMatch.exists)
+        shot("journal-mic-short-tap-hint")
+        pause(1.8)
+        XCTAssertFalse(app.descendants(matching: .any)["voiceHoldHint"].firstMatch.exists)
+        shot("journal-mic-hint-collapsed")
+        mic.press(forDuration: 1.3)
+        pause(0.5); shot("journal-mic-after-hold")
+    }
+
     /// Hold the microphone, then release to attach or slide away to cancel.
     func testJournalAudioBarRecording() throws {
         let app = XCUIApplication()
