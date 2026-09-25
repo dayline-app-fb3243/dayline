@@ -252,6 +252,10 @@ struct SplashView: View {
                 .ignoresSafeArea(edges: .top)
             VStack(alignment: .leading, spacing: 10) {
                 Text("Your day,\nremembered.").font(.largeTitle.bold())
+                Text("Journaling, day tracking, and health - all in one place.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             .padding(.horizontal, 28).padding(.top, -40)
             Spacer()
