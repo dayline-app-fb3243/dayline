@@ -150,6 +150,16 @@ final class DemoTourTests: XCTestCase {
         shot("provider-google-demo")
     }
 
+    func testAuthParallelSubtitles() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo", "-onboarding"]
+        app.launch(); pause(1)
+        tapID(app, "splashContinue"); pause(1)
+        XCTAssertTrue(app.staticTexts["Uses your Apple Account"].exists)
+        XCTAssertTrue(app.staticTexts["Uses your Google Account"].exists)
+        shot("auth-parallel-provider-subtitles")
+    }
+
     func testAuthLabelOptions() {
         for variant in ["A", "B", "C"] {
             let app = XCUIApplication()

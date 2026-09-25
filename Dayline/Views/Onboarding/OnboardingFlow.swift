@@ -400,7 +400,7 @@ struct SignInSheet: View {
             .foregroundStyle(.primary).frame(width: 28)
             VStack(alignment: .leading, spacing: 1) {
                 Text(o == .email ? emailRowTitle : "Continue with \(o.rawValue)").foregroundStyle(.primary)
-                Text(o == .apple ? "Uses your Apple Account" : o == .google ? "Your Google account" : "Verify your email address")
+                Text(o == .apple ? "Uses your Apple Account" : o == .google ? "Uses your Google Account" : "Verify your email address")
                     .font(.subheadline).foregroundStyle(.secondary)
             }
             Spacer()
