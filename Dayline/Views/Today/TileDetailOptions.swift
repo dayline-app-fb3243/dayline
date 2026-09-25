@@ -174,6 +174,7 @@ struct GymDetailView: View {
                     case 4: withStats
                     case 5: withWeek
                     case 6, 7, 8: combined(variant)
+                    case 9, 10, 11: quietNext(variant)
                     default: place
                     }
                 }
@@ -322,6 +323,42 @@ struct GymDetailView: View {
             Header(text: "Recent Visits")
             visits(3)
         }
+    }
+    /// Combo 7's map, recent visits and week order; only the Next treatment changes.
+    @ViewBuilder private func quietNext(_ style: Int) -> some View {
+        if style == 9 {
+            map(height: 210)
+                .overlay(alignment: .bottomLeading) {
+                    Label("Next · 6:00 PM", systemImage: "clock")
+                        .font(.caption).foregroundStyle(.primary)
+                        .padding(.horizontal, 12).padding(.vertical, 8)
+                        .background(.regularMaterial, in: .capsule)
+                        .padding(12)
+                }
+                .clipShape(.rect(cornerRadius: Theme.cardRadius, style: .continuous))
+        } else {
+            map(height: 210).clipShape(.rect(cornerRadius: Theme.cardRadius, style: .continuous))
+        }
+        if style == 10 {
+            HStack(spacing: 6) {
+                Text("Next").foregroundStyle(.secondary)
+                Text("Gym around 6:00 PM")
+                Spacer()
+                Text("12 min walk").foregroundStyle(.secondary)
+            }
+            .font(.subheadline).padding(.horizontal, 6).padding(.vertical, 3)
+        }
+        Header(text: "Recent Visits")
+        visits(3)
+        if style == 11 {
+            HStack(spacing: 4) {
+                Text("Next · 6:00 PM").font(.footnote).foregroundStyle(.secondary)
+                Spacer()
+                Text("12 min walk").font(.footnote).foregroundStyle(.secondary)
+            }.padding(.horizontal, 16).padding(.top, 1)
+        }
+        Header(text: "This Week")
+        weekStrip
     }
     private var weekStrip: some View { Card { weekSymbols } }
     private var weekSymbols: some View {

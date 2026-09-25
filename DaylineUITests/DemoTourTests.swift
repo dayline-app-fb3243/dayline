@@ -600,6 +600,18 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Three subtler Next treatments on the chosen combo-7 Gym page.
+    func testGymQuietNext() throws {
+        for n in 9...11 {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-detailVariant", "\(n)"]
+            app.launch(); pause(1.2)
+            tapID(app, "nextTile"); pause(2.2)
+            shot("gym-quiet-next-\(n)")
+            app.terminate()
+        }
+    }
+
     /// Option 2 with three thicker ring widths in light and dark appearance.
     func testWidgetThickRings() throws {
         for n in 13...15 {
