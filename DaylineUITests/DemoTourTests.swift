@@ -1122,12 +1122,10 @@ final class DemoTourTests: XCTestCase {
         let allow = XCUIApplication(bundleIdentifier: "com.apple.springboard").buttons["Allow"]
         if allow.waitForExistence(timeout: 3) {
             allow.tap(); pause(0.7)
-            start.press(forDuration: 1.2, thenDragTo: lock)
+            mic.press(forDuration: 1.2)
         }
         pause(1.5)
-        shot("journal-audio-bar-recording")
-        let stop = app.buttons["Stop recording"]
-        if stop.exists { stop.tap(); pause(0.6); shot("journal-audio-bar-review") }
+        shot("journal-voice-attached")
     }
 
     /// Day/Week/Month/Year: press and slide across the switcher (recorded as video).
