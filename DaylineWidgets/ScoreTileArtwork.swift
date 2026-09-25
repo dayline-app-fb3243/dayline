@@ -48,10 +48,13 @@ import WidgetKit
                                                 green: 0.38 + 0.47 * ice,
                                                 blue: 0.90 + 0.10 * ice,
                                                 alpha: 1).cgColor)
+                let span: CGFloat = end - start
+                let first: CGFloat = CGFloat(index) / CGFloat(slices)
+                let last: CGFloat = (CGFloat(index) + 1.02) / CGFloat(slices)
+                let a0: CGFloat = start + span * first
+                let a1: CGFloat = start + span * last
                 context.addArc(center: center, radius: radius,
-                               startAngle: start + (end - start) * CGFloat(index) / CGFloat(slices),
-                               endAngle: start + (end - start) * CGFloat(index + 1.02) / CGFloat(slices),
-                               clockwise: false)
+                               startAngle: a0, endAngle: a1, clockwise: false)
                 context.strokePath()
             }
             for (angle, color) in [(start, UIColor(red: 0.61, green: 0.85, blue: 1, alpha: 1)),
