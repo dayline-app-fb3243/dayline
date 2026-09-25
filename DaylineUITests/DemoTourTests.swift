@@ -121,6 +121,10 @@ final class DemoTourTests: XCTestCase {
         let title = app.descendants(matching: .any)["entryTitle"].firstMatch
         XCTAssertTrue(title.waitForExistence(timeout: 4))
         title.tap(); title.typeText("Morning note"); pause(0.4)
+        // iOS simulator may show a one-time swipe-typing tutorial over the keyboard.
+        // Clear it before recording or screenshots; do not confuse this system overlay with app UI.
+        let tutorialContinue = app.buttons["Continue"].firstMatch
+        if tutorialContinue.waitForExistence(timeout: 2) { tutorialContinue.tap(); pause(0.4) }
         let mic = app.descendants(matching: .any)["voiceMic"].firstMatch
         XCTAssertTrue(mic.waitForExistence(timeout: 4))
         mic.press(forDuration: 1.3)
