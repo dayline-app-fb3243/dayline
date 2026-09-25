@@ -1,7 +1,7 @@
 import SwiftUI
 import AVFoundation
 
-/// Messages-style recorder for a journal entry (design: hold-3 #2).
+/// Messages-style recorder for a journal entry.
 /// Hold the mic to record, slide up to lock, slide left to cancel.
 /// Letting go shows the review bar: play, "+ 0:07" to keep going, send to add it, X to throw it away.
 struct VoiceRecorderBar<Tools: View>: View {
@@ -36,7 +36,7 @@ struct VoiceRecorderBar<Tools: View>: View {
                 .transition(.opacity)
             }
             ZStack(alignment: .trailing) {
-                if showTapHint && !voice.isActive { tapHint } else if voice.isActive { recorder } else { tools() }
+                if voice.isActive { recorder } else { tools() }
                 micHitArea
             }
         }
@@ -154,7 +154,7 @@ struct VoiceRecorderBar<Tools: View>: View {
     /// The mic stays under the finger for the whole hold, even while the bar changes around it.
     private var micHitArea: some View {
         Color.clear
-            .frame(width: 88, height: 52)
+            .frame(width: 62, height: 52)
             .contentShape(.rect)
             .allowsHitTesting(!voice.isActive || holding)
             .gesture(

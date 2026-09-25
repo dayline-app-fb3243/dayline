@@ -207,23 +207,33 @@ struct NewEntryView: View {
 
     // MARK: pieces
 
-    /// Separate small glass buttons: camera and library on the left, mic on the right (like Messages).
+    /// Messages-like plus button and one full-width recording field. Camera and library stay in the plus menu.
     private var cameraOK: Bool { UIImagePickerController.isSourceTypeAvailable(.camera) || ProcessInfo.processInfo.arguments.contains("-demo") }
 
     private var addBar: some View {
-        GlassEffectContainer(spacing: 10) {
-            HStack(spacing: 10) {
-                circleButton("camera.fill", "Take photo") { camera = .photo }
+        HStack(spacing: 10) {
+            Menu {
+                Button("Take Photo", systemImage: "camera.fill") { camera = .photo }
                     .disabled(!cameraOK)
-                    .contextMenu { cameraMenu }
-                circleButton("photo.fill", "Photo and video library") { showLibrary = true }
-                Spacer(minLength: 0)
-                // Touch and hold (handled by VoiceRecorderBar, which sits over this spot).
-                Image(systemName: "mic.fill").font(.scaled(size: 20, weight: .regular)).foregroundStyle(Theme.accent)
+                Button("Photo and Video Library", systemImage: "photo.fill") { showLibrary = true }
+            } label: {
+                Image(systemName: "plus").font(.title2.weight(.medium)).foregroundStyle(.primary)
                     .frame(width: 48, height: 48)
                     .glassEffect(.regular.interactive(), in: .circle)
-                    .accessibilityHidden(true)
             }
+            .accessibilityLabel("Add photo or video")
+            HStack(spacing: 10) {
+                Text("Tap and hold to record audio")
+                    .font(.subheadline).foregroundStyle(.secondary).lineLimit(1).minimumScaleFactor(0.78)
+                Spacer(minLength: 0)
+                Image(systemName: "waveform")
+                    .font(.body.weight(.medium)).foregroundStyle(.secondary)
+                    .frame(width: 42, height: 48)
+            }
+            .padding(.leading, 16).padding(.trailing, 6)
+            .frame(height: 48)
+            .glassEffect(.regular, in: .capsule)
+            .accessibilityIdentifier("audioHoldBar")
         }
     }
 

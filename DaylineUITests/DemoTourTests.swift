@@ -781,6 +781,17 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// New Entry's persistent Messages-inspired audio bar, with the keyboard visible.
+    func testJournalAudioBar() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo"]
+        app.launch(); pause(1)
+        tab(app, "Journal"); pause(1)
+        tapID(app, "newEntry"); pause(1.3)
+        XCTAssertTrue(app.descendants(matching: .any)["audioHoldBar"].firstMatch.exists)
+        shot("journal-audio-bar")
+    }
+
     /// Quick mic tap shows an option's hint, without creating a recording.
     func testVoiceHintOptions() throws {
         for n in 1...4 {
