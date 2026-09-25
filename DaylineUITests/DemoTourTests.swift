@@ -1497,6 +1497,26 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Insights: Best day in Month and best/lowest days in Year, each opening that day.
+    func testInsightsBestDay() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo"]
+        app.launch(); pause(1.5)
+        tab(app, "Insights"); pause(1.5)
+        app.buttons["Month"].firstMatch.tap(); pause(1.5)
+        app.swipeUp(); pause(1.2); shot("ib-month")
+        let best = app.descendants(matching: .any)["bestDayCard"]
+        if best.waitForExistence(timeout: 4) { best.tap() }
+        pause(2); shot("ib-month-open")
+        app.navigationBars.buttons.firstMatch.tap(); pause(1.2)
+        app.swipeDown(); pause(0.8)
+        app.buttons["Year"].firstMatch.tap(); pause(1.5)
+        app.swipeUp(); pause(1.2); shot("ib-year")
+        let yd = app.descendants(matching: .any)["yearDaysCard"]
+        if yd.waitForExistence(timeout: 4) { yd.tap() }
+        pause(2); shot("ib-year-open")
+    }
+
     /// Timeline Day page samples 1-5 plus the current page (top and scrolled).
     func testTimelinePages() throws {
         for v in ["", "1", "2", "3", "4", "5"] {

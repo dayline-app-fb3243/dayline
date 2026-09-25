@@ -255,6 +255,7 @@ struct InsightsView: View {
                 statCard("80+ days", "\(items.filter { $0.score >= 80 }.count)")
                 statCard("Places", "\(Set(visits.filter { Calendar.current.isDate($0.arrival, equalTo: .now, toGranularity: .month) }.map(\.placeKey)).count)")
             }
+            if let best = items.max(by: { $0.score < $1.score }) { dayLinkCard("Best day", [best], id: "bestDayCard") }
             if let rough { roughDayCard(rough, all: items) }
         }
     }
@@ -422,6 +423,30 @@ struct InsightsView: View {
         }
     }
 
+    /// A titled card of days; tapping a row opens that day's score page.
+    private func dayLinkCard(_ header: String, _ days: [DayScore], id: String) -> some View {
+        let cal = Calendar.current
+        func back(_ d: Date) -> Int { cal.dateComponents([.day], from: cal.startOfDay(for: d), to: cal.startOfDay(for: .now)).day ?? 0 }
+        return VStack(alignment: .leading, spacing: 0) {
+            SectionHeader(header).padding(.bottom, 6).padding(.top, 8)
+            Card(padding: 0) {
+                VStack(spacing: 0) {
+                    ForEach(Array(days.enumerated()), id: \.offset) { i, d in
+                        if i > 0 { Divider().padding(.leading, 16) }
+                        let why = d.factors.filter { $0.points > 0 }.prefix(2).map(\.title)
+                        NavigationLink { ScoreDetailView(result: todayResult, startBack: back(d.day)) } label: {
+                            dayRow(title: d.day.formatted(.dateTime.weekday(.wide).month(.abbreviated).day()),
+                                   subtitle: d.score < 45 ? d.label : (why.isEmpty ? d.label : why.joined(separator: ", ")),
+                                   score: d.score, up: false)
+                        }
+                    }
+                }
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier(id)
+        }
+    }
+
     private var todayResult: ScoreEngine.Result { ScoreEngine.score(DayData.input(for: .now, context: context)) }
 
     private func dayRow(title: String, subtitle: String, score: Int, up: Bool) -> some View {
@@ -470,6 +495,9 @@ struct InsightsView: View {
                 statCard("Year average", all.isEmpty ? "–" : "\(all.map(\.score).reduce(0, +) / all.count)")
                 statCard("Great days", "\(all.filter { $0.score >= 90 }.count)")
                 statCard("Days logged", "\(all.count)")
+            }
+            if let best = all.max(by: { $0.score < $1.score }), let low = all.min(by: { $0.score < $1.score }) {
+                dayLinkCard("Best and lowest days", best.day == low.day ? [best] : [best, low], id: "yearDaysCard")
             }
         }
     }
