@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 import UserNotifications
 import UIKit
+import WidgetKit
 
 @main
 struct DaylineApp: App {
@@ -23,6 +24,7 @@ struct DaylineApp: App {
         if let i = args.firstIndex(of: "-factorIcons"), i + 1 < args.count { UserDefaults.standard.set(args[i + 1], forKey: "factorIcons") }
         if let i = args.firstIndex(of: "-widgetRingVariant"), i + 1 < args.count {
             SharedBackgroundStore.defaults.set(Int(args[i + 1]) ?? 1, forKey: "widget.ringVariant")
+            WidgetCenter.shared.reloadAllTimelines()
         }
         // Demo tour runs as a signed-in sample user (so Sign Out shows); onboarding runs start signed out.
         // UI tests for a fresh non-demo home can bypass only the sign-in screen.
