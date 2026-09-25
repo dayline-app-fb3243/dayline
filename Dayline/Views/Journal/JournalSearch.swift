@@ -322,20 +322,8 @@ struct SearchHitRow: View {
             if let d = hit.thumbnail, let img = UIImage(data: d) {
                 Image(uiImage: img).resizable().scaledToFill().frame(width: 56, height: 56).clipShape(.rect(cornerRadius: 12))
             } else {
-                if let coordinate = hit.coordinate {
-                    Map(initialPosition: .camera(MapCamera(centerCoordinate: coordinate, distance: 650))) {
-                        Marker(hit.place, coordinate: coordinate).tint(Theme.accent)
-                    }
-                    .mapStyle(.standard)
-                    .environment(\.colorScheme, SystemMapAppearance.scheme)
-                    .frame(width: 56, height: 56)
-                    .clipShape(.rect(cornerRadius: 12))
-                    .allowsHitTesting(false)
-                    .accessibilityLabel("Map of \(hit.place)")
-                } else {
-                    RoundedRectangle(cornerRadius: 12).fill(Color(.tertiarySystemGroupedBackground))
-                        .frame(width: 56, height: 56)
-                }
+                Image(systemName: hit.symbol).font(.system(size: 20, weight: .semibold)).foregroundStyle(.white)
+                    .frame(width: 56, height: 56).background(Theme.accent, in: .rect(cornerRadius: 12))
             }
             VStack(alignment: .leading, spacing: 2) {
                 Text(hit.place).font(.body.weight(.semibold))
