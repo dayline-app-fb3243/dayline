@@ -741,8 +741,14 @@ final class DemoTourTests: XCTestCase {
     func testHomeWidgetModesV2() throws { try captureHomeWidgetModes(variant: 2) }
     func testHomeWidgetModesV3() throws { try captureHomeWidgetModes(variant: 3) }
     private func captureHomeWidgetModes(variant: Int) throws {
-        try installHomeWidget(demo: true, variant: variant)
         let sb = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        if variant == 1 { try installHomeWidget(demo: true, variant: variant) }
+        else {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-widgetRingVariant", String(variant)]
+            app.launch(); pause(4)
+            XCUIDevice.shared.press(.home); pause(2)
+        }
         let widget = sb.icons.matching(NSPredicate(format: "label ==[c] 'Dayline' AND value ==[c] 'Widget'")).firstMatch
         XCTAssertTrue(widget.waitForExistence(timeout: 8), "Installed widget missing")
         shot("widget-home-default-native")
