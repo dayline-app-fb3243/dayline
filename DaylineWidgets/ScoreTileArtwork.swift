@@ -36,27 +36,30 @@ import WidgetKit
             let fraction = CGFloat(min(max(score, 0), 100)) / 100
             let start = -CGFloat.pi / 2
             let end = start + 2 * .pi * fraction
-            // One continuous-looking stroke, shaded across its full length.
-            // Butt-capped overlapping slices share a centerline; rounded caps
-            // are painted only at the two true ends, never in the middle.
-            let slices = 240
-            context.setLineCap(.butt)
-            for index in 0..<slices {
-                let t = CGFloat(index) / CGFloat(slices - 1)
-                let ice = CGFloat(pow(Double(1 - t), 1.35))
-                context.setStrokeColor(UIColor(red: 0.0 + 0.61 * ice,
-                                                green: 0.38 + 0.47 * ice,
-                                                blue: 0.90 + 0.10 * ice,
-                                                alpha: 1).cgColor)
-                let span: CGFloat = end - start
-                let first: CGFloat = CGFloat(index) / CGFloat(slices)
-                let last: CGFloat = (CGFloat(index) + 1.02) / CGFloat(slices)
-                let a0: CGFloat = start + span * first
-                let a1: CGFloat = start + span * last
-                context.addArc(center: center, radius: radius,
-                               startAngle: a0, endAngle: a1, clockwise: false)
-                context.strokePath()
-            }
+            // Render the annular progress as one clipped path, then a horizontal
+            // ice-to-blue gradient. No overlapping slices or concentric moiré.
+            let outer = radius + width / 2
+            let inner = radius - width / 2
+            let path = UIBezierPath()
+            path.addArc(withCenter: center, radius: outer,
+                        startAngle: start, endAngle: end, clockwise: true)
+            path.addArc(withCenter: center, radius: inner,
+                        startAngle: end, endAngle: start, clockwise: false)
+            path.close()
+            context.saveGState()
+            context.addPath(path.cgPath)
+            context.clip()
+            let stops: [CGFloat] = [0, 0.30, 0.66, 1]
+            let colors = [UIColor(red: 0.61, green: 0.85, blue: 1, alpha: 1),
+                          UIColor(red: 0.42, green: 0.73, blue: 0.98, alpha: 1),
+                          UIColor(red: 0.20, green: 0.56, blue: 0.94, alpha: 1),
+                          UIColor(red: 0, green: 0.38, blue: 0.90, alpha: 1)]
+            let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(),
+                                      colors: colors.map(\.cgColor) as CFArray,
+                                      locations: stops)!
+            context.drawLinearGradient(gradient, start: CGPoint(x: 58, y: 0),
+                                       end: CGPoint(x: 139, y: 0), options: [.drawsBeforeStartLocation, .drawsAfterEndLocation])
+            context.restoreGState()
             for (angle, color) in [(start, UIColor(red: 0.61, green: 0.85, blue: 1, alpha: 1)),
                                    (end, UIColor(red: 0, green: 0.38, blue: 0.9, alpha: 1))] {
                 color.setFill()
