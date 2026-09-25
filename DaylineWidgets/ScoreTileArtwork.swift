@@ -36,7 +36,7 @@ import WidgetKit
             let fraction = CGFloat(min(max(score, 0), 100)) / 100
             let start = -CGFloat.pi / 2
             let end = start + 2 * .pi * fraction
-            // Render the annular progress as one clipped path, then a horizontal
+            // Render the annular progress as one clipped path, then a vertical
             // ice-to-blue gradient. No overlapping slices or concentric moiré.
             let outer = radius + width / 2
             let inner = radius - width / 2
@@ -57,8 +57,8 @@ import WidgetKit
             let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(),
                                       colors: colors.map(\.cgColor) as CFArray,
                                       locations: stops)!
-            context.drawLinearGradient(gradient, start: CGPoint(x: 58, y: 0),
-                                       end: CGPoint(x: 139, y: 0), options: [.drawsBeforeStartLocation, .drawsAfterEndLocation])
+            context.drawLinearGradient(gradient, start: CGPoint(x: 80, y: 46),
+                                       end: CGPoint(x: 80, y: 131), options: [.drawsBeforeStartLocation, .drawsAfterEndLocation])
             context.restoreGState()
             for (angle, color) in [(start, UIColor(red: 0.61, green: 0.85, blue: 1, alpha: 1)),
                                    (end, UIColor(red: 0, green: 0.38, blue: 0.9, alpha: 1))] {
