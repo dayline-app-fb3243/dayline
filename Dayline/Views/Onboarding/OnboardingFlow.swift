@@ -354,7 +354,7 @@ struct SignInSheet: View {
             .foregroundStyle(.primary).frame(width: 28)
             VStack(alignment: .leading, spacing: 1) {
                 Text(o.rawValue).foregroundStyle(.primary)
-                Text(o == .apple ? "Fastest, uses Face ID" : o == .google ? "Your Google account" : "We\u{2019}ll send you a code")
+                Text(o == .apple ? "Uses your Apple Account" : o == .google ? "Preview only in this build" : "Preview only in this build")
                     .font(.subheadline).foregroundStyle(.secondary)
             }
             Spacer()
@@ -679,7 +679,7 @@ struct PhoneNumberView: View {
 
     var body: some View {
         SetupStep(symbol: "iphone.gen3.badge.checkmark", title: "Phone Number",
-                  subtitle: "Enter your number so friends can find you and share their streaks with you.",
+                  subtitle: "Save your number on this iPhone. Finding friends by number is not connected in this build.",
                   primary: "Continue", primaryEnabled: digits.count >= 10, secondary: "Set Up Later",
                   back: nil, onPrimary: { savedPhone = countryCode + digits; next() }, onSecondary: later) {
             VStack(alignment: .leading, spacing: 16) {
@@ -699,7 +699,7 @@ struct PhoneNumberView: View {
                         .background(Color(.tertiarySystemFill), in: .capsule)
                         .accessibilityIdentifier("phoneField")
                 }
-                Label("Friends who have this number in their contacts can find you. It's never shown to anyone.", systemImage: "info.circle.fill")
+                Label("Your number stays on this iPhone in this build. Verification and friend discovery are not connected.", systemImage: "info.circle.fill")
                     .font(.footnote).foregroundStyle(.secondary)
                     .labelStyle(InfoLabelStyle())
             }
@@ -721,17 +721,16 @@ struct PhoneCodeView: View {
     var next: () -> Void
     var back: () -> Void
     @AppStorage("auth.phone") private var savedPhone = ""
-    @AppStorage("auth.phoneVerified") private var verified = false
     @State private var code = ""
     @FocusState private var focused: Bool
 
     var body: some View {
         SetupStep(symbol: "ellipsis.message", title: "Enter Code",
-                  subtitle: "Enter the 6-digit code sent to \(savedPhone).",
+                  subtitle: "Preview step only. No text was sent to \(savedPhone). Enter any six digits to continue.",
                   primary: "Continue", primaryEnabled: code.count == 6,
                   back: back, onPrimary: {
                       // No text-message service is connected yet, so any 6 digits are accepted in this build.
-                      verified = true; next()
+                      next()
                   }) {
             VStack(alignment: .leading, spacing: 16) {
                 ZStack {
@@ -752,7 +751,7 @@ struct PhoneCodeView: View {
                     .allowsHitTesting(false)
                 }
                 .onTapGesture { focused = true }
-                Button("Didn't get a code?") {}.font(.subheadline).foregroundStyle(Theme.accent)
+                Text("Text verification needs a connected service.").font(.footnote).foregroundStyle(.secondary)
             }
         }
         .onAppear { focused = true }
@@ -769,7 +768,7 @@ struct EmailView: View {
 
     var body: some View {
         SetupStep(symbol: "envelope", title: "Email Address",
-                  subtitle: "Enter your email to back up your timeline and sign in on other devices.",
+                  subtitle: "Save an email on this iPhone for this preview. Cross-device backup is not set up.",
                   primary: "Continue", primaryEnabled: valid, secondary: nil,
                   back: back, onPrimary: { savedEmail = email; next() }, onSecondary: back) {
             TextField("name@example.com", text: $email)
@@ -792,7 +791,7 @@ struct EmailCodeView: View {
 
     var body: some View {
         SetupStep(symbol: "envelope.badge", title: "Check Your Email",
-                  subtitle: "Enter the 6-digit code sent to \(savedEmail).",
+                  subtitle: "Preview step only. No email was sent to \(savedEmail). Enter any six digits to continue.",
                   primary: "Continue", primaryEnabled: code.count == 6, secondary: nil,
                   back: back, onPrimary: {
                       // No email service is connected yet, so any 6 digits are accepted in this build.
@@ -817,7 +816,7 @@ struct EmailCodeView: View {
                     .allowsHitTesting(false)
                 }
                 .onTapGesture { focused = true }
-                Button("Resend Code") {}.font(.subheadline).foregroundStyle(Theme.accent)
+                Text("Email verification needs a connected service.").font(.footnote).foregroundStyle(.secondary)
             }
         }
         .onAppear { focused = true }
