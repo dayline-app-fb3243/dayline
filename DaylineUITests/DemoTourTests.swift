@@ -895,6 +895,11 @@ final class DemoTourTests: XCTestCase {
         let start = bar.coordinate(withNormalizedOffset: CGVector(dx: 0.82, dy: 0.5))
         let lock = bar.coordinate(withNormalizedOffset: CGVector(dx: 0.82, dy: -1.7))
         start.press(forDuration: 1.2, thenDragTo: lock)
+        let allow = XCUIApplication(bundleIdentifier: "com.apple.springboard").buttons["Allow"]
+        if allow.waitForExistence(timeout: 3) {
+            allow.tap(); pause(0.7)
+            start.press(forDuration: 1.2, thenDragTo: lock)
+        }
         pause(1.5)
         shot("journal-audio-bar-recording")
         let stop = app.buttons["Stop recording"]
