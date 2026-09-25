@@ -267,15 +267,15 @@ struct SplashView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(alignment: .top) {
             Color(.systemBackground).ignoresSafeArea()
-            Color.clear.frame(maxWidth: .infinity).frame(height: 730)
+            Color.clear.frame(maxWidth: .infinity).frame(height: 650)
                 .overlay(alignment: .top) {
                     ZStack {
                         // The motion layer is first. Do not show the retired static SplashMap
                         // while MapKit tiles load; a route-progress overlay covers that phase.
                         if liveMap.isEmpty || liveMap == "loop" {
-                            SplashLoop().frame(height: 730).allowsHitTesting(false)
+                            SplashLoop().frame(height: 650).allowsHitTesting(false)
                         } else {
-                            SplashLiveMap(style: liveMap).frame(height: 730).allowsHitTesting(false)
+                            SplashLiveMap(style: liveMap).frame(height: 650).allowsHitTesting(false)
                         }
                     }
                 }
@@ -284,7 +284,7 @@ struct SplashView: View {
                     LinearGradient(stops: [.init(color: Color(.systemBackground).opacity(0), location: 0),
                                            .init(color: Color(.systemBackground).opacity(0.15), location: 0.38),
                                            .init(color: Color(.systemBackground), location: 1)],
-                                   startPoint: .top, endPoint: .bottom).frame(height: 215)
+                                   startPoint: .top, endPoint: .bottom).frame(height: 245)
                 }
                 .offset(y: -130)
                 .ignoresSafeArea(edges: .top)
