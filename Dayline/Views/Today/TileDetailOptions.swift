@@ -47,10 +47,11 @@ private struct Page<C: View>: View {
 }
 
 private struct Row: View {
+    @AppStorage("symbols.show") private var showSymbols = true
     var symbol: String; var title: String; var value: String
     var body: some View {
         HStack(spacing: 13) {
-            ProfileIcon(symbol: symbol)
+            if showSymbols { ProfileIcon(symbol: symbol) }
             Text(title).font(.body)
             Spacer()
             Text(value).font(.body).foregroundStyle(.secondary).monospacedDigit()
@@ -192,9 +193,10 @@ struct GymDetailView: View {
     private var nextCard: some View {
         Card { nextContent }
     }
+    @AppStorage("symbols.show") private var showSymbols = true
     private var nextContent: some View {
         HStack(spacing: 13) {
-            ProfileIcon(symbol: "dumbbell.fill", size: 44)
+            if showSymbols { ProfileIcon(symbol: "dumbbell.fill", size: 44) }
             VStack(alignment: .leading, spacing: 2) {
                 Text("NEXT").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
                 Text("Gym around 6:00 PM").font(.headline)

@@ -143,13 +143,14 @@ struct ScoreCard: View {
 
 /// Shows only when Location was turned off for Dayline, instead of a permanent row in Profile.
 struct LocationOffCard: View {
+    @AppStorage("symbols.show") private var showSymbols = true
     @ObservedObject private var location = LocationService.shared
     @Environment(\.openURL) private var openURL
     var body: some View {
         if !DemoData.isDemo, location.authorization == .denied || location.authorization == .restricted {
             Card(padding: 14) {
                 HStack(alignment: .top, spacing: 12) {
-                    if UserDefaults.standard.object(forKey: "symbols.show") as? Bool ?? true {
+                    if showSymbols {
                         Image(systemName: "location.slash.fill").font(.title3).foregroundStyle(Theme.accent).frame(width: 28)
                     }
                     VStack(alignment: .leading, spacing: 6) {
@@ -225,15 +226,18 @@ struct TodayStepsNextTiles: View {
         }
         .buttonStyle(.plain).accessibilityIdentifier("stepsTile")
     }
+    @AppStorage("symbols.show") private var showSymbols = true
     private func nextLink(_ n: (title: String, symbol: String)) -> some View {
         NavigationLink {
             if n.title == "Walk" { StepsDetailView() } else { GymDetailView() }
         } label: {
             Card {
                 HStack(spacing: 12) {
-                    Image(systemName: n.symbol).font(.title3).foregroundStyle(Theme.accent)
-                        .frame(width: 42, height: 42)
-                        .background(Theme.accent.opacity(0.12), in: .circle)
+                    if showSymbols {
+                        Image(systemName: n.symbol).font(.title3).foregroundStyle(Theme.accent)
+                            .frame(width: 42, height: 42)
+                            .background(Theme.accent.opacity(0.12), in: .circle)
+                    }
                     VStack(alignment: .leading, spacing: 2) {
                         Text("NEXT").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
                         Text(n.title).font(.title2.weight(.bold)).foregroundStyle(.primary)

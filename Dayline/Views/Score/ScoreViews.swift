@@ -248,6 +248,7 @@ struct DayPickerSheet: View {
 
 /// What you actually did on a day, built from visits (no manual entries).
 struct DayActivityList: View {
+    @AppStorage("symbols.show") private var showSymbols = true
     var day: Date
     @Environment(\.modelContext) private var context
     @Query(sort: \Visit.arrival) private var visits: [Visit]
@@ -432,6 +433,7 @@ enum FactorListStyle {
 }
 
 struct FactorGlassList: View {
+    @AppStorage("symbols.show") private var showSymbols = true
     let factors: [ScoreFactor]
     private var style: Int { FactorListStyle.chosen }
     var body: some View {
@@ -440,7 +442,7 @@ struct FactorGlassList: View {
                 ForEach(Array(factors.enumerated()), id: \.element.id) { i, f in
                     FactorRow(factor: f)
                     if i < factors.count - 1 {
-                        Divider().padding(.leading, style == 2 ? 70 : 62)
+                        Divider().padding(.leading, showSymbols ? (style == 2 ? 70 : 62) : 16)
                             .padding(.trailing, style == 3 ? 0 : 16)
                     }
                 }
@@ -581,7 +583,7 @@ extension DayActivityList {
                         .frame(width: 8, height: bar)
                         .frame(width: 20, height: h, alignment: .top)
                     HStack(spacing: 10) {
-                        icon(r, size: 26)
+                        if showSymbols { icon(r, size: 26) }
                         VStack(alignment: .leading, spacing: 1) {
                             Text(r.title).foregroundStyle(r.kind == .gap ? .secondary : .primary)
                             Text(sub(r).isEmpty ? range(r) : "\(range(r)) · \(sub(r))").font(.subheadline).foregroundStyle(.secondary).monospacedDigit().lineLimit(1)

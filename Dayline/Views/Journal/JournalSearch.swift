@@ -327,6 +327,7 @@ struct SearchHitRow: View {
 /// Five app-style ways to make the empty search page useful without changing search results.
 /// Every suggestion is a working search, never a decorative placeholder.
 struct SearchLandingOption: View {
+    @AppStorage("symbols.show") private var showSymbols = true
     let style: Int
     let pick: (String) -> Void
     private let suggestions: [(String, String)] = [
@@ -404,9 +405,11 @@ struct SearchLandingOption: View {
     private func row(_ title: String, symbol: String, query: String) -> some View {
         Button { pick(query) } label: {
             HStack(spacing: 14) {
-                Image(systemName: symbol).font(.body).foregroundStyle(Theme.accent)
-                    .frame(width: 34, height: 34)
-                    .background(Theme.accent.opacity(0.12), in: .circle)
+                if showSymbols {
+                    Image(systemName: symbol).font(.body).foregroundStyle(Theme.accent)
+                        .frame(width: 34, height: 34)
+                        .background(Theme.accent.opacity(0.12), in: .circle)
+                }
                 Text(title).font(.body).foregroundStyle(.primary)
                 Spacer(minLength: 0)
                 Image(systemName: "arrow.up.left").font(.footnote).foregroundStyle(.tertiary)

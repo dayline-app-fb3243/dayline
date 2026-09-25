@@ -329,7 +329,7 @@ struct ProfileView: View {
                         }
                         Divider().padding(.leading, 57)
                         HStack(spacing: 13) {
-                            ProfileIcon(symbol: "star.fill")
+                            if showSymbols { ProfileIcon(symbol: "star.fill") }
                             Toggle("Show Symbols", isOn: $showSymbols)
                         }
                         .padding(.horizontal, 14).padding(.vertical, 7)
@@ -442,18 +442,19 @@ struct ProfileIcon: View {
 }
 
 struct ProfileRow: View {
+    @AppStorage("symbols.show") private var showSymbols = true
     var symbol: String
     var title: String
     var value: String
     var siriMark = false
     var body: some View {
         HStack(spacing: 13) {
-            if siriMark {
+            if siriMark && showSymbols {
                 // The Siri mark, white on the same blue tile as the other rows.
                 SiriMark(color: .white).padding(5)
                     .frame(width: 30, height: 30)
                     .background(Theme.accent, in: .rect(cornerRadius: 30 * 0.24, style: .continuous))
-            } else {
+            } else if showSymbols {
                 ProfileIcon(symbol: symbol)
             }
             Text(title).foregroundStyle(.primary)

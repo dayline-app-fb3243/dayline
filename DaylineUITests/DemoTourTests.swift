@@ -624,6 +624,27 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Show Symbols affects rows on Today, its schedule, Timeline, Day score, and Profile.
+    func testSymbolsOnOff() throws {
+        for (enabled, label) in [(true, "on"), (false, "off")] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-symbols.show", enabled ? "YES" : "NO"]
+            app.launchEnvironment["TZ"] = Self.morningZone
+            app.launch(); pause(1.5)
+            shot("symbols-\(label)-today")
+            tapID(app, "scoreCard"); pause(1.5)
+            shot("symbols-\(label)-schedule")
+            app.swipeUp(); pause(0.8)
+            shot("symbols-\(label)-factors")
+            goBack(app)
+            tab(app, "Timeline"); pause(2)
+            shot("symbols-\(label)-timeline")
+            tab(app, "Profile"); pause(1)
+            shot("symbols-\(label)-profile")
+            app.terminate()
+        }
+    }
+
     /// Three Week-at-a-glance designs, each with an orange low day in light and dark.
     func testWeekWidgetVariations() throws { try captureWeekWidgets() }
     func testWeekWidgetVariationsDark() throws { try captureWeekWidgets() }

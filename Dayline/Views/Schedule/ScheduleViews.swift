@@ -212,6 +212,7 @@ struct WorkHoursView: View {
 
 /// Profile > Places: Home, Work and your own places, found with Apple Maps search.
 struct PlacesView: View {
+    @AppStorage("symbols.show") private var showSymbols = true
     @State private var s = UserSchedule.current
     @State private var adding: String?
 
@@ -225,8 +226,10 @@ struct PlacesView: View {
             Section("My Places") {
                 ForEach(s.places.filter { $0.kind == "other" }) { p in
                     HStack(spacing: 12) {
-                        Image(systemName: "mappin").font(.footnote.weight(.bold)).foregroundStyle(.white)
-                            .markerBackground(Color.red, size: 30)
+                        if showSymbols {
+                            Image(systemName: "mappin").font(.footnote.weight(.bold)).foregroundStyle(.white)
+                                .markerBackground(Color.red, size: 30)
+                        }
                         VStack(alignment: .leading, spacing: 2) {
                             Text(p.name)
                             Text(p.address).font(.subheadline).foregroundStyle(.secondary).lineLimit(1)
@@ -267,8 +270,10 @@ struct PlacesView: View {
     private func row(kind: String, title: String, symbol: String, color: Color, place: SavedPlace?) -> some View {
         Button { adding = kind } label: {
             HStack(spacing: 12) {
-                Image(systemName: symbol).font(.footnote.weight(.bold)).foregroundStyle(.white)
-                    .markerBackground(color, size: 30)
+                if showSymbols {
+                    Image(systemName: symbol).font(.footnote.weight(.bold)).foregroundStyle(.white)
+                        .markerBackground(color, size: 30)
+                }
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title).foregroundStyle(.primary)
                     Text(place?.address ?? "Add Address").font(.subheadline).foregroundStyle(place == nil ? Theme.accent : .secondary).lineLimit(1)
@@ -345,6 +350,7 @@ final class PlaceKindSearch: ObservableObject {
 }
 
 struct AddPlaceView: View {
+    @AppStorage("symbols.show") private var showSymbols = true
     var title: String
     var prompt = "Search Maps"
     var dismissOnPick = true
@@ -363,8 +369,10 @@ struct AddPlaceView: View {
                     Button { onPick(item); if dismissOnPick { dismiss() } } label: {
                         HStack(spacing: 12) {
                             let g = kindGlyph(cats)
-                            Image(systemName: g.0).font(.footnote.weight(.bold)).foregroundStyle(.white)
-                                .frame(width: 32, height: 32).background(g.1, in: .circle)
+                            if showSymbols {
+                                Image(systemName: g.0).font(.footnote.weight(.bold)).foregroundStyle(.white)
+                                    .frame(width: 32, height: 32).background(g.1, in: .circle)
+                            }
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(item.name ?? "").foregroundStyle(.primary)
                                 let sub = [kindSearch.distanceText(item), Self.address(item)].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " \u{00B7} ")
@@ -380,8 +388,10 @@ struct AddPlaceView: View {
                 Button { pick(r) } label: {
                     HStack(spacing: 12) {
                         let g = glyph(r)
-                        Image(systemName: g.0).font(.footnote.weight(.bold)).foregroundStyle(.white)
-                            .frame(width: 32, height: 32).background(g.1, in: .circle)
+                        if showSymbols {
+                            Image(systemName: g.0).font(.footnote.weight(.bold)).foregroundStyle(.white)
+                                .frame(width: 32, height: 32).background(g.1, in: .circle)
+                        }
                         VStack(alignment: .leading, spacing: 2) {
                             Text(r.title).foregroundStyle(.primary)
                             if !r.subtitle.isEmpty { Text(r.subtitle).font(.subheadline).foregroundStyle(.secondary).lineLimit(1) }

@@ -6,6 +6,7 @@ enum MapRange: String, CaseIterable, Identifiable { case day = "Day", week = "We
 
 /// Map of everywhere you went (day / week / month / year) plus the day's timeline.
 struct TimelineScreen: View {
+    @AppStorage("symbols.show") private var showSymbols = true
     @Query(sort: \Visit.arrival) private var visits: [Visit]
     @Query(sort: \LocationSample.timestamp) private var samples: [LocationSample]
     @Query(sort: \JournalEntry.date) private var journal: [JournalEntry]
@@ -70,8 +71,10 @@ struct TimelineScreen: View {
     private var dayVisits: [Visit] { rangeVisits.sorted { $0.arrival < $1.arrival } }
     private func stopRow(_ v: Visit) -> some View {
         HStack(spacing: 12) {
-            Image(systemName: v.category.symbol).font(.subheadline).foregroundStyle(Theme.accent)
-                .frame(width: 30, height: 30).background(Theme.accent.opacity(0.14), in: .circle)
+            if showSymbols {
+                Image(systemName: v.category.symbol).font(.subheadline).foregroundStyle(Theme.accent)
+                    .frame(width: 30, height: 30).background(Theme.accent.opacity(0.14), in: .circle)
+            }
             VStack(alignment: .leading, spacing: 1) {
                 Text(v.placeName).font(.body)
                 Text(stopRange(v)).font(.subheadline).foregroundStyle(.secondary).monospacedDigit()
