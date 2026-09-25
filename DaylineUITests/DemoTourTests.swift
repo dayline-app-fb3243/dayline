@@ -1008,13 +1008,13 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
-    func testSplashCurrentLight() throws { captureSplashCurrent() }
-    func testSplashCurrentDark() throws { captureSplashCurrent() }
-    private func captureSplashCurrent() {
+    func testSplashCurrentLight() throws { captureSplashCurrent("light") }
+    func testSplashCurrentDark() throws { captureSplashCurrent("dark") }
+    private func captureSplashCurrent(_ appearance: String) {
         let app = XCUIApplication()
         app.launchArguments = ["-demo", "-onboarding", "-splash.map", "loop"]
         app.launch(); pause(4)
-        shot("splash-current")
+        shot("splash-current-\(appearance)")
     }
 
     /// Live splash and Timeline tiles follow the system dark appearance.
