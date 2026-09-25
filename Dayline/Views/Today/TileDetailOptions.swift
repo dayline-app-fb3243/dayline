@@ -2,13 +2,13 @@ import SwiftUI
 import Charts
 import MapKit
 
-// Steps page (Health-style chart) and the Gym page options (-detailVariant N overrides the chosen default 10).
+// Steps page (Health-style chart) and Gym page options (-detailVariant N previews alternatives).
 
 enum TileDetailOption {
     static var variant: Int {
         let a = ProcessInfo.processInfo.arguments
-        guard let i = a.firstIndex(of: "-detailVariant"), i + 1 < a.count else { return 10 }
-        return Int(a[i + 1]) ?? 10
+        guard let i = a.firstIndex(of: "-detailVariant"), i + 1 < a.count else { return 1 }
+        return Int(a[i + 1]) ?? 1
     }
 }
 
@@ -161,7 +161,7 @@ struct StepsDetailView: View {
 
 struct GymDetailView: View {
     @Environment(\.colorScheme) private var mapScheme
-    /// Picked: quiet Next line under the map; -detailVariant previews alternatives.
+    /// Unselected Gym page; it has no normal entry point after Next was removed.
     var variant = TileDetailOption.variant
     var body: some View {
         Group {
