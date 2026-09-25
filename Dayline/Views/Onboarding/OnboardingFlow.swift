@@ -907,6 +907,9 @@ struct SplashLoop: View {
                                   if abs(p.x - heroPoint.x) > 0.5 || abs(p.y - heroPoint.y) > 0.5 { heroPoint = p }
                               } : nil,
                               track: routePin ? tracks.track(i) : nil)
+                    // Route pin: center each place in the clear top part of the map, above the white fade
+                    // and the sign-in sheet (the map still draws under the padding).
+                    .safeAreaPadding(.bottom, routePin ? 180 : 0)
                     .opacity(i == next && !showNext ? 0.001 : 1)
             }
         }
