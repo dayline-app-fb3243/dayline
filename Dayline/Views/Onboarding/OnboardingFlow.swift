@@ -103,23 +103,11 @@ struct SplashView: View {
         showSignIn = true
     }
     private var continueButton: some View {
-        VStack(spacing: 10) {
-            if !hasFinishedSetup {
-            Button { open(.create, .apple) } label: {
-                Label("Continue with Apple", systemImage: "apple.logo").font(.headline).frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.glassProminent).tint(Theme.accent).controlSize(.extraLarge)
-            .accessibilityIdentifier("splashContinue")
-            Button { open(.create, .google) } label: {
-                HStack(spacing: 8) { GoogleG().frame(width: 18, height: 18); Text("Continue with Google") }
-                    .font(.headline).frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.glass).controlSize(.large)
-            .accessibilityIdentifier("splashGoogle")
-            }
-            Button { open(.existing) } label: { Text("Sign in").font(.body.weight(.medium)) }
-                .buttonStyle(.plain).padding(.top, 6).accessibilityIdentifier("splashSignIn")
+        Button { open(.create) } label: {
+            Text("Continue").font(.headline).frame(maxWidth: .infinity)
         }
+        .buttonStyle(.glassProminent).tint(Theme.accent).controlSize(.extraLarge)
+        .accessibilityIdentifier("splashContinue")
     }
     private var bigIcon: some View {
         Image("AppIconImage").resizable().interpolation(.high).frame(width: 120, height: 120)
@@ -320,10 +308,21 @@ struct SignInSheet: View {
     private let isDemo = ProcessInfo.processInfo.arguments.contains("-demo")
     @State private var apple = AppleSignInRunner()
 
+    // Label trials requested for review; all three go to the same prototype email walkthrough.
+    // A production build must verify address ownership and resolve accounts server-side.
+    @AppStorage("auth.emailLabel") private var emailLabel = "A"
+    private var emailRowTitle: String {
+        switch emailLabel {
+        case "B": "Sign in with email"
+        case "C": "Create an account"
+        default: "Continue with email"
+        }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .center) {
-                Text(mode == .existing ? "Sign In to Dayline" : "Create Your Account").font(.title2.bold())
+                Text("Continue with Dayline").font(.title2.bold())
                 Spacer()
                 Button { dismiss() } label: {
                     Image(systemName: "xmark.circle.fill")
@@ -337,14 +336,14 @@ struct SignInSheet: View {
             }
             HStack(spacing: 14) {
                 AppMark(size: 56)
-                Text(mode == .existing ? "Use the same account to return to your day on this iPhone." : "Choose an account. Your timeline stays on this iPhone.").font(.subheadline)
+                Text("Choose how to continue. Your timeline stays on this iPhone.").font(.subheadline)
             }
             .padding(.top, 10)
             VStack(spacing: 0) {
-                ForEach(mode == .existing ? [.apple, .google] : Option.allCases, id: \.self) { o in
+                ForEach(Option.allCases, id: \.self) { o in
                     Button { choice = o } label: { row(o) }.buttonStyle(.plain)
                         .accessibilityIdentifier("signInOption-\(o.rawValue)")
-                    if o != (mode == .existing ? .google : .email) { Divider().padding(.leading, 60) }
+                    if o != .email { Divider().padding(.leading, 60) }
                 }
             }
             .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 24, style: .continuous))
@@ -352,7 +351,7 @@ struct SignInSheet: View {
             if let error = auth.errorMessage {
                 Text(error).font(.footnote).foregroundStyle(.red).frame(maxWidth: .infinity).padding(.top, 8)
             }
-            Button(action: go) { Text(mode == .existing ? "Sign In" : "Continue").font(.headline).padding(.horizontal, 30) }
+            Button(action: go) { Text("Continue").font(.headline).padding(.horizontal, 30) }
                 .buttonStyle(.glassProminent).tint(Theme.accent).controlSize(.large)
                 .frame(maxWidth: .infinity).padding(.top, 18)
                 .accessibilityIdentifier("signInContinue")
@@ -394,8 +393,8 @@ struct SignInSheet: View {
             }
             .foregroundStyle(.primary).frame(width: 28)
             VStack(alignment: .leading, spacing: 1) {
-                Text(o.rawValue).foregroundStyle(.primary)
-                Text(o == .apple ? "Uses your Apple Account" : o == .google ? "Your Google account" : "Continue with your email")
+                Text(o == .email ? emailRowTitle : "Continue with \(o.rawValue)").foregroundStyle(.primary)
+                Text(o == .apple ? "Uses your Apple Account" : o == .google ? "Your Google account" : "Verify your email address")
                     .font(.subheadline).foregroundStyle(.secondary)
             }
             Spacer()

@@ -98,6 +98,18 @@ final class DemoTourTests: XCTestCase {
     }
 
 
+    func testAuthLabelOptions() {
+        for variant in ["A", "B", "C"] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-onboarding", "-auth.emailLabel", variant]
+            app.launch(); pause(1)
+            tapID(app, "splashContinue"); pause(1)
+            XCTAssertTrue(app.buttons["signInOption-Email"].waitForExistence(timeout: 4))
+            shot("auth-label-\(variant)")
+            app.terminate()
+        }
+    }
+
     func testSignOutAndReturningSignIn() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-demo"]
@@ -109,7 +121,7 @@ final class DemoTourTests: XCTestCase {
         XCTAssertTrue(app.descendants(matching: .any)["splash"].firstMatch.waitForExistence(timeout: 8))
         XCTAssertFalse(app.tabBars.buttons["Profile"].exists)
         shot("auth-after-sign-out")
-        tapID(app, "splashSignIn"); pause(1)
+        tapID(app, "splashContinue"); pause(1)
         shot("auth-returning-sign-in")
         tapID(app, "signInContinue"); pause(1)
         let demo = app.buttons["appleDemoContinue"]
@@ -135,8 +147,8 @@ final class DemoTourTests: XCTestCase {
         app.launchArguments = ["-demo", "-onboarding"]
         app.launch(); pause(2)
         XCTAssertTrue(app.buttons["splashContinue"].exists)
-        XCTAssertTrue(app.buttons["splashGoogle"].exists)
-        XCTAssertTrue(app.buttons["splashSignIn"].exists)
+        XCTAssertFalse(app.buttons["splashGoogle"].exists)
+        XCTAssertFalse(app.buttons["splashSignIn"].exists)
         shot("auth-first-launch-splash")
     }
 
