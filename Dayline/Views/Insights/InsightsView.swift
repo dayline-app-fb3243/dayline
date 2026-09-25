@@ -217,7 +217,7 @@ struct InsightsView: View {
                     Text("\(String(year)) so far").font(.headline)
                     Chart(points.compactMap { p in p.1.map { (p.0, $0) } }, id: \.0) { p in
                         BarMark(x: .value("Month", cal.shortMonthSymbols[p.0 - 1]), y: .value("Average", p.1))
-                            .foregroundStyle(LinearGradient(colors: [Theme.accent.opacity(0.5), Theme.accent], startPoint: .bottom, endPoint: .top))
+                            .foregroundStyle(p.1 < 45 ? Theme.bad : Theme.accent.opacity(p.1 >= 80 ? 1 : 0.55))
                             .clipShape(.rect(cornerRadius: 8))
                     }
                     .chartXScale(domain: cal.shortMonthSymbols)
