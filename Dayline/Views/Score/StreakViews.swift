@@ -598,6 +598,13 @@ final class DeviceContacts: ObservableObject {
     private let store = CNContactStore()
 
     func refresh() {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-testPeopleSearch") {
+            people = [("Casey Morgan", "+1 (416) 555-0134"), ("Taylor Reed", "+1 (647) 555-0199")]
+            permissionNeeded = false
+            return
+        }
+        #endif
         let status = CNContactStore.authorizationStatus(for: .contacts)
         guard status == .authorized || status == .limited else {
             people = []; permissionNeeded = status == .notDetermined
@@ -636,6 +643,15 @@ struct PeopleView: View {
     @ObservedObject private var deviceContacts = DeviceContacts.shared
 
     private var hidden: Set<String> { Set(hiddenRaw.split(separator: ",").map(String.init)) }
+    private var filteredContacts: [(String, String)] {
+        let query = search.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else { return deviceContacts.people }
+        let digits = query.filter(\.isNumber)
+        return deviceContacts.people.filter { contact in
+            contact.0.localizedStandardContains(query) || contact.1.localizedStandardContains(query)
+                || (!digits.isEmpty && contact.1.filter(\.isNumber).contains(digits))
+        }
+    }
 
     var body: some View {
         ScrollView {
@@ -678,14 +694,15 @@ struct PeopleView: View {
                     if deviceContacts.permissionNeeded {
                         Button("Choose Contacts") { Task { await deviceContacts.requestAndRefresh() } }
                             .padding(16)
-                    } else if deviceContacts.people.isEmpty {
-                        Text("No contacts with a phone number or email are available.")
+                    } else if filteredContacts.isEmpty {
+                        Text(deviceContacts.people.isEmpty ? "No contacts with a phone number or email are available." : "No matching contacts")
                             .font(.subheadline).foregroundStyle(.secondary).padding(16)
                     }
-                    ForEach(Array(deviceContacts.people.enumerated()), id: \.offset) { i, c in
-                        PersonRow(compact: true, name: c.0, subtitle: c.1, last: i == deviceContacts.people.count - 1) {
+                    ForEach(Array(filteredContacts.enumerated()), id: \.offset) { i, c in
+                        PersonRow(compact: true, name: c.0, subtitle: c.1, last: i == filteredContacts.count - 1) {
                             InviteButton(recipient: c.1).accessibilityIdentifier("invite-\(c.0)")
                         }
+                        .accessibilityIdentifier("contact-\(c.0)")
                     }
                 }
                 Text("Choose someone to invite through Messages. Your contacts stay on this iPhone.")

@@ -177,6 +177,23 @@ final class DemoTourTests: XCTestCase {
         shot("journal-media-dialog-dark")
     }
 
+    func testPeopleSearchFiltersContacts() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo", "-testPeopleSearch"]
+        app.launch(); pause(1)
+        app.tabBars.buttons["Insights"].tap(); pause(1)
+        tapID(app, "streakCard"); pause(1)
+        tapID(app, "peopleButton"); pause(1)
+        XCTAssertTrue(app.descendants(matching: .any)["contact-Casey Morgan"].firstMatch.exists)
+        XCTAssertTrue(app.descendants(matching: .any)["contact-Taylor Reed"].firstMatch.exists)
+        let search = app.searchFields.firstMatch
+        XCTAssertTrue(search.waitForExistence(timeout: 5))
+        search.tap(); search.typeText("0134"); pause(1)
+        XCTAssertTrue(app.descendants(matching: .any)["contact-Casey Morgan"].firstMatch.exists)
+        XCTAssertFalse(app.descendants(matching: .any)["contact-Taylor Reed"].firstMatch.exists)
+        shot("people-search-filtered-number")
+    }
+
     func testOneJournalMultipleMediaOneScheduleRow() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-onboarding.done", "YES", "-appearance", "dark", "-testJournalMediaGroup"]
