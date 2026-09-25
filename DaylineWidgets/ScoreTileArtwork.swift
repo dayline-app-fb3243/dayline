@@ -45,11 +45,7 @@ import WidgetKit
             // Ice-to-blue overlay is clipped to the arc silhouette, preventing
             // the pale cap from swelling into an oval over the blue stroke.
             context.saveGState()
-            let icePath = UIBezierPath(arcCenter: center, radius: radius,
-                                     startAngle: start, endAngle: end, clockwise: true)
-            icePath.lineWidth = width
-            icePath.lineCapStyle = .round
-            context.addPath(icePath.cgPath)
+            context.addArc(center: center, radius: radius, startAngle: start, endAngle: end, clockwise: false)
             context.replacePathWithStrokedPath()
             context.clip()
             let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(),
