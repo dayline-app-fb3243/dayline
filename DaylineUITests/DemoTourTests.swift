@@ -1450,6 +1450,9 @@ final class DemoTourTests: XCTestCase {
         shot("journal-mic-hint-collapsed")
         mic.press(forDuration: 3.0)
         pause(0.5)
+        XCTAssertTrue(app.descendants(matching: .any)["audioHoldBar"].firstMatch.exists)
+        shot("journal-mic-recording-red")
+        tapID(app, "voiceStop"); pause(0.4)
         let send = app.buttons["voiceSend"].firstMatch
         XCTAssertTrue(send.waitForExistence(timeout: 3), "Release should show a send button")
         shot("journal-mic-ready-to-send")
@@ -1474,7 +1477,9 @@ final class DemoTourTests: XCTestCase {
             mic.press(forDuration: 1.2)
         }
         pause(1.5)
-        shot("journal-voice-attached")
+        shot("journal-voice-recording-red")
+        tapID(app, "voiceStop"); pause(0.5)
+        shot("journal-voice-ready-blue")
     }
 
     /// Day/Week/Month/Year: press and slide across the switcher (recorded as video).

@@ -115,7 +115,7 @@ struct VoiceRecorderBar<Tools: View, Leading: View>: View {
             .contentShape(.rect)
             .gesture(DragGesture(minimumDistance: 0)
                 .onChanged { value in
-                    guard !readyToSend, !voice.isRecording || holding else { return }
+                    guard !readyToSend, !voice.isRecording else { return }
                     if !holding {
                         holding = true; cancelled = false; pressStarted = .now
                         hintTask?.cancel(); hintVisible = false
@@ -138,7 +138,7 @@ struct VoiceRecorderBar<Tools: View, Leading: View>: View {
                 }
                 .onEnded { _ in
                     guard !readyToSend else { return }
-                    if voice.isRecording { holding = false; finishRecording(); return }
+                    if voice.isRecording { holding = false; return }
                     holding = false; pressGeneration += 1; startTask?.cancel()
                     let longEnough = pressStarted.map { Date.now.timeIntervalSince($0) >= minimumHold } ?? false
                     if !longEnough && !cancelled {
@@ -149,7 +149,7 @@ struct VoiceRecorderBar<Tools: View, Leading: View>: View {
                             if !Task.isCancelled { hintVisible = false }
                         }
                     } else if cancelled { voice.cancel() }
-                    else if voice.isRecording { finishRecording() }
+                    else if voice.isRecording { holding = false }
                     // If microphone permission arrives after release, the start task cancels it.
                 })
             .accessibilityLabel("Voice memo")
