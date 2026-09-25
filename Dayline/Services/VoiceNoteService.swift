@@ -122,11 +122,13 @@ final class VoiceNoteService: NSObject, ObservableObject {
         // Transcribe in the background so the note shows up in the entry right away
         // (and Save links it), instead of waiting for speech-to-text to finish.
         Task { @MainActor in
-            if let text = await Transcriber.transcribe(file) {
+            if let text = await Transcriber.transcribe(file), !text.isEmpty {
                 entry.text = text
                 entry.isTranscribed = true
-                try? context.save()
+            } else {
+                entry.transcriptionFailed = true
             }
+            try? context.save()
         }
     }
 }
@@ -139,19 +141,30 @@ enum Transcriber {
         }
         guard status == .authorized, let recognizer = SFSpeechRecognizer(), recognizer.isAvailable else { return nil }
         let request = SFSpeechURLRecognitionRequest(url: url)
+        // Apple's on-device engine when available; use Apple's Speech service otherwise.
         request.requiresOnDeviceRecognition = recognizer.supportsOnDeviceRecognition
         request.addsPunctuation = true
+        request.shouldReportPartialResults = true
         return await withCheckedContinuation { continuation in
-            var finished = false
-            recognizer.recognitionTask(with: request) { result, error in
-                guard !finished else { return }
-                if let result, result.isFinal {
-                    finished = true
-                    continuation.resume(returning: result.bestTranscription.formattedString)
-                } else if error != nil {
-                    finished = true
-                    continuation.resume(returning: nil)
+            var resolved = false
+            var best = ""
+            var recognition: SFSpeechRecognitionTask?
+            func finish(_ text: String?) {
+                guard !resolved else { return }
+                resolved = true
+                recognition?.cancel()
+                continuation.resume(returning: text?.trimmingCharacters(in: .whitespacesAndNewlines))
+            }
+            recognition = recognizer.recognitionTask(with: request) { result, error in
+                DispatchQueue.main.async {
+                    if let result { best = result.bestTranscription.formattedString }
+                    if result?.isFinal == true || error != nil { finish(best.isEmpty ? nil : best) }
                 }
+            }
+            // Some recognizer versions return partial words without an isFinal callback.
+            // Conclude with those words rather than leaving the journal stuck forever.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 30) {
+                finish(best.isEmpty ? nil : best)
             }
         }
     }

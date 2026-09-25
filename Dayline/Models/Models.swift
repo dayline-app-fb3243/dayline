@@ -116,6 +116,8 @@ final class JournalEntry {
     var latitude: Double?
     var longitude: Double?
     var isTranscribed: Bool
+    /// Terminal failure is distinct from still transcribing so the UI never spins forever.
+    var transcriptionFailed: Bool = false
 
     init(date: Date, kind: JournalKind, text: String = "", photoAssetID: String? = nil, thumbnail: Data? = nil,
          audioFileName: String? = nil, audioDuration: Double = 0, latitude: Double? = nil, longitude: Double? = nil,

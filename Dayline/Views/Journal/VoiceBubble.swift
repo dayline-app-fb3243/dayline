@@ -7,6 +7,7 @@ struct VoiceBubble: View {
     let seconds: Double
     var words: String = ""
     var transcribed: Bool = false
+    var failed: Bool = false
     var seed: String = ""
     var audioURL: URL? = nil
 
@@ -48,7 +49,7 @@ struct VoiceBubble: View {
                 Text("\u{201C}\(words)\u{201D}").font(.subheadline).foregroundStyle(.white)
                     .padding(.top, 8).padding(.leading, 6)
             }
-            Text(transcribed ? "Transcribed" : "Transcribing…")
+            Text(transcribed ? "Transcribed" : failed ? "Transcript unavailable" : "Transcribing…")
                 .font(.caption.weight(.semibold)).foregroundStyle(.white.opacity(0.75))
                 .padding(.top, 4).padding(.leading, 6)
         }

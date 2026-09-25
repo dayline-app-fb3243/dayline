@@ -191,7 +191,7 @@ struct JournalCard: View {
 
     @ViewBuilder private var voiceBlock: some View {
         if let voice = group.voice {
-            VoiceBubble(seconds: voice.audioDuration, words: voice.text, transcribed: voice.isTranscribed,
+            VoiceBubble(seconds: voice.audioDuration, words: voice.text, transcribed: voice.isTranscribed, failed: voice.transcriptionFailed,
                         seed: voice.audioFileName ?? "\(voice.date)",
                         audioURL: voice.audioFileName.map { VoiceNoteService.folder.appending(path: $0) })
         }
@@ -214,7 +214,7 @@ struct JournalEntryView: View {
                 }
                 if let text = group.text { Text(text).font(.body) }
                 if let voice = group.voice {
-                    VoiceBubble(seconds: voice.audioDuration, words: voice.text, transcribed: voice.isTranscribed,
+                    VoiceBubble(seconds: voice.audioDuration, words: voice.text, transcribed: voice.isTranscribed, failed: voice.transcriptionFailed,
                                 seed: voice.audioFileName ?? "\(voice.date)",
                                 audioURL: voice.audioFileName.map { VoiceNoteService.folder.appending(path: $0) })
                 }
