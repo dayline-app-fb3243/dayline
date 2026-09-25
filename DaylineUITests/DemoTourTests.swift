@@ -407,6 +407,7 @@ final class DemoTourTests: XCTestCase {
             pause(1); app.swipeDown(); app.swipeDown(); pause(1)
             shot("so-\(path)-1-signed-out")
             tapID(app, "accountRow"); pause(1.5); shot("so-\(path)-2-sheet")
+            print("SHEETFIT close=\(app.buttons["Close"].firstMatch.frame) continue=\(app.buttons["signInContinue"].frame)")
             if path == "Apple" {
                 tapID(app, "signInContinue"); pause(1.5); shot("so-\(path)-3-apple")
                 tapID(app, "appleDemoContinue"); pause(2.5)

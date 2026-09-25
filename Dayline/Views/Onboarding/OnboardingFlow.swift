@@ -272,7 +272,8 @@ struct SplashView: View {
 /// Sign-in sheet in the style of Apple's own "Sign in with Apple" sheet: pick one, then the blue button.
 struct SignInSheet: View {
     @State private var fitHeight: CGFloat = 0
-    @State private var detent: PresentationDetent = .height(500)
+    @State private var detent: PresentationDetent = .height(FitSheet.firstGuess)
+    @State private var fitted = false
     var next: () -> Void
     var email: () -> Void
     enum Option: String, CaseIterable { case apple = "Apple", google = "Google", email = "Email" }
@@ -322,10 +323,12 @@ struct SignInSheet: View {
         // instead of stacking its inset under the button.
         .ignoresSafeArea(.container, edges: .bottom)
         .background(Color(.systemGroupedBackground))
-        // The sheet is exactly as tall as its content, like Apple's own sheets.
-        // Detents are read when the sheet opens (before the content is measured), so resize through the selection.
-        .presentationDetents([detent], selection: $detent)
-        .onChange(of: fitHeight) { _, h in if h > 0 { detent = .height(h) } }
+        .presentationDetents(FitSheet.detents(fitHeight, fitted: fitted), selection: $detent)
+        .onChange(of: fitHeight) { _, h in
+            guard h > 0 else { return }
+            fitted = false; detent = .height(h)
+            Task { try? await Task.sleep(for: .milliseconds(600)); fitted = true }
+        }
         .sheet(isPresented: $showAppleDemo, onDismiss: {
             // Only move on once the Apple sheet is fully gone, so the sign-in sheet can close too.
             if appleDone { next() }
@@ -402,7 +405,8 @@ final class AppleSignInRunner: NSObject, ASAuthorizationControllerDelegate, ASAu
 /// Laid out like the real iOS 26 sheet.
 struct AppleSignInDemoSheet: View {
     @State private var fitHeight: CGFloat = 0
-    @State private var detent: PresentationDetent = .height(520)
+    @State private var detent: PresentationDetent = .height(FitSheet.firstGuess)
+    @State private var fitted = false
     var onContinue: () -> Void
     @State private var hideEmail = true
     @Environment(\.dismiss) private var dismiss
@@ -453,9 +457,12 @@ struct AppleSignInDemoSheet: View {
         // instead of stacking its inset under the button.
         .ignoresSafeArea(.container, edges: .bottom)
         .background(Color(.systemGroupedBackground))
-        // Detents are read when the sheet opens (before the content is measured), so resize through the selection.
-        .presentationDetents([detent], selection: $detent)
-        .onChange(of: fitHeight) { _, h in if h > 0 { detent = .height(h) } }
+        .presentationDetents(FitSheet.detents(fitHeight, fitted: fitted), selection: $detent)
+        .onChange(of: fitHeight) { _, h in
+            guard h > 0 else { return }
+            fitted = false; detent = .height(h)
+            Task { try? await Task.sleep(for: .milliseconds(600)); fitted = true }
+        }
     }
 
     private func choice(_ title: String, _ detail: String, selected: Bool, _ action: @escaping () -> Void) -> some View {
@@ -1338,5 +1345,16 @@ struct MapReadyProbe: UIViewRepresentable {
             done = true
             DispatchQueue.main.async { self.onReady() }
         }
+    }
+}
+
+/// Sheets as tall as their content, like Apple's own. Detents are read when a sheet opens, before its content
+/// is measured, so the sheet opens at a first guess and then moves to the measured height through the
+/// selection (both heights are listed while it moves), after which only the measured height remains.
+enum FitSheet {
+    static let firstGuess: CGFloat = 480
+    static func detents(_ h: CGFloat, fitted: Bool) -> Set<PresentationDetent> {
+        guard h > 0 else { return [.height(firstGuess)] }
+        return fitted ? [.height(h)] : [.height(firstGuess), .height(h)]
     }
 }
