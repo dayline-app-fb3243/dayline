@@ -1238,7 +1238,7 @@ struct SplashLiveMap: View {
                   style == "E" ? .hybrid(elevation: .realistic, pointsOfInterest: .excludingAll) :
                   style == "F" ? .standard(elevation: .realistic, emphasis: .muted, pointsOfInterest: .excludingAll) :
                   .standard(pointsOfInterest: .excludingAll))
-        .environment(\.colorScheme, SystemMapAppearance.scheme)
+        .environment(\.colorScheme, mapScheme)
         .mapControlVisibility(.hidden)
         .mapCameraKeyframeAnimator(trigger: drift) { cam in
             // Route mode: a slow turn around the place itself, pushing in a little and tilting a touch more.
@@ -1397,19 +1397,20 @@ struct SplashLiveMap: View {
 
 /// A hidden MKMapView that reports once its 3D tiles are fully drawn (it also warms the tile cache for the real map).
 struct MapReadyProbe: UIViewRepresentable {
+    @Environment(\.colorScheme) private var mapScheme
     var center: CLLocationCoordinate2D
     var onReady: () -> Void
     func makeCoordinator() -> Coordinator { Coordinator(onReady: onReady) }
     func makeUIView(context: Context) -> MKMapView {
         let m = MKMapView()
         m.delegate = context.coordinator
-        m.overrideUserInterfaceStyle = SystemMapAppearance.interfaceStyle
+        m.overrideUserInterfaceStyle = mapScheme == .dark ? .dark : .light
         m.pointOfInterestFilter = .excludingAll
         m.camera = MKMapCamera(lookingAtCenter: center, fromDistance: 600, pitch: 45, heading: 60)
         return m
     }
     func updateUIView(_ uiView: MKMapView, context: Context) {
-        uiView.overrideUserInterfaceStyle = SystemMapAppearance.interfaceStyle
+        uiView.overrideUserInterfaceStyle = mapScheme == .dark ? .dark : .light
     }
     final class Coordinator: NSObject, MKMapViewDelegate {
         let onReady: () -> Void

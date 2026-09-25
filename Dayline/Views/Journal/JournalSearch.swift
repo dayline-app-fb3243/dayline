@@ -487,7 +487,7 @@ struct SearchPlaceView: View {
                 Marker(hit.place, coordinate: coordinate).tint(Theme.accent)
             }
             .mapStyle(.standard(pointsOfInterest: .excludingAll))
-            .environment(\.colorScheme, SystemMapAppearance.scheme)
+            .environment(\.colorScheme, mapScheme)
             .frame(height: design == 3 ? 160 : 205)
             .clipShape(.rect(cornerRadius: Theme.cardRadius))
             .allowsHitTesting(false)

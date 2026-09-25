@@ -1288,7 +1288,21 @@ final class DemoTourTests: XCTestCase {
         shot("splash-current-\(appearance)")
     }
 
-    /// Live splash and Timeline tiles follow the system dark appearance.
+    /// Light and dark app appearances should drive Apple's live map colors.
+    func testAppMapAppearanceLight() throws { captureAppMapAppearance("light") }
+    func testAppMapAppearanceDark() throws { captureAppMapAppearance("dark") }
+    private func captureAppMapAppearance(_ appearance: String) {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo", "-appearance", appearance]
+        app.launch(); pause(1)
+        tab(app, "Timeline"); pause(8)
+        shot("app-map-timeline-\(appearance)")
+        tab(app, "Profile"); pause(1)
+        tapID(app, "yourScheduleRow"); pause(1)
+        shot("app-map-schedule-\(appearance)")
+    }
+
+    /// Live splash and Timeline tiles honor the dark app appearance.
     func testAllMapsDark() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-demo", "-onboarding", "-splash.map", "loop"]

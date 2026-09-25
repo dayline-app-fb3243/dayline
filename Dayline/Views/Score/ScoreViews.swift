@@ -404,7 +404,7 @@ struct DayActivityList: View {
                     Marker(r.title, systemImage: r.symbol, coordinate: place).tint(Theme.accent)
                 }
                 .mapStyle(.standard(pointsOfInterest: .excludingAll))
-                .environment(\.colorScheme, SystemMapAppearance.scheme)
+                .environment(\.colorScheme, mapScheme)
                 .allowsHitTesting(false)
                 .frame(height: 120).clipShape(.rect(cornerRadius: 12))
             }

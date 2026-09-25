@@ -200,7 +200,7 @@ struct GymDetailView: View {
                 Marker(gymName, systemImage: "dumbbell.fill", coordinate: coordinate).tint(Theme.accent)
             }
             .mapStyle(.standard(pointsOfInterest: .excludingAll))
-            .environment(\.colorScheme, SystemMapAppearance.scheme)
+            .environment(\.colorScheme, mapScheme)
             .frame(height: 210).allowsHitTesting(false)
             .clipShape(.rect(cornerRadius: Theme.cardRadius, style: .continuous))
             Card { Text(gymName).font(.headline).frame(maxWidth: .infinity, alignment: .leading) }
@@ -228,7 +228,7 @@ struct GymDetailView: View {
             Marker("Iron Works Gym", systemImage: "dumbbell.fill", coordinate: GymDemo.place).tint(Theme.accent)
         }
         .mapStyle(.standard(pointsOfInterest: .excludingAll))
-        .environment(\.colorScheme, SystemMapAppearance.scheme)
+        .environment(\.colorScheme, mapScheme)
         .frame(height: height).allowsHitTesting(false)
     }
 
