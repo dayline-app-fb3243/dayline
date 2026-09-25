@@ -21,7 +21,7 @@ enum ScoreEngine {
 
     /// Pace from your own habits: a habit only counts against you once its time is up
     /// (wake-up goal, work start, a plan's end, the gym's "Go By" time, bedtime for the journal).
-    /// Make-up actions (extra journaling, a gym visit when the gym isn't one of your habits) win points back.
+    /// Extra activity, such as a workout, can win points back.
     struct Pace: Equatable {
         /// Points you can no longer get today from your habits.
         var lost: Int
@@ -187,12 +187,12 @@ enum ScoreEngine {
             }
         }
 
-        // 4. Plans & reminders done (none = full points)
+        // 4. Plans & reminders: no tasks means nothing was completed, not an automatic reward.
         let plan = input.plan
         let total = plan.count + input.remindersTotal
         let done = plan.filter(\.isDone).count + input.remindersDone
         if total == 0 {
-            factors.append(.init(part: .plans, title: "Plans & reminders", effect: .up, points: pts(.plans, 1)))
+            factors.append(.init(part: .plans, title: "No plans or reminders yet", effect: .pending, points: 0))
         } else {
             factors.append(.init(part: .plans, title: "Plans: \(done) of \(total) done", effect: done > 0 ? .up : .pending, points: pts(.plans, Double(done) / Double(total))))
         }
@@ -212,14 +212,18 @@ enum ScoreEngine {
         // Apple Health workouts arrive as journal lines ("Run · 5.2 km · 31 min"); they count as activity, not journaling.
         let workouts = input.journal.filter { $0.placeName == "Apple Health" }
         let entries = input.journal.filter { $0.placeName != "Apple Health" }
+        // One composer save may contain text, photos and voice stored as separate records.
+        // Count it once for the person's journal habit.
+        let distinctEntries = Set(entries.map { $0.groupID ?? String(describing: $0.persistentModelID) }).count
 
         // 7. Journal
         if w[.journal] != nil, !entries.isEmpty {
-            factors.append(.init(part: .journal, title: "Journaled", effect: .up, points: pts(.journal, Double(entries.count) * 0.4)))
+            factors.append(.init(part: .journal, title: "Journaled", effect: .up, points: pts(.journal, Double(distinctEntries) * 0.4),
+                                 detail: "\(distinctEntries) journal entr\(distinctEntries == 1 ? "y" : "ies")")))
         }
 
         // 8. Make-up actions: anything good wins back points for missed habits (and moves the ring back toward blue).
-        // Workouts from Apple Health (a run, a ride, a swim), a lot more steps than usual, extra journaling,
+        // Workouts from Apple Health (a run, a ride, a swim), a lot more steps than usual,
         // or a gym visit when the gym isn't one of your habits.
         for wk in workouts.prefix(2) {
             let kind = wk.text.components(separatedBy: " · ").first ?? "Workout"
@@ -231,11 +235,6 @@ enum ScoreEngine {
         if input.steps >= usual * 3 / 2 || (!s.walk && input.steps >= usual) {
             factors.append(ScoreFactor(title: "Lots of steps", effect: .up, points: 8,
                                        detail: "\(input.steps.formatted()) steps · probably a walk", part: bonusPart))
-        }
-        let extraNotes = max(0, entries.count - 3)
-        if extraNotes > 0 {
-            factors.append(ScoreFactor(title: "Extra journaling", effect: .up, points: min(15, extraNotes * 3),
-                                       detail: "\(extraNotes) more entr\(extraNotes == 1 ? "y" : "ies") than usual", part: bonusPart))
         }
         if !s.gym, outside.contains(where: { $0.category == .gym && $0.duration > 20 * 60 }) {
             factors.append(ScoreFactor(title: "Gym (make-up)", effect: .up, points: 15, detail: "Not one of your habits, so it makes up for a miss", part: bonusPart))
@@ -319,10 +318,9 @@ enum DayData {
         let fourAM = start
         let leftHome = visits.filter { $0.category == .home }.compactMap(\.departure).filter { $0 > fourAM }.min()
         let firstOut = visits.filter { $0.category != .home }.map(\.arrival).filter { $0 > fourAM }.min()
-        let firstJournal = journal.map(\.date).filter { $0 > fourAM }.min()
-        // Wake-up = first motion after the overnight still stretch; otherwise the first sign of activity.
+        // Writing a journal entry does not establish when the person woke up.
         let first = DayBoundary.shared.wakeUp(on: day, calendar: calendar)
-            ?? [leftHome, firstOut.map { $0.addingTimeInterval(-15 * 60) }, firstJournal].compactMap { $0 }.min()
+            ?? [leftHome, firstOut.map { $0.addingTimeInterval(-15 * 60) }].compactMap { $0 }.min()
         return .init(firstActivity: first, plan: plan, visits: visits, journal: journal, isFinished: end <= .now,
                      day: day, bedtime: DayBoundary.shared.night(after: day, calendar: calendar)?.sleep,
                      steps: DayCache.steps(for: day), remindersDone: DayCache.reminders(for: day).done,

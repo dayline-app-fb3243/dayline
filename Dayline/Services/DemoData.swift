@@ -147,14 +147,13 @@ enum DemoData {
             sched = UserSchedule(); sched.gym = false; sched.walk = true
             f = [F(.wake, "Up at 8:40", 4, "Late start · goal 7:00")]
             if hour >= 12 {
-                f += [F(.work, "Work", 8, "At the office since 9:40"), F(.journal, "Journaled", 5, "3 entries"),
-                      bonus("Extra journaling", 6, "2 more entries than usual")]
+                f += [F(.work, "Work", 8, "At the office since 9:40"), F(.journal, "Journaled", 5, "3 entries")]
             }
             if hour >= 17 {
                 f += [F(.work, "Work", 7, "Full afternoon"), F(.plans, "Plans", 16, "3 of 4 done"),
                       bonus("Gym (make-up)", 15, "Not one of your habits, so it makes up for the late start")]
             }
-            tip = hour < 12 ? "A late start. Extra journaling or a workout wins it back." : hour < 17 ? "Winning it back. A workout would finish the job." : "Made up for the late start."
+            tip = hour < 12 ? "A late start. A workout could win points back." : hour < 17 ? "Winning it back. A workout would finish the job." : "Made up for the late start."
         default:
             f = [F(.wake, "Woke up on time", 20, "Up at 6:50")]
         }
