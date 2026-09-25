@@ -736,6 +736,30 @@ final class DemoTourTests: XCTestCase {
         try sb.debugDescription.write(toFile: Self.shotDir + (demo ? "/widget-installed-hierarchy.txt" : "/widget-installed-empty-hierarchy.txt"), atomically: true, encoding: .utf8)
     }
 
+    /// Installed Today widget on the actual Home Screen in each customization mode.
+    func testHomeWidgetModes() throws {
+        try installHomeWidget(demo: true)
+        let sb = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        let widget = sb.icons.matching(NSPredicate(format: "label ==[c] 'Dayline' AND value ==[c] 'Widget'")).firstMatch
+        XCTAssertTrue(widget.waitForExistence(timeout: 8), "Installed widget missing")
+        shot("widget-home-default-native")
+        sb.coordinate(withNormalizedOffset: CGVector(dx: 0.76, dy: 0.65)).press(forDuration: 1.5)
+        pause(0.5)
+        let edit = sb.buttons["Edit"].firstMatch
+        XCTAssertTrue(edit.waitForExistence(timeout: 4))
+        edit.tap(); pause(0.5)
+        let customize = sb.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'Customize'")).firstMatch
+        XCTAssertTrue(customize.waitForExistence(timeout: 4), "Home Screen Customize missing")
+        customize.tap(); pause(1)
+        shot("widget-home-customize-sheet")
+        for mode in ["Dark", "Tinted", "Clear", "Light"] {
+            let option = sb.buttons.matching(NSPredicate(format: "label CONTAINS[c] %@", mode)).firstMatch
+            XCTAssertTrue(option.waitForExistence(timeout: 5), "\(mode) option missing")
+            option.tap(); pause(2)
+            shot("widget-home-\(mode.lowercased())-native")
+        }
+    }
+
     /// Home Screen shot to check the real app icon (Icon Composer .icon) as iOS draws it.
     func testHomeIcon() throws {
         let app = XCUIApplication()
