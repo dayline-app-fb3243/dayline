@@ -298,11 +298,18 @@ struct SignInSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack {
+            HStack(alignment: .center) {
                 Text("Sign In to Dayline").font(.title2.bold())
                 Spacer()
-                Button { dismiss() } label: { Image(systemName: "xmark").font(.body.weight(.semibold)).frame(width: 44, height: 44) }
-                    .buttonStyle(.glass).buttonBorderShape(.circle).accessibilityLabel("Close")
+                Button { dismiss() } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 24, weight: .regular))
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundStyle(.secondary)
+                        .frame(width: 32, height: 32)
+                        .contentShape(.rect)
+                }
+                .buttonStyle(.plain).accessibilityLabel("Close")
             }
             HStack(spacing: 14) {
                 AppMark(size: 56)
@@ -326,10 +333,9 @@ struct SignInSheet: View {
                 .frame(maxWidth: .infinity).padding(.top, 18)
                 .accessibilityIdentifier("signInContinue")
         }
-        .padding(.horizontal, 20).padding(.top, 20).padding(.bottom, 24)
+        .padding(.horizontal, 20).padding(.top, 12).padding(.bottom, 24)
         .fixedSize(horizontal: false, vertical: true)
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { fitHeight = $0 }
-        .frame(maxHeight: .infinity, alignment: .bottom)
         // Button near the sheet's bottom edge like Apple's sheets: lay out through the home-indicator area
         // instead of stacking its inset under the button.
         .ignoresSafeArea(.container, edges: .bottom)
