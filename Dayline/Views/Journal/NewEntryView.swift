@@ -175,10 +175,21 @@ struct NewEntryView: View {
         .safeAreaInset(edge: .bottom) {
             VoiceRecorderBar(voice: voice, onSend: { await stopVoice() }, leading: { addMediaButton }) { EmptyView() }
         }
-        .confirmationDialog("Add photo or video", isPresented: $showMediaChoices, titleVisibility: .visible) {
-            Button("Photo and Video Library", systemImage: "photo.fill") { showLibrary = true }
-            if cameraOK { Button("Take Photo", systemImage: "camera.fill") { camera = .photo } }
-            Button("Cancel", role: .cancel) {}
+        .popover(isPresented: $showMediaChoices, arrowEdge: .bottom) {
+            VStack(alignment: .leading, spacing: 4) {
+                if cameraOK {
+                    mediaMenuRow("Camera", symbol: "camera.fill") {
+                        showMediaChoices = false; camera = .photo
+                    }
+                }
+                mediaMenuRow("Photos", symbol: "photo.on.rectangle.angled") {
+                    showMediaChoices = false; showLibrary = true
+                }
+            }
+            .padding(12)
+            .frame(width: 230)
+            .glassEffect(.regular, in: .rect(cornerRadius: 26))
+            .presentationCompactAdaptation(.popover)
         }
         .photosPicker(isPresented: $showLibrary, selection: $picks, maxSelectionCount: 10,
                       matching: .any(of: [.images, .videos]))
@@ -227,6 +238,22 @@ struct NewEntryView: View {
         }
         .accessibilityLabel("Add photo or video")
         .accessibilityIdentifier("entryAddMedia")
+    }
+
+    private func mediaMenuRow(_ label: String, symbol: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 14) {
+                Image(systemName: symbol)
+                    .font(.title3).foregroundStyle(Theme.accent)
+                    .frame(width: 36, height: 36)
+                Text(label).font(.body.weight(.medium)).foregroundStyle(.primary)
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 9).frame(height: 52)
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("mediaOption\(label)")
     }
 
     @ViewBuilder private var cameraMenu: some View {

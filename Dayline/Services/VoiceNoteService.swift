@@ -13,7 +13,7 @@ final class VoiceNoteService: NSObject, ObservableObject {
     @Published private(set) var elapsed: TimeInterval = 0
     /// Recent loudness, newest last, for the live bars.
     @Published private(set) var levels: [Float] = []
-    var isActive: Bool { isRecording }
+    var isActive: Bool { currentFile != nil }
 
     private var recorder: AVAudioRecorder?
     private var meterTimer: Timer?
@@ -76,6 +76,14 @@ final class VoiceNoteService: NSObject, ObservableObject {
         isRecording = false
         levels = []
         elapsed = 0
+    }
+
+    /// Finish capture for review without discarding the file or its waveform.
+    func finishForReview() {
+        guard isRecording else { return }
+        recorder?.stop()
+        meterTimer?.invalidate()
+        isRecording = false
     }
 
     /// Stops, saves the entry, then fills in the transcript when it's ready.

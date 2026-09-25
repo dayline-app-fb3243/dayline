@@ -18,24 +18,54 @@ struct VoiceRecorderBar<Tools: View, Leading: View>: View {
     @State private var pressStarted: Date?
     @State private var startTask: Task<Void, Never>?
     @State private var pressGeneration = 0
+    @State private var player: AVAudioPlayer?
     private let minimumHold: TimeInterval = 0.45
     private let cancelDistance: CGFloat = 75
 
     var body: some View {
         HStack(spacing: 10) {
-            leading()
-            Spacer(minLength: 12)
+            if readyToSend {
+                Button {
+                    player?.stop(); player = nil
+                    voice.cancel(); readyToSend = false
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.title3.weight(.medium)).foregroundStyle(.primary)
+                        .frame(width: 48, height: 48)
+                        .glassEffect(.regular.interactive(), in: .circle)
+                }
+                .accessibilityLabel("Discard voice note")
+                .accessibilityIdentifier("voiceCancel")
+            } else if !voice.isRecording {
+                leading()
+            }
             ZStack(alignment: .trailing) {
                 if readyToSend || voice.isRecording {
                     HStack(spacing: 8) {
-                        Circle().fill(.red).frame(width: 8, height: 8)
-                        LiveBars(levels: voice.levels, color: .red)
-                        Text(Duration.seconds(voice.elapsed).formatted(.time(pattern: .minuteSecond)))
-                            .font(.subheadline).monospacedDigit().foregroundStyle(.secondary)
+                        if readyToSend {
+                            Button {
+                                guard let url = voice.currentURL else { return }
+                                if player?.isPlaying == true { player?.stop(); player = nil }
+                                else { player = try? AVAudioPlayer(contentsOf: url); player?.play() }
+                            } label: {
+                                Image(systemName: player?.isPlaying == true ? "pause.fill" : "play.fill")
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(.primary)
+                                    .frame(width: 34, height: 34)
+                                    .background(.gray.opacity(0.12), in: .circle)
+                            }
+                            .accessibilityLabel("Preview voice note")
+                            .accessibilityIdentifier("voicePreview")
+                        }
+                        LiveBars(levels: voice.levels, color: readyToSend ? Theme.accent : .red)
+                        Text("\(readyToSend ? "+" : "")\(Duration.seconds(voice.elapsed).formatted(.time(pattern: .minuteSecond)))")
+                            .font(.subheadline).monospacedDigit()
+                            .foregroundStyle(readyToSend ? Theme.accent : .red)
                         if readyToSend {
                             Button {
                                 guard !sending else { return }
                                 sending = true
+                                player?.stop(); player = nil
                                 Task { await onSend(); readyToSend = false; sending = false }
                             } label: {
                                 Image(systemName: "arrow.up").font(.headline.weight(.bold))
@@ -45,12 +75,20 @@ struct VoiceRecorderBar<Tools: View, Leading: View>: View {
                             .accessibilityLabel("Send voice note")
                             .accessibilityIdentifier("voiceSend")
                         } else {
-                            Image(systemName: "mic.fill").font(.scaled(size: 18, weight: .medium))
-                                .foregroundStyle(.red).frame(width: 38, height: 38)
+                            Button {
+                                finishRecording()
+                            } label: {
+                                Image(systemName: "stop.fill").font(.subheadline)
+                                    .foregroundStyle(.red).frame(width: 38, height: 38)
+                                    .background(.red.opacity(0.12), in: .circle)
+                            }
+                            .accessibilityLabel("Stop recording")
+                            .accessibilityIdentifier("voiceStop")
                         }
                     }
                     .padding(.horizontal, 8)
-                    .frame(width: 238, height: 48)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 48)
                     .glassEffect(.regular, in: .capsule)
                     .accessibilityIdentifier(readyToSend ? "audioReadyBar" : "audioHoldBar")
                     .transition(.scale(scale: 0.2, anchor: .trailing).combined(with: .opacity))
@@ -72,11 +110,12 @@ struct VoiceRecorderBar<Tools: View, Leading: View>: View {
                         .transition(.scale(scale: 0.2, anchor: .trailing).combined(with: .opacity))
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .trailing)
             .frame(height: 48, alignment: .trailing)
             .contentShape(.rect)
             .gesture(DragGesture(minimumDistance: 0)
                 .onChanged { value in
-                    guard !readyToSend else { return }
+                    guard !readyToSend, !voice.isRecording || holding else { return }
                     if !holding {
                         holding = true; cancelled = false; pressStarted = .now
                         hintTask?.cancel(); hintVisible = false
@@ -99,6 +138,7 @@ struct VoiceRecorderBar<Tools: View, Leading: View>: View {
                 }
                 .onEnded { _ in
                     guard !readyToSend else { return }
+                    if voice.isRecording { holding = false; finishRecording(); return }
                     holding = false; pressGeneration += 1; startTask?.cancel()
                     let longEnough = pressStarted.map { Date.now.timeIntervalSince($0) >= minimumHold } ?? false
                     if !longEnough && !cancelled {
@@ -109,7 +149,7 @@ struct VoiceRecorderBar<Tools: View, Leading: View>: View {
                             if !Task.isCancelled { hintVisible = false }
                         }
                     } else if cancelled { voice.cancel() }
-                    else if voice.isRecording { readyToSend = true }
+                    else if voice.isRecording { finishRecording() }
                     // If microphone permission arrives after release, the start task cancels it.
                 })
             .accessibilityLabel("Voice memo")
@@ -121,6 +161,11 @@ struct VoiceRecorderBar<Tools: View, Leading: View>: View {
         .animation(.snappy(duration: 0.25), value: voice.isRecording)
         .animation(.snappy(duration: 0.25), value: readyToSend)
         .animation(.snappy(duration: 0.25), value: hintVisible)
+    }
+
+    private func finishRecording() {
+        voice.finishForReview()
+        readyToSend = true
     }
 }
 
