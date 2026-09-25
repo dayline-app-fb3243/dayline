@@ -770,10 +770,7 @@ struct AskToShareView: View {
                 PeopleGroup {
                     ForEach(Array(PeopleStore.notOnDayline.enumerated()), id: \.offset) { i, c in
                         PersonRow(name: c.0, subtitle: c.1, last: i == PeopleStore.notOnDayline.count - 1) {
-                            ShareLink(item: PeopleStore.inviteText) {
-                                Text("Invite").font(.subheadline.weight(.semibold)).foregroundStyle(Theme.accent)
-                                    .padding(.horizontal, 14).padding(.vertical, 6).background(Theme.accent.opacity(0.12), in: .capsule)
-                            }
+InviteButton(recipient: c.1)
                         }
                     }
                 }
