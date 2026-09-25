@@ -16,3 +16,18 @@ CI simulator builds and unsigned Xcode project zips do not prove iCloud sync.
 - Replace `PeopleStore.inviteText`'s `https://dayline.app/invite` placeholder with a live, tested invite URL/domain. Native Messages composition is wired on capable iPhones; simulator fallback may be a share sheet.
 - Enroll in the Apple Developer Program (verify the current membership price and region with Apple), then supply the Team ID and CloudKit container/capabilities above.
 - Verify native notification delivery, reminders, and permission persistence on a signed real device, including install/reinstall and Settings changes.
+
+## Account and sign-in launch gate
+
+- Connect an email delivery service and verify one-time email codes server-side. The current local onboarding accepts any six digits and sends no email.
+- Connect SMS delivery and server-side phone verification. The current local onboarding accepts any six digits and sends no text. Do not treat the locally saved number as verified or use it for real friend discovery.
+- Configure a Google OAuth client and implement Google Sign-In with token verification. A local account-choice walkthrough in the seeded demo is not Google authentication; never collect Google passwords in it.
+- Verify Sign in with Apple, token validation, account creation, failure and cancellation on a signed physical device with the app's registered identifier.
+- Verify account deletion and migration between local demo data and real accounts before publishing. Until real services are connected, the Xcode projects are prototypes, not production authentication.
+
+## People and sharing launch gate
+
+- Build an account backend/server, data ownership rules, and authenticated account lookup before using user identities for sharing.
+- Request Contacts permission at the point of use, import only the fields needed with consent, and match friends by verified phone/email through the backend. Current PeopleStore rows are hard-coded sample names and addresses; no real Contacts read or friend matching exists.
+- Implement follow requests, acceptance/rejection, sharing visibility, revocation, and streak updates with an authenticated social graph. Current "Follow" and "Ask" pills only change local button state; demo friends are fixed sample values. The hide-from-my-ring toggle is local UserDefaults state, not a sharing permission.
+- Replace the placeholder invite URL with a tested live destination, and verify the Messages composer on a physical device. An invite UI or local button state does not establish that any person received or accepted a request.

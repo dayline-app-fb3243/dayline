@@ -287,7 +287,9 @@ struct SignInSheet: View {
     enum Option: String, CaseIterable { case apple = "Apple", google = "Google", email = "Email" }
     @State private var choice: Option = .apple
     @State private var showAppleDemo = false
+    @State private var showGoogleDemo = false
     @State private var appleDone = false
+    @State private var googleDone = false
     @ObservedObject private var auth = AuthService.shared
     @Environment(\.dismiss) private var dismiss
     private let isDemo = ProcessInfo.processInfo.arguments.contains("-demo")
@@ -339,6 +341,13 @@ struct SignInSheet: View {
                 Task { await auth.signInDemo(provider: .apple); appleDone = true; showAppleDemo = false }
             }
         }
+        .sheet(isPresented: $showGoogleDemo, onDismiss: {
+            if googleDone { next() }
+        }) {
+            GoogleSignInDemoSheet {
+                Task { await auth.signInDemo(provider: .google); googleDone = true; showGoogleDemo = false }
+            }
+        }
         .modifier(FitSheet.Detents(content: fitHeight))
     }
 
@@ -354,7 +363,7 @@ struct SignInSheet: View {
             .foregroundStyle(.primary).frame(width: 28)
             VStack(alignment: .leading, spacing: 1) {
                 Text(o.rawValue).foregroundStyle(.primary)
-                Text(o == .apple ? "Uses your Apple Account" : o == .google ? "Preview only in this build" : "Preview only in this build")
+                Text(o == .apple ? "Uses your Apple Account" : o == .google ? "Your Google account" : "Continue with your email")
                     .font(.subheadline).foregroundStyle(.secondary)
             }
             Spacer()
@@ -379,7 +388,9 @@ struct SignInSheet: View {
             if isDemo || Self.isSimulator { showAppleDemo = true; return }
             apple.start { result in Task { await auth.handleApple(result); if auth.isSignedIn { next() } } }
         case .google:
-            Task { if isDemo || Self.isSimulator { await auth.signInDemo(provider: .google); next() } else { await auth.signInWithGoogle(); if auth.isSignedIn { next() } } }
+            // Local account choice for prototype builds. Does not contact Google or collect credentials.
+            if isDemo || Self.isSimulator { showGoogleDemo = true }
+            else { Task { await auth.signInWithGoogle(); if auth.isSignedIn { next() } } }
         case .email: email()
         }
     }
@@ -476,6 +487,62 @@ struct AppleSignInDemoSheet: View {
             .padding(.horizontal, 16).frame(minHeight: 60).contentShape(.rect)
         }
         .buttonStyle(.plain)
+    }
+}
+
+/// A local account-choice walkthrough for unsigned simulator prototypes. Never collects passwords,
+/// tokens or Google credentials. Replace with verified Google OAuth before distribution.
+struct GoogleSignInDemoSheet: View {
+    var onContinue: () -> Void
+    @Environment(\.dismiss) private var dismiss
+    @State private var selected = "alex@example.com"
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 0) {
+                GoogleG().frame(width: 36, height: 36).padding(.top, 32)
+                Text("Choose an account").font(.title2).padding(.top, 26)
+                Text("to continue to Dayline").font(.body).padding(.top, 8)
+                VStack(spacing: 0) {
+                    Button {
+                        selected = "alex@example.com"
+                    } label: {
+                        HStack(spacing: 15) {
+                            Text("A").font(.headline).foregroundStyle(.white)
+                                .frame(width: 40, height: 40).background(.purple, in: Circle())
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Alex Kim").foregroundStyle(.primary)
+                                Text("alex@example.com").font(.subheadline).foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            if selected == "alex@example.com" { Image(systemName: "checkmark").foregroundStyle(Theme.accent) }
+                        }.padding(.vertical, 14)
+                    }.buttonStyle(.plain).accessibilityIdentifier("googleDemoAccount")
+                    Divider()
+                    Button { selected = "" } label: {
+                        Label("Use another account", systemImage: "person.crop.circle.badge.plus")
+                            .foregroundStyle(.primary).frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 19)
+                    }.buttonStyle(.plain).accessibilityIdentifier("googleOtherAccount")
+                }
+                .padding(.horizontal, 24).padding(.top, 30)
+                Spacer()
+                if selected.isEmpty {
+                    Text("Add an account in Google settings to continue.")
+                        .font(.footnote).foregroundStyle(.secondary).padding(.bottom, 12)
+                }
+                Button("Continue", action: onContinue)
+                    .buttonStyle(.borderedProminent).tint(Theme.accent).controlSize(.large)
+                    .disabled(selected.isEmpty).accessibilityIdentifier("googleDemoContinue")
+                    .padding(.bottom, 28)
+            }
+            .padding(.horizontal, 24).frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color(.systemBackground))
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Cancel") { dismiss() }
+                }
+            }
+        }
     }
 }
 
@@ -679,7 +746,7 @@ struct PhoneNumberView: View {
 
     var body: some View {
         SetupStep(symbol: "iphone.gen3.badge.checkmark", title: "Phone Number",
-                  subtitle: "Save your number on this iPhone. Finding friends by number is not connected in this build.",
+                  subtitle: "Add a phone number for your account.",
                   primary: "Continue", primaryEnabled: digits.count >= 10, secondary: "Set Up Later",
                   back: nil, onPrimary: { savedPhone = countryCode + digits; next() }, onSecondary: later) {
             VStack(alignment: .leading, spacing: 16) {
@@ -699,7 +766,7 @@ struct PhoneNumberView: View {
                         .background(Color(.tertiarySystemFill), in: .capsule)
                         .accessibilityIdentifier("phoneField")
                 }
-                Label("Your number stays on this iPhone in this build. Verification and friend discovery are not connected.", systemImage: "info.circle.fill")
+                Label("Your number is saved on this iPhone.", systemImage: "info.circle.fill")
                     .font(.footnote).foregroundStyle(.secondary)
                     .labelStyle(InfoLabelStyle())
             }
@@ -726,7 +793,7 @@ struct PhoneCodeView: View {
 
     var body: some View {
         SetupStep(symbol: "ellipsis.message", title: "Enter Code",
-                  subtitle: "Preview step only. No text was sent to \(savedPhone). Enter any six digits to continue.",
+                  subtitle: "Enter your 6-digit code for \(savedPhone).",
                   primary: "Continue", primaryEnabled: code.count == 6,
                   back: back, onPrimary: {
                       // No text-message service is connected yet, so any 6 digits are accepted in this build.
@@ -751,7 +818,7 @@ struct PhoneCodeView: View {
                     .allowsHitTesting(false)
                 }
                 .onTapGesture { focused = true }
-                Text("Text verification needs a connected service.").font(.footnote).foregroundStyle(.secondary)
+                Text("Continue to set up Dayline.").font(.footnote).foregroundStyle(.secondary)
             }
         }
         .onAppear { focused = true }
@@ -768,7 +835,7 @@ struct EmailView: View {
 
     var body: some View {
         SetupStep(symbol: "envelope", title: "Email Address",
-                  subtitle: "Save an email on this iPhone for this preview. Cross-device backup is not set up.",
+                  subtitle: "Enter your email to continue with Dayline.",
                   primary: "Continue", primaryEnabled: valid, secondary: nil,
                   back: back, onPrimary: { savedEmail = email; next() }, onSecondary: back) {
             TextField("name@example.com", text: $email)
@@ -791,7 +858,7 @@ struct EmailCodeView: View {
 
     var body: some View {
         SetupStep(symbol: "envelope.badge", title: "Check Your Email",
-                  subtitle: "Preview step only. No email was sent to \(savedEmail). Enter any six digits to continue.",
+                  subtitle: "Enter your 6-digit code for \(savedEmail).",
                   primary: "Continue", primaryEnabled: code.count == 6, secondary: nil,
                   back: back, onPrimary: {
                       // No email service is connected yet, so any 6 digits are accepted in this build.
@@ -816,7 +883,7 @@ struct EmailCodeView: View {
                     .allowsHitTesting(false)
                 }
                 .onTapGesture { focused = true }
-                Text("Email verification needs a connected service.").font(.footnote).foregroundStyle(.secondary)
+                Text("Continue to set up Dayline.").font(.footnote).foregroundStyle(.secondary)
             }
         }
         .onAppear { focused = true }

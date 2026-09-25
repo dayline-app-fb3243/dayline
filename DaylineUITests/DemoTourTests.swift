@@ -1110,7 +1110,7 @@ final class DemoTourTests: XCTestCase {
     private func captureSplashCurrent(_ appearance: String) {
         let app = XCUIApplication()
         app.launchArguments = ["-demo", "-onboarding", "-splash.map", "loop"]
-        app.launch(); pause(4)
+        app.launch(); pause(10)
         shot("splash-current-\(appearance)")
     }
 
