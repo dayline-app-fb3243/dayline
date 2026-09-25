@@ -1060,6 +1060,13 @@ struct SplashLiveMap: View {
     /// splash.pin "route": camera (so it can be moved once to frame the place) and the pin's spot on the walked route.
     @State private var cam: MapCameraPosition?
     @State private var pinCoord: CLLocationCoordinate2D?
+    private var segSeconds: Double { (routeMode ? Self.orbitSeconds : 12) / 8 }
+    /// Camera center at step k of 8: on route mode's arc around the place (easing in a little), otherwise unchanged.
+    private func orbitCenter(_ cam: MapCamera, step k: Int) -> CLLocationCoordinate2D {
+        guard routeMode, let hero = stops.first(where: { $0.name == heroName }) else { return cam.centerCoordinate }
+        let f = Double(k) / 8
+        return Self.shift(hero.c, meters: orbitLead * (1 - 0.14 * f), heading: cam.heading + Self.orbitDegrees * f)
+    }
     /// Route mode: how far past the place the camera center sits (meters along the heading), from the framing step.
     @State private var orbitLead: Double = 0
     private var routeMode: Bool { track != nil }
@@ -1165,27 +1172,23 @@ struct SplashLiveMap: View {
                   .standard(pointsOfInterest: .excludingAll))
         .mapControlVisibility(.hidden)
         .mapCameraKeyframeAnimator(trigger: drift) { cam in
-            if routeMode, let hero = stops.first(where: { $0.name == heroName }) {
-                // Route mode: a slow turn around the place itself, pushing in a little and tilting a touch more.
-                // MapKit plays these keyframes at the screen's frame rate, so the motion is smooth. The camera
-                // center rides an arc around the place, so the place and its pin stay put while the city turns.
-                let T = Self.orbitSeconds, n = 8.0
-                func arc(_ k: Double) -> CLLocationCoordinate2D {
-                    Self.shift(hero.c, meters: orbitLead * (1 - 0.14 * k / n), heading: cam.heading + Self.orbitDegrees * k / n)
-                }
-                KeyframeTrack(\MapCamera.centerCoordinate) {
-                    LinearKeyframe(arc(1), duration: T / n); LinearKeyframe(arc(2), duration: T / n)
-                    LinearKeyframe(arc(3), duration: T / n); LinearKeyframe(arc(4), duration: T / n)
-                    LinearKeyframe(arc(5), duration: T / n); LinearKeyframe(arc(6), duration: T / n)
-                    LinearKeyframe(arc(7), duration: T / n); LinearKeyframe(arc(8), duration: T / n)
-                }
-                KeyframeTrack(\MapCamera.heading) { LinearKeyframe(cam.heading + Self.orbitDegrees, duration: T) }
-                KeyframeTrack(\MapCamera.distance) { LinearKeyframe(cam.distance * 0.86, duration: T) }
-                KeyframeTrack(\MapCamera.pitch) { LinearKeyframe(cam.pitch + 4, duration: T) }
-            } else {
-                KeyframeTrack(\MapCamera.heading) { LinearKeyframe(cam.heading + 18, duration: 12) }
-                KeyframeTrack(\MapCamera.distance) { LinearKeyframe(cam.distance * 0.85, duration: 12) }
+            // Route mode: a slow turn around the place itself, pushing in a little and tilting a touch more.
+            // MapKit plays these keyframes at the screen's frame rate, so the motion is smooth. The camera center
+            // rides an arc around the place, so the place and its pin stay put while the city turns.
+            // Other styles: a plain slow turn and push-in (their center stays where it is).
+                        KeyframeTrack(\MapCamera.centerCoordinate) {
+                    LinearKeyframe(orbitCenter(cam, step: 1), duration: segSeconds)
+                    LinearKeyframe(orbitCenter(cam, step: 2), duration: segSeconds)
+                    LinearKeyframe(orbitCenter(cam, step: 3), duration: segSeconds)
+                    LinearKeyframe(orbitCenter(cam, step: 4), duration: segSeconds)
+                    LinearKeyframe(orbitCenter(cam, step: 5), duration: segSeconds)
+                    LinearKeyframe(orbitCenter(cam, step: 6), duration: segSeconds)
+                    LinearKeyframe(orbitCenter(cam, step: 7), duration: segSeconds)
+                    LinearKeyframe(orbitCenter(cam, step: 8), duration: segSeconds)
             }
+            KeyframeTrack(\MapCamera.heading) { LinearKeyframe(cam.heading + (routeMode ? Self.orbitDegrees : 18), duration: segSeconds * 8) }
+            KeyframeTrack(\MapCamera.distance) { LinearKeyframe(cam.distance * (routeMode ? 0.86 : 0.85), duration: segSeconds * 8) }
+            KeyframeTrack(\MapCamera.pitch) { LinearKeyframe(cam.pitch + (routeMode ? 4 : 0), duration: segSeconds * 8) }
         }
         .safeAreaPadding(.bottom, routeMode ? Self.logoInset : 0)
         .task {
