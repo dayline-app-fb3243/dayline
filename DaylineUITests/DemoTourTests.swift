@@ -1534,10 +1534,10 @@ final class DemoTourTests: XCTestCase {
         pause(1.5)
         XCTAssertTrue(app.descendants(matching: .any)["audioHoldBar"].firstMatch.exists,
                       "Hold did not start recording; do not label an idle-mic screenshot as red")
-        let editor = app.descendants(matching: .any)["entryTitle"].firstMatch
-        if editor.exists { editor.tap(); pause(0.4) }
         shot("journal-voice-recording-red")
-        tapID(app, "voiceStop"); pause(0.5)
+        let stop = app.descendants(matching: .any)["voiceStop"].firstMatch
+        XCTAssertTrue(stop.waitForExistence(timeout: 4), "Recording should expose Stop")
+        stop.tap(); pause(0.5)
         XCTAssertTrue(app.descendants(matching: .any)["audioReadyBar"].firstMatch.exists,
                       "Stop did not enter review; do not label an idle-mic screenshot as blue")
         shot("journal-voice-ready-blue")

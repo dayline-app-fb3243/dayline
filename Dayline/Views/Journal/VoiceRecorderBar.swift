@@ -18,6 +18,7 @@ struct VoiceRecorderBar<Tools: View, Leading: View>: View {
     @State private var pressStarted: Date?
     @State private var startTask: Task<Void, Never>?
     @State private var pressGeneration = 0
+    @State private var recordingUI = false
     @State private var player: AVAudioPlayer?
     private let minimumHold: TimeInterval = 0.45
     private let cancelDistance: CGFloat = 75
@@ -27,7 +28,7 @@ struct VoiceRecorderBar<Tools: View, Leading: View>: View {
             if readyToSend {
                 Button {
                     player?.stop(); player = nil
-                    voice.cancel(); readyToSend = false
+                    voice.cancel(); readyToSend = false; recordingUI = false
                 } label: {
                     Image(systemName: "xmark")
                         .font(.title3.weight(.medium)).foregroundStyle(.primary)
@@ -36,11 +37,11 @@ struct VoiceRecorderBar<Tools: View, Leading: View>: View {
                 }
                 .accessibilityLabel("Discard voice note")
                 .accessibilityIdentifier("voiceCancel")
-            } else if !voice.isRecording {
+            } else if !recordingUI {
                 leading()
             }
             ZStack(alignment: .trailing) {
-                if readyToSend || voice.isRecording {
+                if readyToSend || recordingUI {
                     HStack(spacing: 8) {
                         if readyToSend {
                             Button {
@@ -101,7 +102,7 @@ struct VoiceRecorderBar<Tools: View, Leading: View>: View {
                         .accessibilityIdentifier("voiceHoldHint")
                         .transition(.scale(scale: 0.2, anchor: .trailing).combined(with: .opacity))
                 }
-                if !readyToSend && !voice.isRecording && !hintVisible {
+                if !readyToSend && !recordingUI && !hintVisible {
                     Image(systemName: "mic.fill")
                         .font(.scaled(size: 19, weight: .medium))
                         .foregroundStyle(.primary)
@@ -110,7 +111,7 @@ struct VoiceRecorderBar<Tools: View, Leading: View>: View {
                         .transition(.scale(scale: 0.2, anchor: .trailing).combined(with: .opacity))
                     .gesture(DragGesture(minimumDistance: 0)
                         .onChanged { value in
-                            guard !readyToSend, !voice.isRecording else { return }
+                            guard !readyToSend, !recordingUI else { return }
                             if !holding {
                                 holding = true; cancelled = false; pressStarted = .now
                                 hintTask?.cancel(); hintVisible = false
@@ -121,19 +122,21 @@ struct VoiceRecorderBar<Tools: View, Leading: View>: View {
                                     try? await Task.sleep(for: .seconds(minimumHold))
                                     guard !Task.isCancelled, holding, !cancelled, pressGeneration == generation else { return }
                                     do { try await voice.start() } catch { return }
+                                    guard voice.isRecording else { return }
+                                    recordingUI = true
                                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                                    if !holding || cancelled { voice.cancel() }
+                                    if cancelled { voice.cancel(); recordingUI = false }
                                 }
                             }
                             if abs(value.translation.width) > cancelDistance || abs(value.translation.height) > cancelDistance {
                                 cancelled = true
                                 startTask?.cancel()
-                                voice.cancel()
+                                voice.cancel(); recordingUI = false
                             }
                         }
                         .onEnded { _ in
                             guard !readyToSend else { return }
-                            if voice.isRecording { holding = false; return }
+                            if recordingUI { holding = false; return }
                             holding = false; pressGeneration += 1; startTask?.cancel()
                             let longEnough = pressStarted.map { Date.now.timeIntervalSince($0) >= minimumHold } ?? false
                             if !longEnough && !cancelled {
@@ -144,12 +147,8 @@ struct VoiceRecorderBar<Tools: View, Leading: View>: View {
                                     if !Task.isCancelled { hintVisible = false }
                                 }
                             } else if cancelled { voice.cancel() }
-                            else if voice.isRecording { holding = false }
                             // If microphone permission arrives after release, the start task cancels it.
                         })
-                        .onChange(of: voice.isRecording) { _, recording in
-                            if recording { holding = false }
-                        }
                         .accessibilityLabel("Voice memo")
                         .accessibilityHint("Hold to record, then tap Stop to review and send")
                         .accessibilityIdentifier("voiceMic")
@@ -162,13 +161,14 @@ struct VoiceRecorderBar<Tools: View, Leading: View>: View {
         }
         .padding(.horizontal, 16)
         .padding(.bottom, 12)
-        .animation(.snappy(duration: 0.25), value: voice.isRecording)
+        .animation(.snappy(duration: 0.25), value: recordingUI)
         .animation(.snappy(duration: 0.25), value: readyToSend)
         .animation(.snappy(duration: 0.25), value: hintVisible)
     }
 
     private func finishRecording() {
         voice.finishForReview()
+        recordingUI = false
         readyToSend = true
     }
 }
