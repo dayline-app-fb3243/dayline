@@ -333,6 +333,23 @@ final class DemoTourTests: XCTestCase {
     func testEmptyTabsDark() { emptyTabs("Dark") }
     func testEmptyTabsLight() { emptyTabs("Light") }
 
+    /// The Demo Xcode target, launched without flags or permissions, must already contain history.
+    func testFreshDemoHistory() throws {
+        let app = XCUIApplication()
+        app.launch(); pause(5)
+        XCTAssertTrue(app.tabBars.buttons["Timeline"].waitForExistence(timeout: 8))
+        tab(app, "Timeline"); pause(3)
+        XCTAssertTrue(app.staticTexts["Gym"].exists || app.staticTexts["Blue Door Coffee"].exists)
+        shot("fresh-demo-timeline-day")
+        tapSegment(app, "Month"); pause(3)
+        shot("fresh-demo-timeline-month")
+        tab(app, "Insights"); pause(2)
+        shot("fresh-demo-insights")
+        tab(app, "Journal"); pause(2)
+        XCTAssertTrue(app.buttons["journalCard"].firstMatch.exists)
+        shot("fresh-demo-journal-history")
+    }
+
     func testVariantFirstLaunch() throws {
         let app = XCUIApplication()
         app.launch(); pause(3)

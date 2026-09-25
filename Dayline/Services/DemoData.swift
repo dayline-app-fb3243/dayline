@@ -171,19 +171,19 @@ enum DemoData {
         let home = place(0, 0), gym = place(0.004, 0.003), cafe = place(0.009, 0.006),
             work = place(0.014, 0.012), park = place(0.020, 0.004), food = place(0.016, 0.009)
 
-        // 45 days of history so the routine learner and charts have something to work with.
-        var rng = SystemRandomNumberGenerator()
-        for offset in (1...45).reversed() {
+        // Three months of local demo history on the first run, with no permissions or setup.
+        // Fixed pattern makes the example stable between launches and screenshots.
+        for offset in (1...90).reversed() {
             let day = calendar.date(byAdding: .day, value: -offset, to: today)!
             let weekend = calendar.isDateInWeekend(day)
-            let wake = Int.random(in: 6...8, using: &rng)
+            let wake = 6 + offset % 3
             add(context, "Home", .home, home, at(day, 0, 0), at(day, wake, 30))
-            if Bool.random(using: &rng) || offset % 3 == 0 {
+            if offset % 3 != 1 {
                 add(context, "Iron Works Gym", .gym, gym, at(day, wake, 45), at(day, wake + 1, 35))
             }
             if !weekend {
                 add(context, "Office", .work, work, at(day, 9, 0), at(day, 12, 25))
-                if calendar.component(.weekday, from: day) == 4 || Bool.random(using: &rng) {
+                if calendar.component(.weekday, from: day) == 4 || offset % 2 == 0 {
                     add(context, "Riverside Noodle Bar", .food, food, at(day, 12, 35), at(day, 13, 20))
                 }
                 add(context, "Office", .work, work, at(day, 13, 30), at(day, 17, 0))
@@ -191,8 +191,17 @@ enum DemoData {
                 add(context, "Riverside Park", .outdoors, park, at(day, 11, 0), at(day, 13, 0))
             }
             add(context, "Home", .home, home, at(day, 17, 45), at(day, 23, 59))
-            if offset % 4 == 2 && offset > 6 {
-                context.insert(JournalEntry(date: at(day, 20, 10), kind: .text, text: "Good day overall."))
+            if offset % 4 == 2 {
+                context.insert(JournalEntry(date: at(day, 20, 10), kind: .text,
+                                            text: weekend ? "A slow day outside and time to recharge." : "Good day overall. Got a lot done."))
+            }
+            if offset % 6 == 3 {
+                let p = weekend ? park : cafe
+                let e = JournalEntry(date: at(day, 12, 20), kind: .photo,
+                                     text: weekend ? "Afternoon in the park." : "Coffee break before heading back.",
+                                     thumbnail: photo(weekend ? "demo-park" : "demo-coffee"), latitude: p.0, longitude: p.1)
+                e.placeName = weekend ? "Riverside Park" : "Blue Door Coffee"
+                context.insert(e)
             }
         }
 
@@ -267,7 +276,7 @@ enum DemoData {
         let recent = ((try? context.fetch(FetchDescriptor<DayScore>())) ?? [])
         let pattern = [84, 76, 88, 91, 72, 86, 79, 93, 81, 68, 87, 90, 77, 85, 82, 74, 89, 92, 70, 83]
         var history: [(Int, Int)] = [(1, 91), (2, 86), (3, 83), (4, 88), (5, 94), (6, 79 + 3), (7, 38)]
-        for offset in 8...45 { history.append((offset, pattern[offset % pattern.count])) }
+        for offset in 8...90 { history.append((offset, pattern[offset % pattern.count])) }
         // Best streak of 9 days, earlier in the month.
         let bestRun = [84, 88, 85, 91, 82, 86, 90, 93, 81]
         history = history.map { o, v in (19...28).contains(o) ? (o, o == 19 ? 74 : bestRun[o - 20]) : (o, v) }
