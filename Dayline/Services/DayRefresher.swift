@@ -89,6 +89,8 @@ enum Notifications {
         // A minute-of-day calculation handles midnight without creating a stale one-off date.
         let reminderMinute = (UserSchedule.current.bed - 15 + 1440) % 1440
         await requestPermission()
+        // The permission alert may stay open while the user turns the switch off.
+        guard UserDefaults.standard.bool(forKey: "notify.journal.daily") else { return }
         let content = UNMutableNotificationContent()
         content.title = "A moment for your journal"
         content.body = "How did your day go? Add a note, photo or voice memo."
