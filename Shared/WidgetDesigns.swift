@@ -273,16 +273,10 @@ struct DesignFriendsSmall: View {
             .frame(maxWidth: .infinity)
         }
     }
+    /// Gray monogram with the name and day score under it; no rings around people.
     private func cell(_ p: WidgetFriendScore) -> some View {
         VStack(spacing: 2) {
-            ZStack {
-                if d.mark == .ring || d.mark == .thinRing || d.mark == .rings || d.mark == .gauge {
-                    Circle().stroke(d.track, lineWidth: 3)
-                    Circle().trim(from: 0, to: CGFloat(p.score) / 100).stroke(d.accent == .white ? Color.white : d.accent, style: StrokeStyle(lineWidth: 3, lineCap: .round)).rotationEffect(.degrees(-90))
-                }
-                WidgetMonogram(name: p.fullName, size: 38)
-            }
-            .frame(width: 46, height: 46)
+            WidgetMonogram(name: p.fullName, size: 36)
             Text("\(p.name) \(p.score)").font(.caption2.weight(.semibold)).foregroundStyle(d.foreground).lineLimit(1)
         }
     }

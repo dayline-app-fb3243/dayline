@@ -8,7 +8,7 @@ struct WidgetDesignGalleryView: View {
     private let snap = WidgetSnapshot(date: .now, score: 86, label: "Great day", summary: "Up early, gym done.",
                                       nextTitle: "Lunch out", nextStart: Calendar.current.date(bySettingHour: 12, minute: 30, second: 0, of: .now),
                                       streakDays: 6, recentScores: [72, 85, 90, 64, 88, 91, 86])
-    private let small: CGFloat = 170, wide: CGFloat = 364, gap: CGFloat = 20
+    private let small: CGFloat = 170, wide: CGFloat = 364, gap: CGFloat = 14
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -16,7 +16,7 @@ struct WidgetDesignGalleryView: View {
             VStack(spacing: 0) {
                 Text("\(design.id). \(design.name)").font(.headline).foregroundStyle(.white)
                     .padding(.horizontal, 14).padding(.vertical, 6).background(.black.opacity(0.35), in: .capsule)
-                    .padding(.top, 62).padding(.bottom, 14)
+                    .padding(.top, 60).padding(.bottom, 12)
                 if page == 1 { home } else { large }
                 Spacer(minLength: 0)
             }
