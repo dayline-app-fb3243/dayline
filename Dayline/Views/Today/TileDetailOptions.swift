@@ -2,8 +2,7 @@ import SwiftUI
 import Charts
 import MapKit
 
-// Steps and Gym tile pages: five options each for David to pick from (-detailVariant N picks one;
-// default 1). Once he picks, the others come out.
+// Steps page (Health-style chart) and the Gym page options (-detailVariant N picks one; default 1).
 
 enum TileDetailOption {
     static var variant: Int {
@@ -89,177 +88,93 @@ private struct GoalRing: View {
 // MARK: - Steps
 
 struct StepsDetailView: View {
-    var variant = TileDetailOption.variant
+    /// D = today by hour, W = the last 7 days. Motion keeps about a week of steps, so longer ranges aren't offered.
     @State private var range = "D"
+    @State private var hourly: [(Int, Int)] = DemoData.isDemo ? StepsDemo.hourly : []
+    @State private var week: [(String, Int)] = DemoData.isDemo ? StepsDemo.week : []
+    @State private var today = DemoData.isDemo ? StepsDemo.today : 0
+    private var usual: Int { DemoData.isDemo ? StepsDemo.goal : UserSchedule.current.stepGoal }
+    private var weekAverage: Int { week.isEmpty ? 0 : week.map(\.1).reduce(0, +) / week.count }
+
     var body: some View {
         Page(title: "Steps") {
-            switch variant {
-            case 2: ring
-            case 3: byPlace
-            case 4: week
-            case 5: toGo
-            default: health
+            Picker("Range", selection: $range) { ForEach(["D", "W"], id: \.self) { Text($0) } }.pickerStyle(.segmented)
+            Card {
+                VStack(alignment: .leading, spacing: 12) {
+                    bigNumber
+                    if range == "D" {
+                        Chart(hourly, id: \.0) { h in
+                            BarMark(x: .value("Hour", h.0), y: .value("Steps", h.1), width: 9).foregroundStyle(Theme.accent).cornerRadius(3)
+                        }
+                        .chartXScale(domain: 5...23)
+                        .chartXAxis { AxisMarks(values: [6, 12, 18]) { v in AxisGridLine(); AxisValueLabel { Text(["6 AM", "12 PM", "6 PM"][[6, 12, 18].firstIndex(of: v.as(Int.self) ?? 6) ?? 0]) } } }
+                        .frame(height: 190)
+                    } else {
+                        Chart(Array(week.enumerated()), id: \.offset) { i, d in
+                            BarMark(x: .value("Day", "\(i)"), y: .value("Steps", d.1)).foregroundStyle(Theme.accent).cornerRadius(4)
+                        }
+                        .chartXAxis { AxisMarks { v in AxisValueLabel { Text(week[Int(v.as(String.self) ?? "0") ?? 0].0) } } }
+                        .frame(height: 190)
+                    }
+                }
+            }
+            if let line = highlight {
+                Header(text: "Highlights")
+                Card { Text(line).font(.body).frame(maxWidth: .infinity, alignment: .leading) }
+            }
+            Card(padding: 0) {
+                VStack(spacing: 0) {
+                    if DemoData.isDemo {
+                        Row(symbol: "point.topleft.down.to.point.bottomright.curvepath.fill", title: "Distance", value: "4.3 km"); Divider().padding(.leading, 59)
+                        Row(symbol: "stairs", title: "Flights Climbed", value: "6"); Divider().padding(.leading, 59)
+                    }
+                    Row(symbol: "chart.bar.fill", title: "Daily Average", value: weekAverage.formatted())
+                }
             }
         }
         .accessibilityIdentifier("stepsDetail")
+        .task { await load() }
     }
 
     private var bigNumber: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text("TOTAL").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
+            Text(range == "D" ? "TOTAL" : "DAILY AVERAGE").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
             HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text(StepsDemo.today.formatted()).font(.largeTitle.weight(.semibold)).monospacedDigit()
+                Text((range == "D" ? today : weekAverage).formatted()).font(.largeTitle.weight(.semibold)).monospacedDigit()
                 Text("steps").font(.body).foregroundStyle(.secondary)
             }
-            Text("Today").font(.subheadline).foregroundStyle(.secondary)
+            Text(range == "D" ? "Today" : "Last 7 Days").font(.subheadline).foregroundStyle(.secondary)
         }
     }
 
-    /// 1. Like Apple Health: D/W/M, big total, hourly bars.
-    @ViewBuilder private var health: some View {
-        Picker("Range", selection: $range) { ForEach(["D", "W", "M", "6M", "Y"], id: \.self) { Text($0) } }.pickerStyle(.segmented)
-        Card {
-            VStack(alignment: .leading, spacing: 12) {
-                bigNumber
-                Chart(StepsDemo.hourly, id: \.0) { h in
-                    BarMark(x: .value("Hour", h.0), y: .value("Steps", h.1), width: 9).foregroundStyle(Theme.accent).cornerRadius(3)
-                }
-                .chartXScale(domain: 5...23)
-                .chartXAxis { AxisMarks(values: [6, 12, 18]) { v in AxisGridLine(); AxisValueLabel { Text(["6 AM", "12 PM", "6 PM"][[6, 12, 18].firstIndex(of: v.as(Int.self) ?? 6) ?? 0]) } } }
-                .frame(height: 190)
-            }
-        }
-        Header(text: "Highlights")
-        Card { Text("You walk the most around 8 AM, on the way to the gym. Today you're 2,360 steps under your usual day.").font(.body) }
-        Card(padding: 0) {
-            VStack(spacing: 0) {
-                Row(symbol: "point.topleft.down.to.point.bottomright.curvepath.fill", title: "Distance", value: "4.3 km"); Divider().padding(.leading, 59)
-                Row(symbol: "stairs", title: "Flights Climbed", value: "6"); Divider().padding(.leading, 59)
-                Row(symbol: "chart.bar.fill", title: "Daily Average", value: "8,210")
-            }
-        }
+    /// When you walk the most today, and how today compares with your usual day.
+    private var highlight: String? {
+        guard today > 0, let peak = hourly.max(by: { $0.1 < $1.1 }), peak.1 > 0 else { return nil }
+        let hour = Calendar.current.date(bySettingHour: peak.0, minute: 0, second: 0, of: .now) ?? .now
+        let peakText = "You walk the most around \(hour.formatted(.dateTime.hour()))."
+        let diff = usual - today
+        let compare = diff > 0 ? " Today you're \(diff.formatted()) steps under your usual day." : " You're past your usual day."
+        return peakText + compare
     }
 
-    /// 2. Goal ring like Fitness, with the week as small rings.
-    @ViewBuilder private var ring: some View {
-        Card {
-            VStack(spacing: 14) {
-                ZStack {
-                    GoalRing(value: Double(StepsDemo.today) / Double(StepsDemo.goal), lineWidth: 22).frame(width: 200, height: 200)
-                    VStack(spacing: 0) {
-                        Text(StepsDemo.today.formatted()).font(.largeTitle.weight(.semibold)).monospacedDigit()
-                        Text("of \(StepsDemo.goal.formatted())").font(.subheadline).foregroundStyle(.secondary)
-                    }
-                }
-                Text("71% of your usual day").font(.headline)
-            }
-            .frame(maxWidth: .infinity)
+    private func load() async {
+        guard !DemoData.isDemo else { return }
+        let cal = Calendar.current
+        let start = cal.startOfDay(for: .now)
+        today = await StepGoal.steps(from: start, to: .now)
+        var hours: [(Int, Int)] = []
+        let nowHour = cal.component(.hour, from: .now)
+        for h in 5...23 {
+            guard h <= nowHour, let a = cal.date(byAdding: .hour, value: h, to: start), let b = cal.date(byAdding: .hour, value: 1, to: a) else { hours.append((h, 0)); continue }
+            hours.append((h, await StepGoal.steps(from: a, to: min(b, .now))))
         }
-        Header(text: "This Week")
-        Card {
-            HStack(spacing: 0) {
-                ForEach(StepsDemo.week, id: \.0) { d in
-                    VStack(spacing: 6) {
-                        GoalRing(value: Double(d.1) / Double(StepsDemo.goal), lineWidth: 5).frame(width: 34, height: 34)
-                        Text(String(d.0.prefix(1))).font(.caption).foregroundStyle(.secondary)
-                    }
-                    .frame(maxWidth: .infinity)
-                }
-            }
+        hourly = hours
+        var days: [(String, Int)] = []
+        for offset in stride(from: 6, through: 0, by: -1) {
+            guard let a = cal.date(byAdding: .day, value: -offset, to: start), let b = cal.date(byAdding: .day, value: 1, to: a) else { continue }
+            days.append((a.formatted(.dateTime.weekday(.abbreviated)), await StepGoal.steps(from: a, to: min(b, .now))))
         }
-        Card(padding: 0) {
-            VStack(spacing: 0) {
-                Row(symbol: "flame.fill", title: "Days Over Goal", value: "4 of 7"); Divider().padding(.leading, 59)
-                Row(symbol: "chart.bar.fill", title: "Weekly Average", value: "8,041")
-            }
-        }
-    }
-
-    /// 3. Where the steps came from, along today's timeline.
-    @ViewBuilder private var byPlace: some View {
-        Card { bigNumber }
-        Header(text: "Along Your Day")
-        Card(padding: 0) {
-            VStack(spacing: 0) {
-                ForEach(Array(StepsDemo.legs.enumerated()), id: \.offset) { i, l in
-                    HStack(spacing: 13) {
-                        ProfileIcon(symbol: l.0)
-                        VStack(alignment: .leading, spacing: 4) {
-                            HStack {
-                                Text(l.1).font(.body)
-                                Spacer()
-                                Text(l.3.formatted()).font(.body).monospacedDigit()
-                            }
-                            Text(l.2).font(.subheadline).foregroundStyle(.secondary)
-                            ProgressView(value: Double(l.3), total: 1500).tint(Theme.accent)
-                        }
-                    }
-                    .padding(.horizontal, 16).padding(.vertical, 11)
-                    if i < StepsDemo.legs.count - 1 { Divider().padding(.leading, 59) }
-                }
-            }
-        }
-    }
-
-    /// 4. The week as bars with your usual day as a line.
-    @ViewBuilder private var week: some View {
-        Card {
-            VStack(alignment: .leading, spacing: 12) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("DAILY AVERAGE").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
-                    HStack(alignment: .firstTextBaseline, spacing: 4) {
-                        Text("8,041").font(.largeTitle.weight(.semibold)).monospacedDigit()
-                        Text("steps").font(.body).foregroundStyle(.secondary)
-                    }
-                    Text("Sep 19 - 25").font(.subheadline).foregroundStyle(.secondary)
-                }
-                Chart {
-                    ForEach(StepsDemo.week, id: \.0) { d in
-                        BarMark(x: .value("Day", d.0), y: .value("Steps", d.1), width: 22)
-                            .foregroundStyle(d.0 == "Fri" ? Theme.accent : Theme.accent.opacity(0.45)).cornerRadius(5)
-                    }
-                    RuleMark(y: .value("Usual", StepsDemo.goal)).foregroundStyle(.secondary).lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 3]))
-                        .annotation(position: .top, alignment: .trailing) { Text("Usual").font(.caption).foregroundStyle(.secondary) }
-                }
-                .frame(height: 200)
-            }
-        }
-        Header(text: "Trend")
-        Card {
-            HStack(spacing: 13) {
-                ProfileIcon(symbol: "arrow.up.right")
-                Text("You're walking 12% more than last week.").font(.body)
-            }
-        }
-    }
-
-    /// 5. How many to go, and an easy way to get there.
-    @ViewBuilder private var toGo: some View {
-        Card {
-            VStack(alignment: .leading, spacing: 10) {
-                bigNumber
-                ProgressView(value: Double(StepsDemo.today), total: Double(StepsDemo.goal)).tint(Theme.accent).scaleEffect(y: 2.2)
-                    .padding(.vertical, 6)
-                HStack {
-                    Text("0").font(.caption).foregroundStyle(.secondary)
-                    Spacer()
-                    Text("Usual day \(StepsDemo.goal.formatted())").font(.caption).foregroundStyle(.secondary)
-                }
-            }
-        }
-        Header(text: "To Get There")
-        Card {
-            VStack(alignment: .leading, spacing: 6) {
-                Text("2,360 steps to go").font(.title3.weight(.semibold))
-                Text("About a 20 minute walk. Walking home from the office would do it.").font(.body).foregroundStyle(.secondary)
-            }
-        }
-        Card(padding: 0) {
-            VStack(spacing: 0) {
-                Row(symbol: "bell.fill", title: "Remind Me at 5 PM", value: "Off"); Divider().padding(.leading, 59)
-                Row(symbol: "target", title: "Usual Day", value: StepsDemo.goal.formatted())
-            }
-        }
+        week = days
     }
 }
 

@@ -582,12 +582,19 @@ final class DemoTourTests: XCTestCase {
             let app = XCUIApplication()
             app.launchArguments = ["-demo", "-detailVariant", "\(v)"]
             app.launch(); pause(1.5)
-            tapID(app, "stepsTile"); pause(2); shot("td-steps-\(v)")
-            app.swipeUp(); pause(1); shot("td-steps-\(v)b"); goBack(app); pause(1)
             tapID(app, "nextTile"); pause(2.5); shot("td-gym-\(v)")
             app.swipeUp(); pause(1); shot("td-gym-\(v)b")
             app.terminate()
         }
+    }
+
+    /// Steps page (picked: Health-style chart), opened from the Steps tile: D and W.
+    func testStepsPage() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo"]
+        app.launch(); pause(1.5)
+        tapID(app, "stepsTile"); pause(2); shot("sp1-day")
+        tapSegment(app, "W"); pause(1.5); shot("sp2-week")
     }
 
     /// Today tiles (just the number, Next named as the thing) and the Day score calendar (Apple Calendar circle).
