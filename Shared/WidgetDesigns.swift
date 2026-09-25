@@ -56,6 +56,44 @@ struct DaylineWidgetScoreRing: View {
     }
 }
 
+/// Approved small and wide Day-score ring: one constant-width rounded stroke.
+/// The score sits inside the stroke's actual endpoint rather than in an overlaid disk.
+struct SeamlessWidgetScoreRing: View {
+    let score: Int
+    var size: CGFloat = 118
+    var width: CGFloat = 34
+
+    var body: some View {
+        let progress = CGFloat(min(max(score, 0), 100)) / 100
+        let diameter = size - width
+        let radius = diameter / 2
+        let angle = (-90 + 360 * progress) * CGFloat.pi / 180
+        ZStack {
+            Circle().stroke(Color(red: 0.89, green: 0.91, blue: 0.94), lineWidth: width)
+                .frame(width: diameter, height: diameter)
+            Circle().trim(from: 0, to: progress)
+                .stroke(AngularGradient(stops: [
+                    .init(color: Color(red: 0.61, green: 0.85, blue: 1), location: 0),
+                    .init(color: Color(red: 0.0, green: 0.38, blue: 0.9), location: Double(progress)),
+                    .init(color: Color(red: 0.0, green: 0.38, blue: 0.9), location: 1)
+                ], center: .center, startAngle: .degrees(-90), endAngle: .degrees(270)),
+                        style: StrokeStyle(lineWidth: width, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+                .frame(width: diameter, height: diameter)
+            if score > 0 {
+                Text("\(score)")
+                    .font(.system(size: width * 0.47, weight: .bold, design: .rounded))
+                    .minimumScaleFactor(0.7).lineLimit(1).monospacedDigit()
+                    .foregroundStyle(.white)
+                    .frame(width: width * 0.9)
+                    .offset(x: radius * cos(angle), y: radius * sin(angle))
+            }
+        }
+        .frame(width: size, height: size)
+        .accessibilityLabel("Day score \(score) out of 100")
+    }
+}
+
 struct DaylineWidgetFriend: Identifiable {
     var id: String { name }
     let name: String

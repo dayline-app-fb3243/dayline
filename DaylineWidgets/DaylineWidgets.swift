@@ -63,9 +63,23 @@ struct TodayWidgetView: View {
                 }
             }
         case .systemSmall:
-            WidgetScoreOption(d: WidgetDesign.all.first { $0.id == 14 }!, score: s.score, wide: false)
+            VStack(spacing: 4) {
+                Text("Day score").font(.footnote.weight(.medium))
+                Spacer(minLength: 0)
+                SeamlessWidgetScoreRing(score: s.score, size: 122, width: 34)
+                Spacer(minLength: 0)
+                Text(s.label).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+            }.frame(maxWidth: .infinity, maxHeight: .infinity)
         default:
-            WidgetScoreOption(d: WidgetDesign.all.first { $0.id == 14 }!, score: s.score, wide: true)
+            HStack(spacing: 16) {
+                SeamlessWidgetScoreRing(score: s.score, size: 122, width: 34)
+                VStack(alignment: .leading, spacing: 5) {
+                    Text("Day score").font(.headline)
+                    Text(s.label).font(.subheadline).foregroundStyle(.secondary)
+                    Spacer(minLength: 0)
+                    if let next = s.nextTitle { Text(next).font(.footnote).lineLimit(1) }
+                }.frame(maxWidth: .infinity, alignment: .leading)
+            }.frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         }
     }
