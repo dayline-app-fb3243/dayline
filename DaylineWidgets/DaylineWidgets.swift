@@ -63,13 +63,10 @@ struct TodayWidgetView: View {
                 }
             }
         case .systemSmall:
-            VStack(spacing: 2) {
-                Text("Day score").font(.system(size: 12, weight: .semibold)).foregroundStyle(.black).lineLimit(1)
-                SeamlessWidgetScoreRing(score: s.score, size: 110, width: 32)
-                Text(s.label).font(.system(size: 10)).foregroundStyle(Color.black.opacity(0.65)).lineLimit(1)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .padding(.vertical, 7)
+            Image(uiImage: ScoreTileArtwork.image(score: s.score, label: s.label))
+                .resizable()
+                .widgetAccentedRenderingMode(.fullColor)
+                .accessibilityLabel("Day score \(s.score) out of 100. \(s.label)")
         default:
             HStack(spacing: 16) {
                 SeamlessWidgetScoreRing(score: s.score, size: 122, width: 34)
