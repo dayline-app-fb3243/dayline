@@ -83,6 +83,19 @@ struct DaylineApp: App {
         let context = ModelStore.container.mainContext
         if isDemo {
             DemoData.seed(context)
+            if ProcessInfo.processInfo.arguments.contains("-demoAllNotifications") {
+                Task {
+                    await Notifications.requestPermission()
+                    try? await Task.sleep(for: .seconds(3))
+                    for kind in CheckInService.Kind.allCases {
+                        await CheckInService.ask(kind, detail: "Demo notification preview", force: true)
+                        try? await Task.sleep(for: .milliseconds(500))
+                    }
+                    await Notifications.followRequest(from: "Maya")
+                    await Notifications.previewScoreReached()
+                    await Notifications.previewJournalReminder()
+                }
+            }
             // Screenshot runs: show real check-in notifications (Apple's Yes / No actions).
             let args = ProcessInfo.processInfo.arguments
             if args.contains("-demoCheckIn") || args.contains("-demoCheckInAll") {

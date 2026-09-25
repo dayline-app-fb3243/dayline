@@ -92,6 +92,26 @@ enum Notifications {
             UNNotificationRequest(identifier: "journal-daily", content: content, trigger: trigger))
     }
 
+    /// Demo-only notification previews use the actual local notification center.
+    static func previewScoreReached() async {
+        guard DemoData.isDemo else { return }
+        let content = UNMutableNotificationContent()
+        content.title = "You hit 80 today"
+        content.body = "Today counts toward your streak."
+        content.sound = .default
+        try? await UNUserNotificationCenter.current().add(
+            UNNotificationRequest(identifier: "demo-score80", content: content, trigger: nil))
+    }
+    static func previewJournalReminder() async {
+        guard DemoData.isDemo else { return }
+        let content = UNMutableNotificationContent()
+        content.title = "A moment for your journal"
+        content.body = "How did your day go? Add a note, photo or voice memo."
+        content.sound = .default
+        try? await UNUserNotificationCenter.current().add(
+            UNNotificationRequest(identifier: "demo-journal", content: content, trigger: nil))
+    }
+
     /// Only two notifications exist: someone asks to follow you, and today hits 80.
     /// Also clears the old morning recap / 9 PM check-in from earlier installs.
     static func scoreReached(_ score: Int, day today: Date) async {

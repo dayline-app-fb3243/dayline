@@ -70,6 +70,21 @@ final class DemoTourTests: XCTestCase {
         XCUIDevice.shared.press(.home)
     }
 
+    func testAllNotificationPreviews() throws {
+        let app = XCUIApplication()
+        let spring = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        app.launchArguments = ["-demo", "-demoAllNotifications"]
+        app.launch()
+        let allow = spring.buttons["Allow"]
+        if allow.waitForExistence(timeout: 6) { allow.tap() }
+        XCUIDevice.shared.press(.home)
+        pause(10)
+        let start = spring.coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.005))
+        start.press(forDuration: 0.1, thenDragTo: spring.coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.7)))
+        pause(2)
+        shot("all-notification-types-lock-screen")
+    }
+
     override func setUp() {
         continueAfterFailure = true
         try? FileManager.default.createDirectory(atPath: Self.shotDir, withIntermediateDirectories: true)
