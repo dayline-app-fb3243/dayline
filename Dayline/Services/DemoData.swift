@@ -199,9 +199,17 @@ enum DemoData {
             }
             if offset % 6 == 3 {
                 let p = weekend ? park : cafe
+                // Rotate real bundled pictures rather than repeating the same croissant
+                // across the three-month history. Keep each caption/place plausible.
+                let parkPhotos = [("demo-park", "Afternoon walk by the river."),
+                                  ("demo-sunset", "The sunset over the water was worth stopping for.")]
+                let cafePhotos = [("demo-coffee", "Coffee break before heading back."),
+                                  ("demo-danish", "A pastry and a quiet coffee break."),
+                                  ("demo-danish2", "Stopped for something sweet.")]
+                let choices = weekend ? parkPhotos : cafePhotos
+                let selected = choices[(offset / 6) % choices.count]
                 let e = JournalEntry(date: at(day, 12, 20), kind: .photo,
-                                     text: weekend ? "Afternoon in the park." : "Coffee break before heading back.",
-                                     thumbnail: photo(weekend ? "demo-park" : "demo-coffee"), latitude: p.0, longitude: p.1)
+                                     text: selected.1, thumbnail: photo(selected.0), latitude: p.0, longitude: p.1)
                 e.placeName = weekend ? "Riverside Park" : "Blue Door Coffee"
                 context.insert(e)
             }
