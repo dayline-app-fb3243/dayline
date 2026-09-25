@@ -624,6 +624,17 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Three Week-at-a-glance designs, each with an orange low day in light and dark.
+    func testWeekWidgetVariations() throws {
+        for n in 21...23 {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-widgetConcept", "\(n)"]
+            app.launch(); pause(1)
+            shot("week-widget-\(n)")
+            app.terminate()
+        }
+    }
+
     /// Five landing options on an actual phone keyboard; live autocomplete and typo recovery.
     func testSearchDesigns() throws {
         for n in 1...5 {
