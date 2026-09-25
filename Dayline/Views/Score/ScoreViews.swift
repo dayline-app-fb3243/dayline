@@ -166,7 +166,6 @@ struct ScoreDetailView: View {
                 if b == 0 {
                     SectionHeader("This week")
                     Card { WeekStrip(scores: Array(scores.prefix(7)), today: result.score) }
-                    if UserDefaults.standard.string(forKey: "score.friends") == "2" { FriendsTodayCard() }
                 } else {
                     SectionHeader("Schedule")
                     DayActivityList(day: day(b))

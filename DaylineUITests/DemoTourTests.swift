@@ -1562,19 +1562,6 @@ final class DemoTourTests: XCTestCase {
         tapID(app, "peopleButton"); pause(2); shot("fr-5-people")
     }
 
-    /// Friends option 1 (Insights > Streak only, current) vs option 2 (also on the Day score page the Today ring opens).
-    func testFriendsOptions() throws {
-        for opt in ["1", "2"] {
-            let app = XCUIApplication()
-            app.launchArguments = ["-demo", "-score.friends", opt]
-            app.launch(); pause(1.5)
-            tab(app, "Today"); pause(1.5); tapID(app, "scoreCard"); pause(2); shot("fo\(opt)-1-dayscore")
-            app.swipeUp(); pause(1.2); shot("fo\(opt)-2-scrolled")
-            app.swipeUp(); pause(1.2); shot("fo\(opt)-3-bottom")
-            app.terminate()
-        }
-    }
-
     /// Font check: the real iOS Settings app next to Dayline's People and Day score pages, same simulator, same scale.
     func testFontProof() throws {
         let settings = XCUIApplication(bundleIdentifier: "com.apple.Preferences")
