@@ -446,11 +446,11 @@ struct FactorGlassList: View {
 struct FactorRow: View {
     var factor: ScoreFactor
     @AppStorage("symbols.show") private var showSymbols = true
-    @AppStorage("factorIcons") private var iconStyle = "circle"
+    @AppStorage("factorIcons") private var iconStyle = "gray"
     private var styleVariant: Int {
         let a = ProcessInfo.processInfo.arguments
-        guard let i = a.firstIndex(of: "-factorIconStyle"), i + 1 < a.count else { return 0 }
-        return Int(a[i + 1]) ?? 0
+        guard let i = a.firstIndex(of: "-factorIconStyle"), i + 1 < a.count else { return 2 }
+        return Int(a[i + 1]) ?? 2
     }
     var body: some View {
         let symbol = Self.style(factor.title).0
