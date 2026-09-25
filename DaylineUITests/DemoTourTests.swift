@@ -292,8 +292,13 @@ final class DemoTourTests: XCTestCase {
         app.launchArguments = ["-onboarding.done", "YES", "-testSignedIn", "-appearance", scheme.lowercased()]
         app.launch(); pause(2)
         let locationPrompt = XCUIApplication(bundleIdentifier: "com.apple.springboard")
-        let allowLocation = locationPrompt.buttons["Allow While Using App"]
-        if allowLocation.waitForExistence(timeout: 3) { allowLocation.tap(); pause(1) }
+        for _ in 0..<3 {
+            let allowLocation = locationPrompt.buttons["Allow While Using App"]
+            let keep = locationPrompt.buttons["Keep Only While Using"]
+            if allowLocation.waitForExistence(timeout: 2) { allowLocation.tap(); pause(1) }
+            else if keep.waitForExistence(timeout: 1) { keep.tap(); pause(1) }
+            else { break }
+        }
         XCTAssertTrue(app.descendants(matching: .any)["todayEmptyState"].firstMatch.waitForExistence(timeout: 8))
         let add = app.buttons["addJournalEmpty"]
         XCTAssertTrue(add.exists && add.isHittable)
