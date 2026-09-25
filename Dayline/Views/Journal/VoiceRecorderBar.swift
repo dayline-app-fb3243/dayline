@@ -120,7 +120,7 @@ struct VoiceRecorderBar<Tools: View, Leading: View>: View {
                         .contentShape(Circle())
                     }
                         .buttonStyle(.plain)
-                        .gesture(LongPressGesture(minimumDuration: minimumHold, maximumDistance: cancelDistance)
+                        .highPriorityGesture(LongPressGesture(minimumDuration: minimumHold, maximumDistance: cancelDistance)
                             .onEnded { _ in
                                 guard !readyToSend, !recordingUI else { return }
                                 hintVisible = false

@@ -1532,14 +1532,19 @@ final class DemoTourTests: XCTestCase {
             mic.press(forDuration: 1.2)
         }
         pause(1.5)
-        XCTAssertTrue(app.descendants(matching: .any)["audioHoldBar"].firstMatch.exists,
-                      "Hold did not start recording; do not label an idle-mic screenshot as red")
+        let red = app.descendants(matching: .any)["audioHoldBar"].firstMatch
+        if !red.waitForExistence(timeout: 4) {
+            shot("journal-voice-failed-idle")
+            try? app.debugDescription.write(toFile: Self.shotDir + "/journal-voice-failed-hierarchy.txt", atomically: true, encoding: .utf8)
+            XCTFail("Hold did not start recording; see failed hierarchy and screenshot")
+            return
+        }
         shot("journal-voice-recording-red")
         let stop = app.descendants(matching: .any)["voiceStop"].firstMatch
-        XCTAssertTrue(stop.waitForExistence(timeout: 4), "Recording should expose Stop")
+        guard stop.waitForExistence(timeout: 4) else { XCTFail("Recording should expose Stop"); return }
         stop.tap(); pause(0.5)
-        XCTAssertTrue(app.descendants(matching: .any)["audioReadyBar"].firstMatch.exists,
-                      "Stop did not enter review; do not label an idle-mic screenshot as blue")
+        let blue = app.descendants(matching: .any)["audioReadyBar"].firstMatch
+        guard blue.waitForExistence(timeout: 4) else { XCTFail("Stop did not enter review"); return }
         shot("journal-voice-ready-blue")
     }
 
