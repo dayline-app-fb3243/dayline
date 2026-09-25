@@ -422,28 +422,18 @@ struct DayActivityList: View {
     }
 }
 
-/// Polished variations of Dayline's existing white-card factor list.
-/// The icon stays a soft colored circle and the page keeps its own surface language.
-enum FactorListStyle {
-    static var chosen: Int {
-        let a = ProcessInfo.processInfo.arguments
-        guard let i = a.firstIndex(of: "-factorList"), i + 1 < a.count else { return 0 }
-        return Int(a[i + 1]) ?? 0
-    }
-}
-
+/// The chosen grouped-card factor list, with the app's circular blue/orange symbols.
 struct FactorGlassList: View {
     @AppStorage("symbols.show") private var showSymbols = true
     let factors: [ScoreFactor]
-    private var style: Int { FactorListStyle.chosen }
     var body: some View {
         Card(padding: 0) {
             VStack(spacing: 0) {
                 ForEach(Array(factors.enumerated()), id: \.element.id) { i, f in
                     FactorRow(factor: f)
                     if i < factors.count - 1 {
-                        Divider().padding(.leading, showSymbols ? (style == 2 ? 70 : 62) : 16)
-                            .padding(.trailing, style == 3 ? 0 : 16)
+                        Divider().padding(.leading, showSymbols ? 70 : 16)
+                            .padding(.trailing, 16)
                     }
                 }
             }
@@ -464,11 +454,10 @@ struct FactorRow: View {
             if showSymbols {
                 let tint = factor.points < 0 ? Theme.bad : Theme.accent
                 Image(systemName: symbol)
-                    .font(FactorListStyle.chosen == 2 ? .body.weight(.medium) : .subheadline.weight(.semibold))
+                    .font(.body.weight(.medium))
                     .foregroundStyle(tint)
-                    .frame(width: FactorListStyle.chosen == 2 ? 38 : 34,
-                           height: FactorListStyle.chosen == 2 ? 38 : 34)
-                    .background(iconStyle == "bare" ? Color.clear : tint.opacity(FactorListStyle.chosen == 1 ? 0.10 : 0.14), in: .circle)
+                    .frame(width: 38, height: 38)
+                    .background(iconStyle == "bare" ? Color.clear : tint.opacity(0.14), in: .circle)
             }
             VStack(alignment: .leading, spacing: 1) {
                 Text(factor.title).font(.body)
@@ -481,7 +470,7 @@ struct FactorRow: View {
                 .foregroundStyle(factor.points > 0 ? Color.primary : Color.secondary)
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, FactorListStyle.chosen == 1 ? 14 : FactorListStyle.chosen == 2 ? 12 : 11)
+        .padding(.vertical, 12)
     }
 
     static func style(_ title: String) -> (String, Color) {
