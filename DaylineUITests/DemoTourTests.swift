@@ -588,6 +588,19 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Option 2 with three thicker ring widths in light and dark appearance.
+    func testWidgetThickRings() throws {
+        for n in 13...15 {
+            for p in 1...2 {
+                let app = XCUIApplication()
+                app.launchArguments = ["-demo", "-widgetDesign", "\(n)", "-widgetPage", "\(p)"]
+                app.launch(); pause(1)
+                shot("wt\(n)-\(p)")
+                app.terminate()
+            }
+        }
+    }
+
     /// Five search landing designs. Each suggestion is an actual search action.
     func testSearchDesigns() throws {
         for n in 1...5 {

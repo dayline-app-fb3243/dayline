@@ -25,6 +25,9 @@ struct WidgetDesign: Identifiable {
         .init(id: 10, name: "Names Below", note: "Friend color key below a larger circle", scoreSize: 114, ringWidth: 16, titlePlacement: 2, friendsLayout: 0, namePlacement: 0),
         .init(id: 11, name: "Side By Side", note: "Horizontal cards with more room for each name", scoreSize: 110, ringWidth: 17, titlePlacement: 0, friendsLayout: 3, namePlacement: 0),
         .init(id: 12, name: "Soft", note: "Thinner arcs and compact labels", scoreSize: 108, ringWidth: 12, titlePlacement: 1, friendsLayout: 3, namePlacement: 1),
+        .init(id: 13, name: "Full Circle 23", note: "Option 2 with a 23-point ring", scoreSize: 122, ringWidth: 23, titlePlacement: 0, friendsLayout: 0, namePlacement: 1),
+        .init(id: 14, name: "Full Circle 27", note: "Option 2 with a 27-point ring", scoreSize: 122, ringWidth: 27, titlePlacement: 0, friendsLayout: 0, namePlacement: 1),
+        .init(id: 15, name: "Full Circle 31", note: "Option 2 with a 31-point ring", scoreSize: 122, ringWidth: 31, titlePlacement: 0, friendsLayout: 0, namePlacement: 1),
     ]
 }
 
