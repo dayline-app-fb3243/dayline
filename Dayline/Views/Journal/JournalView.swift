@@ -125,7 +125,16 @@ struct JournalGroup: Identifiable {
 
     static func placeName(for entry: JournalEntry, visits: [Visit]) -> String? {
         if let saved = entry.placeName { return saved }
-        if let v = visits.first(where: { $0.arrival <= entry.date && entry.date <= ($0.departure ?? .distantFuture) && $0.category != .home }) {
+        // Several visits can overlap the entry's time (a short stop inside a long work block): pick the one
+        // closest to where the entry was made, or the shortest one when the entry has no location.
+        let overlapping = visits.filter { $0.arrival <= entry.date && entry.date <= ($0.departure ?? .distantFuture) && $0.category != .home }
+        if let c = entry.coordinate, overlapping.count > 1 {
+            let here = CLLocation(latitude: c.latitude, longitude: c.longitude)
+            if let v = overlapping.min(by: { here.distance(from: CLLocation(latitude: $0.latitude, longitude: $0.longitude)) < here.distance(from: CLLocation(latitude: $1.latitude, longitude: $1.longitude)) }) {
+                return v.placeName
+            }
+        }
+        if let v = overlapping.min(by: { ($0.departure ?? .distantFuture).timeIntervalSince($0.arrival) < ($1.departure ?? .distantFuture).timeIntervalSince($1.arrival) }) {
             return v.placeName
         }
         guard let c = entry.coordinate else { return nil }

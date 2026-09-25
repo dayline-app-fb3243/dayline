@@ -401,8 +401,7 @@ enum SearchSuggestions {
     }
 
     private static func placeName(_ e: JournalEntry, _ visits: [Visit]) -> String? {
-        if let p = e.placeName { return p }
-        return visits.first { $0.arrival <= e.date && e.date <= ($0.departure ?? .distantFuture) && $0.category != .home }?.placeName
+        JournalGroup.placeName(for: e, visits: visits)
     }
 }
 
