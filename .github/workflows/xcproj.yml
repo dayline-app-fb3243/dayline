@@ -33,7 +33,7 @@ jobs:
             APP=$(find "/tmp/dd-${MODE}/Build/Products" -maxdepth 2 -name Dayline.app -path '*iphonesimulator*' | head -1)
             xcrun simctl install "$UDID" "$APP"
             xcrun simctl launch "$UDID" app.dayline
-            sleep 5
+            sleep 12
             xcrun simctl io "$UDID" screenshot "/tmp/first-launch/${MODE}.png"
             cd /tmp/out
             zip -qry "Dayline-${MODE}.zip" "Dayline-${MODE}"
