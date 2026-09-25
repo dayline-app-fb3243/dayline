@@ -201,7 +201,7 @@ struct TodayStepsNextTiles: View {
     static var ringStyle: Int {
         let a = ProcessInfo.processInfo.arguments
         if let i = a.firstIndex(of: "-stepsRing"), i + 1 < a.count { return Int(a[i + 1]) ?? 0 }
-        return 0
+        return 1
     }
     private var stepCount: Int { steps ?? 0 }
     private var stepsStatus: String { stepCount >= goal ? "Goal Reached" : (stepCount * 2 >= goal ? "Keep Going" : "Get Moving") }
@@ -227,7 +227,21 @@ struct TodayStepsNextTiles: View {
     private func nextLink(_ n: (title: String, symbol: String)) -> some View {
         NavigationLink {
             if n.title == "Walk" { StepsDetailView() } else { GymDetailView() }
-        } label: { tile("Next", n.title, n.symbol) }
+        } label: {
+            Card {
+                HStack(spacing: 12) {
+                    Image(systemName: n.symbol).font(.title3).foregroundStyle(Theme.accent)
+                        .frame(width: 42, height: 42)
+                        .background(Theme.accent.opacity(0.12), in: .circle)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("NEXT").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                        Text(n.title).font(.title2.weight(.bold)).foregroundStyle(.primary)
+                    }
+                    Spacer(minLength: 0)
+                    Image(systemName: "chevron.right").font(.subheadline.weight(.semibold)).foregroundStyle(.tertiary)
+                }.padding(.vertical, 4)
+            }
+        }
             .buttonStyle(.plain).accessibilityIdentifier("nextTile")
             .disabled(n.title != "Gym" && n.title != "Walk")
     }
