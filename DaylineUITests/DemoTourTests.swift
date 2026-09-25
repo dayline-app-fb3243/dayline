@@ -75,6 +75,13 @@ final class DemoTourTests: XCTestCase {
         try? FileManager.default.createDirectory(atPath: Self.shotDir, withIntermediateDirectories: true)
     }
 
+    /// Inspect the actual first launch of whichever Xcode variant was built, with no launch arguments.
+    func testVariantFirstLaunch() throws {
+        let app = XCUIApplication()
+        app.launch(); pause(3)
+        shot("variant-first-launch")
+    }
+
     /// First launch as a new user: splash, intro pages, Sign in with Apple, phone, permissions.
     func testOnboarding() throws {
         let app = XCUIApplication()
