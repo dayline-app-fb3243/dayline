@@ -147,6 +147,9 @@ struct VoiceRecorderBar<Tools: View, Leading: View>: View {
                             else if voice.isRecording { holding = false }
                             // If microphone permission arrives after release, the start task cancels it.
                         })
+                        .onChange(of: voice.isRecording) { _, recording in
+                            if recording { holding = false }
+                        }
                         .accessibilityLabel("Voice memo")
                         .accessibilityHint("Hold to record, then tap Stop to review and send")
                         .accessibilityIdentifier("voiceMic")
