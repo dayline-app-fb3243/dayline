@@ -218,8 +218,10 @@ enum ScoreEngine {
 
         // 7. Journal
         if w[.journal] != nil, !entries.isEmpty {
-            factors.append(.init(part: .journal, title: "Journaled", effect: .up, points: pts(.journal, Double(distinctEntries) * 0.4),
-                                 detail: "\(distinctEntries) journal entr\(distinctEntries == 1 ? "y" : "ies")")))
+            let entryLabel = distinctEntries == 1 ? "entry" : "entries"
+            factors.append(.init(part: .journal, title: "Journaled", effect: .up,
+                                 points: pts(.journal, Double(distinctEntries) * 0.4),
+                                 detail: "\(distinctEntries) journal \(entryLabel)"))
         }
 
         // 8. Make-up actions: anything good wins back points for missed habits (and moves the ring back toward blue).
