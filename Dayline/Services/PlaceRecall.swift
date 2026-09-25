@@ -106,8 +106,9 @@ enum PlaceRecall {
         let here = CLLocation(latitude: visit.latitude, longitude: visit.longitude)
         let photos = entries.filter { entry in
             guard entry.kind == .photo, let thumb = entry.thumbnail, !thumb.isEmpty else { return false }
-            guard let c = entry.coordinate else { return true }   // no location: trust the time window
-            return CLLocation(latitude: c.latitude, longitude: c.longitude).distance(from: here) < 250
+            guard let c = entry.coordinate else { return entry.placeName == visit.placeName }
+            if let name = entry.placeName, name != visit.placeName { return false }
+            return CLLocation(latitude: c.latitude, longitude: c.longitude).distance(from: here) < 120
         }.compactMap(\.thumbnail)
 
         let key = visit.placeKey

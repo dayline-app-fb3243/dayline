@@ -217,7 +217,6 @@ enum DemoData {
 
         context.insert(JournalEntry(date: at(today, 8, 12), kind: .photo, text: "Coffee before work. Feeling focused today.",
                                     thumbnail: photo("demo-coffee") ?? swatch(.brown), latitude: cafe.0, longitude: cafe.1, isTranscribed: true))
-        context.insert(JournalEntry(date: at(today, 8, 13), kind: .photo, thumbnail: photo("demo-park"), latitude: cafe.0, longitude: cafe.1))
         }
         // Photos from earlier this month, placed where they were taken.
         for (i, name) in ["demo-park", "demo-sunset", "demo-coffee"].enumerated() {

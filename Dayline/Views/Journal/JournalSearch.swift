@@ -102,7 +102,7 @@ enum JournalSearch {
                 if keys.allSatisfy({ SearchSuggestions.matches($0, in: text) }) {
                     let k = keys[0]
                     let why = e.kind == .voice ? "Voice memo: \u{201C}\(e.text.prefix(48))\u{201D}" : (place.lowercased().contains(k) ? "Place name" : "Journal: \u{201C}\(e.text.prefix(48))\u{201D}")
-                    hits.append(SearchHit(place: place, date: e.date, reason: why, symbol: v?.category.symbol ?? "doc.text.fill", thumbnail: e.thumbnail, coordinate: e.coordinate ?? v?.coordinate))
+                    hits.append(SearchHit(place: place, date: e.date, reason: why, symbol: v?.category.symbol ?? "doc.text.fill", thumbnail: e.kind == .photo ? e.thumbnail : nil, coordinate: e.coordinate ?? v?.coordinate))
                     continue
                 }
                 if e.kind == .photo {
@@ -135,6 +135,21 @@ enum JournalSearch {
                 let why = note.map { "\(len) · \u{201C}\($0.text)\u{201D}" } ?? len
                 hits.append(SearchHit(place: v.placeName, date: v.arrival, reason: why, symbol: v.category.symbol, coordinate: v.coordinate))
             }
+        }
+        // Attach only a photo explicitly assigned to this place, or a photo taken
+        // during this visit at its coordinates. Nearby photos from other places are not interchangeable.
+        for i in hits.indices where hits[i].thumbnail == nil {
+            let hit = hits[i]
+            let matching = entries.filter { entry in
+                guard entry.kind == .photo, entry.thumbnail != nil else { return false }
+                if let named = entry.placeName { return named == hit.place }
+                guard let coordinate = hit.coordinate, let photoCoordinate = entry.coordinate else { return false }
+                guard cal.isDate(entry.date, inSameDayAs: hit.date),
+                      abs(entry.date.timeIntervalSince(hit.date)) < 3 * 3600 else { return false }
+                return CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
+                    .distance(from: CLLocation(latitude: photoCoordinate.latitude, longitude: photoCoordinate.longitude)) < 120
+            }.min { abs($0.date.timeIntervalSince(hit.date)) < abs($1.date.timeIntervalSince(hit.date)) }
+            hits[i].thumbnail = matching?.thumbnail
         }
         // One result per place per day.
         var seen = Set<String>()
@@ -307,8 +322,20 @@ struct SearchHitRow: View {
             if let d = hit.thumbnail, let img = UIImage(data: d) {
                 Image(uiImage: img).resizable().scaledToFill().frame(width: 56, height: 56).clipShape(.rect(cornerRadius: 12))
             } else {
-                Image(systemName: hit.symbol).font(.system(size: 20, weight: .semibold)).foregroundStyle(.white)
-                    .frame(width: 56, height: 56).background(Theme.accent, in: .rect(cornerRadius: 12))
+                if let coordinate = hit.coordinate {
+                    Map(initialPosition: .camera(MapCamera(centerCoordinate: coordinate, distance: 650))) {
+                        Marker(hit.place, coordinate: coordinate).tint(Theme.accent)
+                    }
+                    .mapStyle(.standard)
+                    .environment(\.colorScheme, SystemMapAppearance.scheme)
+                    .frame(width: 56, height: 56)
+                    .clipShape(.rect(cornerRadius: 12))
+                    .allowsHitTesting(false)
+                    .accessibilityLabel("Map of \(hit.place)")
+                } else {
+                    RoundedRectangle(cornerRadius: 12).fill(Color(.tertiarySystemGroupedBackground))
+                        .frame(width: 56, height: 56)
+                }
             }
             VStack(alignment: .leading, spacing: 2) {
                 Text(hit.place).font(.body.weight(.semibold))
