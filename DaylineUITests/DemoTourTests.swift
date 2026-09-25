@@ -1257,6 +1257,16 @@ final class DemoTourTests: XCTestCase {
     }
 
     /// Dark-mode surface hierarchy: black canvas, lighter grouped cards across five tabs.
+    func testInsightsDayDark() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo"]
+        app.launch()
+        tab(app, "Insights")
+        tapSegment(app, "Day")
+        pause(1.5)
+        shot("insights-day-dark")
+    }
+
     func testDarkSurfacesDark() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-demo"]
