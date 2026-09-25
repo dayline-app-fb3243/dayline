@@ -71,6 +71,8 @@ struct TimelineScreen: View {
                             infoChip("\(rangePhotos.count)", "photos")
                         }
                         DayPhotoCards(visits: rangeVisits, journal: journal.filter { interval.contains($0.date) })
+                    } else if tlPage.hasPrefix("4") {
+                        rangePage4
                     } else {
                         // Week / month / year: every place and route in the range, stats on the map, then a plain list.
                         mapCard(height: 330, hint: false)
@@ -107,6 +109,8 @@ struct TimelineScreen: View {
     /// 1 = big map with the numbers on it. 2 = a line through the day with a pin per stop and photos inline.
     /// 3 = numbers first as big tiles, then map and cards. 4 = photos in a side-scrolling row, stops listed below.
     /// 5 = map, then stops grouped into Morning / Afternoon / Evening.
+    /// 4a-4c = more takes on 4: a = place and time on each photo, b = numbers row and square photos,
+    /// c = captioned photos with stops grouped by part of day. With any 4 sample, Week / Month / Year use the same style.
     @AppStorage("timeline.page") private var tlPage = ""
     private var dayVisits: [Visit] { rangeVisits.sorted { $0.arrival < $1.arrival } }
     private func photos(for v: Visit) -> [UIImage] {
@@ -189,25 +193,8 @@ struct TimelineScreen: View {
             }
             mapCard(height: 180, hint: true)
             DayPhotoCards(visits: rangeVisits, journal: journal.filter { interval.contains($0.date) })
-        case "4":
-            mapCard(height: 170, hint: true)
-            Text(title).font(.title2.bold()).padding(.horizontal, 2).padding(.top, 4)
-            let pics = journal.filter { interval.contains($0.date) && $0.kind == .photo }.compactMap { $0.thumbnail.flatMap(UIImage.init(data:)) }
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
-                    ForEach(pics.indices, id: \.self) { k in
-                        Image(uiImage: pics[k]).resizable().scaledToFill().frame(width: 150, height: 190).clipShape(.rect(cornerRadius: 18))
-                    }
-                }
-            }
-            Card(padding: 0) {
-                VStack(spacing: 0) {
-                    ForEach(Array(dayVisits.enumerated()), id: \.offset) { i, v in
-                        stopRow(v).padding(.horizontal, 14).padding(.vertical, 10)
-                        if i < dayVisits.count - 1 { Divider().padding(.leading, 56) }
-                    }
-                }
-            }
+        case "4", "4a", "4b", "4c":
+            day4
         default:
             mapCard(height: 170, hint: true)
             let parts = [("Morning", 0, 12), ("Afternoon", 12, 17), ("Evening", 17, 24)]
@@ -227,6 +214,97 @@ struct TimelineScreen: View {
                 }
             }
         }
+    }
+
+    // MARK: Timeline sample 4 and its variants (Day), plus Week / Month / Year in the same style
+
+    private var photoItems: [(image: UIImage, date: Date)] {
+        journal.filter { interval.contains($0.date) && $0.kind == .photo }
+            .sorted { $0.date < $1.date }
+            .compactMap { e in e.thumbnail.flatMap(UIImage.init(data:)).map { ($0, e.date) } }
+    }
+    private func placeName(at date: Date) -> String? {
+        visits.first { date >= $0.arrival && date <= ($0.departure ?? .now) }?.placeName
+    }
+    private func photoCaption(_ date: Date) -> String {
+        switch range {
+        case .day: [placeName(at: date), DayActivityList.clock.string(from: date)].compactMap { $0 }.joined(separator: " · ")
+        case .week: [date.formatted(.dateTime.weekday(.abbreviated)), placeName(at: date)].compactMap { $0 }.joined(separator: " · ")
+        case .month: [date.formatted(.dateTime.month(.abbreviated).day()), placeName(at: date)].compactMap { $0 }.joined(separator: " · ")
+        case .year: date.formatted(.dateTime.month(.wide))
+        }
+    }
+    private func photoRow(width: CGFloat, height: CGFloat, captions: Bool) -> some View {
+        let items = Array(photoItems.prefix(range == .day ? 20 : 12))
+        return ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 10) {
+                ForEach(items.indices, id: \.self) { k in
+                    Image(uiImage: items[k].image).resizable().scaledToFill().frame(width: width, height: height)
+                        .overlay(alignment: .bottomLeading) {
+                            if captions {
+                                Text(photoCaption(items[k].date)).font(.caption.weight(.semibold)).foregroundStyle(.white)
+                                    .lineLimit(1).padding(10).frame(maxWidth: .infinity, alignment: .leading)
+                                    .background(LinearGradient(colors: [.clear, .black.opacity(0.55)], startPoint: .top, endPoint: .bottom))
+                            }
+                        }
+                        .clipShape(.rect(cornerRadius: 18))
+                }
+            }
+        }
+    }
+    private func stopList(_ list: [Visit]) -> some View {
+        Card(padding: 0) {
+            VStack(spacing: 0) {
+                ForEach(Array(list.enumerated()), id: \.offset) { i, v in
+                    stopRow(v).padding(.horizontal, 14).padding(.vertical, 10)
+                    if i < list.count - 1 { Divider().padding(.leading, 56) }
+                }
+            }
+        }
+    }
+    private var numbersRow: some View {
+        HStack(spacing: 6) {
+            infoChip("\(placeCount)", "places"); infoChip(distanceText, "moved"); infoChip("\(photoItems.count)", "photos")
+        }
+    }
+    @ViewBuilder private var day4: some View {
+        mapCard(height: 170, hint: true)
+        Text(title).font(.title2.bold()).padding(.horizontal, 2).padding(.top, 4)
+        switch tlPage {
+        case "4a":
+            photoRow(width: 170, height: 210, captions: true)
+            stopList(dayVisits)
+        case "4b":
+            numbersRow
+            photoRow(width: 120, height: 120, captions: false)
+            stopList(dayVisits)
+        case "4c":
+            photoRow(width: 150, height: 190, captions: true)
+            let parts = [("Morning", 0, 12), ("Afternoon", 12, 17), ("Evening", 17, 24)]
+            ForEach(parts.indices, id: \.self) { pi in
+                let part = parts[pi]
+                let list = dayVisits.filter { let h = Calendar.current.component(.hour, from: $0.arrival); return h >= part.1 && h < part.2 }
+                if !list.isEmpty {
+                    Text(part.0).font(.subheadline.weight(.semibold)).foregroundStyle(.secondary).padding(.leading, 4).padding(.top, 2)
+                    stopList(list)
+                }
+            }
+        default:
+            photoRow(width: 150, height: 190, captions: false)
+            stopList(dayVisits)
+        }
+    }
+    /// Week / Month / Year when a sample-4 page is on: map, title, the range's photos in a row, then the places card.
+    @ViewBuilder private var rangePage4: some View {
+        mapCard(height: 200, hint: false)
+        Text(title).font(.title2.bold()).padding(.horizontal, 2).padding(.top, 4)
+        HStack(spacing: 6) {
+            infoChip("\(placeCount)", "places"); infoChip(distanceText, "moved"); infoChip("\(photoItems.count)", "photos")
+        }
+        if !photoItems.isEmpty {
+            photoRow(width: 150, height: 190, captions: true)
+        }
+        MostVisitedList(clusters: placeClusters)
     }
 
     /// A search result was tapped: show that day, and open the full map at that place.

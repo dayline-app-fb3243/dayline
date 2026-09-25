@@ -1473,6 +1473,30 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Timeline sample 4 and 4a-4c (Day), then Week / Month / Year in the sample-4 style.
+    func testTimeline4() throws {
+        for v in ["4", "4a", "4b", "4c"] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-timeline.page", v, "-no.lookaround"]
+            app.launchEnvironment["TZ"] = Self.zone(localHour: 18)
+            app.launch(); pause(1.5)
+            tab(app, "Timeline"); pause(4)
+            shot("t4-\(v)-1")
+            app.swipeUp(); pause(1.5)
+            shot("t4-\(v)-2")
+            if v == "4" {
+                for r in ["Week", "Month", "Year"] {
+                    app.swipeDown(); pause(0.8)
+                    app.buttons[r].firstMatch.tap(); pause(3)
+                    shot("t4-\(r.lowercased())-1")
+                    app.swipeUp(); pause(1.5)
+                    shot("t4-\(r.lowercased())-2")
+                }
+            }
+            app.terminate()
+        }
+    }
+
     /// Timeline Day page samples 1-5 plus the current page (top and scrolled).
     func testTimelinePages() throws {
         for v in ["", "1", "2", "3", "4", "5"] {
