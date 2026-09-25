@@ -11,11 +11,9 @@ final class VoiceNoteService: NSObject, ObservableObject {
     @Published private(set) var isRecording = false
     @Published private(set) var level: Float = 0
     @Published private(set) var elapsed: TimeInterval = 0
-    /// Paused after the finger lifts: the Messages-style review bar (play, + more, send, X).
-    @Published private(set) var isReviewing = false
     /// Recent loudness, newest last, for the live bars.
     @Published private(set) var levels: [Float] = []
-    var isActive: Bool { isRecording || isReviewing }
+    var isActive: Bool { isRecording }
 
     private var recorder: AVAudioRecorder?
     private var meterTimer: Timer?
@@ -47,7 +45,6 @@ final class VoiceNoteService: NSObject, ObservableObject {
         self.recorder = recorder
         currentFile = file
         isRecording = true
-        isReviewing = false
         elapsed = 0
         levels = []
         startMeter()
@@ -69,26 +66,7 @@ final class VoiceNoteService: NSObject, ObservableObject {
         }
     }
 
-    /// Finger lifted: keep what was said, show the review bar.
-    func pause() {
-        guard let recorder, isRecording else { return }
-        elapsed = recorder.currentTime
-        recorder.pause()
-        meterTimer?.invalidate()
-        isRecording = false
-        isReviewing = true
-    }
-
-    /// "+ 0:07": keep recording onto the same note.
-    func resume() {
-        guard let recorder, isReviewing else { return }
-        recorder.record()
-        isReviewing = false
-        isRecording = true
-        startMeter()
-    }
-
-    /// X or slide left: throw the recording away.
+    /// Sliding away discards the recording.
     func cancel() {
         recorder?.stop()
         recorder?.deleteRecording()
@@ -96,7 +74,6 @@ final class VoiceNoteService: NSObject, ObservableObject {
         recorder = nil
         currentFile = nil
         isRecording = false
-        isReviewing = false
         levels = []
         elapsed = 0
     }
@@ -109,7 +86,6 @@ final class VoiceNoteService: NSObject, ObservableObject {
         recorder.stop()
         meterTimer?.invalidate()
         isRecording = false
-        isReviewing = false
         levels = []
         self.recorder = nil
         currentFile = nil
