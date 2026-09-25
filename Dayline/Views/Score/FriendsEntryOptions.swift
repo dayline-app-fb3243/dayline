@@ -95,13 +95,18 @@ struct TodayFriendsCircleCard: View {
         NavigationLink { StreakView() } label: {
             Card {
                 HStack(spacing: 16) {
-                    DaylineWidgetFriendsRing(days: streak,
-                        friends: friends.map { DaylineWidgetFriend(name: $0.name, days: $0.current, color: $0.color) },
-                        size: 94, width: 17, namesInside: false)
+                    if !DemoData.isDemo && friends.isEmpty && streak == 0 {
+                        EmptyCardRing(size: 94)
+                    } else {
+                        DaylineWidgetFriendsRing(days: streak,
+                            friends: friends.map { DaylineWidgetFriend(name: $0.name, days: $0.current, color: $0.color) },
+                            size: 94, width: 17, namesInside: false)
+                    }
                     VStack(alignment: .leading, spacing: 4) {
                         Text("FRIENDS").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-                        Text("Your streak").font(.title3.weight(.semibold)).foregroundStyle(.primary)
-                        Text(friends.isEmpty ? "See your streak" : friends.map(\.name).joined(separator: ", "))
+                        Text(!DemoData.isDemo && friends.isEmpty && streak == 0 ? "No friends yet" : "Your streak")
+                            .font(.title3.weight(.semibold)).foregroundStyle(.primary)
+                        Text(friends.isEmpty ? "Invite someone from People" : friends.map(\.name).joined(separator: ", "))
                             .font(.subheadline).foregroundStyle(.secondary).lineLimit(1)
                     }
                     Spacer(minLength: 0)

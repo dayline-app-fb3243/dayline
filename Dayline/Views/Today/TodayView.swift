@@ -9,6 +9,8 @@ struct TodayView: View {
     @State private var capture: CaptureMode?
     @State private var showGym = false
 
+    private var isFreshStart: Bool { !DemoData.isDemo && allPlan.isEmpty && journal.isEmpty && visits.isEmpty && DayCache.steps(for: DayBoundary.shared.today) == 0 }
+
     private var result: ScoreEngine.Result {
         // Recomputed whenever the queried data changes.
         _ = (allPlan.count, journal.count, visits.count)
@@ -22,24 +24,28 @@ struct TodayView: View {
                 VStack(alignment: .leading, spacing: 14) {
                     header
                     LocationOffCard()
-                    if !DemoData.isDemo && allPlan.isEmpty && journal.isEmpty && visits.isEmpty {
+                    if isFreshStart {
                         ContentUnavailableView {
                             Label("Your day starts here", systemImage: "calendar.badge.clock")
                         } description: {
                             Text("As you use Dayline, your places, schedule and journal will appear here. Add a journal entry to begin.")
                         } actions: {
-                            Button("Add Journal Entry") { capture = .text }
-                                .buttonStyle(.borderedProminent)
+                            Button { capture = .text } label: {
+                                Text("Add Journal Entry").font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(Color.white)
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .tint(Theme.accent)
+                            .accessibilityIdentifier("addJournalEmpty")
                         }
                         .accessibilityIdentifier("todayEmptyState")
-                    } else {
+                    }
                     if TodayStepsNextTiles.ringStyle != 5 { scoreLink }
                     if FriendsEntry.style == 0 { TodayFriendsCircleCard() }
                     if FriendsEntry.style == 3 { TodayStreakCard() }
                     if FriendsEntry.style == 2 { TodayFriendsRow() }
-                    TodayStepsNextTiles(result: result)
+                    TodayStepsNextTiles(result: result, showEmpty: isFreshStart)
                     scheduleSection
-                    }
                 }
                 .padding(.horizontal, 18)
                 .padding(.bottom, 24)
@@ -52,9 +58,11 @@ struct TodayView: View {
     }
 
     private var scoreLink: some View {
-        NavigationLink { ScoreDetailView(result: result) } label: { ScoreCard(result: result) }
-            .buttonStyle(.plain)
-            .accessibilityIdentifier("scoreCard")
+        NavigationLink { ScoreDetailView(result: result) } label: {
+            if isFreshStart { EmptyScoreCard() } else { ScoreCard(result: result) }
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("scoreCard")
     }
 
     /// Friends button (option 4) or your picture that opens Profile (option 1, when Friends is a tab).
@@ -121,6 +129,34 @@ struct TodayView: View {
     }
 }
 
+/// An unfilled outline, not a computed score or a zero that looks like a bad day.
+struct EmptyCardRing: View {
+    var size: CGFloat = 84
+    var body: some View {
+        Circle().stroke(Color.secondary.opacity(0.35), style: StrokeStyle(lineWidth: 12, dash: [4, 6]))
+            .overlay { Image(systemName: "ellipsis").font(.title3).foregroundStyle(.secondary) }
+            .frame(width: size, height: size)
+            .accessibilityLabel("No data yet")
+    }
+}
+
+struct EmptyScoreCard: View {
+    var body: some View {
+        Card {
+            HStack(spacing: 16) {
+                EmptyCardRing()
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("DAY SCORE").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                    Text("No score yet").font(.title2.weight(.semibold)).foregroundStyle(.primary)
+                    Text("Your score appears as Dayline learns your day.").font(.subheadline).foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(.vertical, 4)
+        }
+    }
+}
+
 struct ScoreCard: View {
     var result: ScoreEngine.Result
     /// The tip follows the time of day and what's still open.
@@ -181,6 +217,7 @@ struct LocationOffCard: View {
 /// Today: Steps and what's next, as two Liquid Glass tiles under the day score card. Real numbers, demo numbers in demo mode.
 struct TodayStepsNextTiles: View {
     var result: ScoreEngine.Result
+    var showEmpty = false
     @State private var steps: Int? = nil
     private var s: UserSchedule { UserSchedule.current }
     private var goal: Int { DemoData.isDemo ? 8200 : s.stepGoal }
@@ -222,11 +259,17 @@ struct TodayStepsNextTiles: View {
         NavigationLink { StepsDetailView() } label: {
             Card {
                 HStack(alignment: .center, spacing: 16) {
-                    StepsRing(steps: stepCount, goal: goal, size: 84, tint: tint)
+                    if showEmpty {
+                        EmptyCardRing(size: 84)
+                    } else {
+                        StepsRing(steps: stepCount, goal: goal, size: 84, tint: tint)
+                    }
                     VStack(alignment: .leading, spacing: 2) {
                         Text("STEPS").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-                        Text(stepsStatus).font(.title2.weight(.bold))
-                            .foregroundStyle(tint == "blue" ? Theme.accent : .orange).lineLimit(1).minimumScaleFactor(0.8)
+                        Text(showEmpty ? "No steps yet" : stepsStatus).font(.title2.weight(.semibold))
+                            .foregroundStyle(showEmpty ? Color.primary : (tint == "blue" ? Theme.accent : .orange))
+                            .lineLimit(1).minimumScaleFactor(0.8)
+                        if showEmpty { Text("Steps appear after Motion or Health access.").font(.subheadline).foregroundStyle(.secondary) }
                     }
                     Spacer(minLength: 0)
                 }

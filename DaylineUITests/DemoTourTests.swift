@@ -148,6 +148,25 @@ final class DemoTourTests: XCTestCase {
         shot("empty-05-email-entry")
     }
 
+    private func emptyTabs(_ scheme: String) {
+        let app = XCUIApplication()
+        app.launchArguments = ["-onboarding.done", "YES", "-appearance", scheme.lowercased()]
+        app.launch(); pause(2)
+        XCTAssertTrue(app.descendants(matching: .any)["todayEmptyState"].firstMatch.waitForExistence(timeout: 8))
+        let add = app.buttons["addJournalEmpty"]
+        XCTAssertTrue(add.exists && add.isHittable)
+        shot("empty-today-\(scheme.lowercased())")
+        for tab in ["Timeline", "Insights", "Journal", "Profile"] {
+            let button = app.tabBars.buttons[tab]
+            XCTAssertTrue(button.waitForExistence(timeout: 5), "Missing \(tab) tab")
+            button.tap(); pause(2)
+            shot("empty-\(tab.lowercased())-\(scheme.lowercased())")
+        }
+    }
+
+    func testEmptyTabsDark() { emptyTabs("Dark") }
+    func testEmptyTabsLight() { emptyTabs("Light") }
+
     func testVariantFirstLaunch() throws {
         let app = XCUIApplication()
         app.launch(); pause(3)

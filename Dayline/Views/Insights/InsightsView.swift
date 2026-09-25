@@ -22,15 +22,14 @@ struct InsightsView: View {
                     }
                     CapsuleSegmented(selection: $range, options: InsightRange.allCases.map { ($0, $0.rawValue) })
                     if !DemoData.isDemo && scores.isEmpty && visits.isEmpty {
-                        ContentUnavailableView("Insights will grow with you", systemImage: "chart.bar",
-                                               description: Text("Keep using Dayline. Your trends appear after your first days."))
+                        Text("No data yet. Your trends appear after your first days.")
+                            .font(.subheadline).foregroundStyle(.secondary)
                             .accessibilityIdentifier("insightsEmptyState")
-                    } else {
+                    }
                     switch range {
                     case .day: classicDayView
                     case .month: monthView
                     case .year: yearView
-                    }
                     }
                 }
                 .padding(.horizontal, 18).padding(.bottom, 24)
@@ -48,7 +47,11 @@ struct InsightsView: View {
     private var classicDayView: some View {
         let r = ScoreEngine.score(DayData.input(for: .now, context: context))
         return VStack(spacing: 12) {
-            ScoreCard(result: r)
+            if !DemoData.isDemo && scores.isEmpty && visits.isEmpty {
+                EmptyScoreCard()
+            } else {
+                ScoreCard(result: r)
+            }
             if !r.factors.isEmpty {
                 SectionHeader("What shaped today")
                 FactorGlassList(factors: r.factors)
@@ -79,8 +82,8 @@ struct InsightsView: View {
                         VStack(alignment: .leading) {
                             Text("\(Date.now.formatted(.dateTime.month(.wide))) average").font(.subheadline).foregroundStyle(.secondary)
                             HStack(alignment: .firstTextBaseline, spacing: 2) {
-                                Text("\(avg)").font(.largeTitle.bold())
-                                Text("/100").font(.title3.weight(.semibold)).foregroundStyle(.secondary)
+                                Text(items.isEmpty ? "–" : "\(avg)").font(.largeTitle.bold())
+                                if !items.isEmpty { Text("/100").font(.title3.weight(.semibold)).foregroundStyle(.secondary) }
                             }
                         }
                         Spacer()
