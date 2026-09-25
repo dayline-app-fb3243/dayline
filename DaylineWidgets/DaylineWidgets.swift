@@ -10,7 +10,8 @@ struct DayEntry: TimelineEntry {
 struct DayProvider: TimelineProvider {
     private func current() -> WidgetSnapshot {
         guard let snapshot = SharedStore.load(),
-              Calendar.current.isDate(snapshot.date, inSameDayAs: .now) else { return .placeholder }
+              Calendar.current.isDate(snapshot.date, inSameDayAs: .now),
+              snapshot.hasDayData else { return .placeholder }
         return snapshot
     }
     func placeholder(in context: Context) -> DayEntry { DayEntry(date: .now, snapshot: .placeholder) }
