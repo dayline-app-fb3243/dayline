@@ -1,6 +1,7 @@
 import SwiftUI
 import SwiftData
 import UserNotifications
+import UIKit
 
 @main
 struct DaylineApp: App {
@@ -82,6 +83,25 @@ struct DaylineApp: App {
     @MainActor
     private func startUp() async {
         let context = ModelStore.container.mainContext
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-testJournalMediaGroup") {
+            // UI-test fixture: one composer save stores text, three photos and a voice note.
+            // All five records share the same ID and must count/display as one entry.
+            let group = UUID().uuidString
+            for index in 0..<4 {
+                let entry = JournalEntry(date: .now.addingTimeInterval(Double(index)), kind: index == 0 ? .text : .photo,
+                                         text: index == 0 ? "A walk with photos" : "")
+                entry.groupID = group
+                if index == 0 { entry.title = "Walk with photos" }
+                if index > 0 { entry.thumbnail = UIImage(systemName: "photo")?.pngData() }
+                context.insert(entry)
+            }
+            let voice = JournalEntry(date: .now.addingTimeInterval(4), kind: .voice, audioDuration: 12)
+            voice.groupID = group
+            context.insert(voice)
+            try? context.save()
+        }
+        #endif
         if isDemo {
             DemoData.seed(context)
             if ProcessInfo.processInfo.arguments.contains("-demoNativeBanner") {

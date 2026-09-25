@@ -177,6 +177,18 @@ final class DemoTourTests: XCTestCase {
         shot("journal-media-dialog-dark")
     }
 
+    func testOneJournalMultipleMediaOneScheduleRow() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-onboarding.done", "YES", "-appearance", "dark", "-testJournalMediaGroup"]
+        app.launch(); pause(1)
+        let schedule = app.descendants(matching: .any)["todaySchedule"].firstMatch
+        XCTAssertTrue(schedule.waitForExistence(timeout: 8))
+        let journalRows = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH %@", "scheduleRow-")).allElementsBoundByIndex
+            .filter { $0.label.localizedCaseInsensitiveContains("Walk with photos") }
+        XCTAssertEqual(journalRows.count, 1)
+        shot("one-journal-with-photos-voice-one-row")
+    }
+
     func testEmptyTabsDark() { emptyTabs("Dark") }
     func testEmptyTabsLight() { emptyTabs("Light") }
 
