@@ -517,7 +517,7 @@ struct SearchPlaceView: View {
     @ViewBuilder private var mapFocusPage: some View {
         Text(hit.place).font(.largeTitle.weight(.regular)).padding(.top, 12)
         Text(visitLabel).font(.subheadline).foregroundStyle(.secondary)
-        placeMap.frame(height: 260)
+        placeMap
         directions
         Text(countLabel).font(.subheadline).foregroundStyle(.secondary)
         photos
