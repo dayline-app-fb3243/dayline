@@ -47,26 +47,9 @@ struct SiriCommandsView: View {
 }
 
 
-/// Icon next to "Ask Siri". Old previews: -siri.iconStyle orb|circle|waveform.
+/// Icon next to "Ask Siri".
 struct SiriRowIcon: View {
-    @AppStorage("siri.iconStyle") private var style = "mark"
-    var body: some View {
-        switch style {
-        case "mark":
-            SiriMark().frame(width: 28, height: 28)
-        case "orb":
-            // Apple's official Siri artwork; only bundled in preview builds, never committed.
-            if let img = UIImage(named: "SiriOrb") {
-                Image(uiImage: img).resizable().scaledToFit().frame(width: 24, height: 24)
-            } else {
-                Image(systemName: "waveform")
-            }
-        case "circle":
-            Image(systemName: "waveform.circle").foregroundStyle(Theme.accent)
-        default:
-            Image(systemName: "waveform")
-        }
-    }
+    var body: some View { SiriMark().frame(width: 28, height: 28) }
 }
 
 

@@ -27,16 +27,13 @@ struct DaylineApp: App {
     var body: some Scene {
         WindowGroup {
             Group {
-                if ProcessInfo.processInfo.arguments.contains("-demo.rings") {
-                    RingSamplesView()
-                } else if onboardingDone {
+                if onboardingDone {
                     RootView().task { await startUp() }
                 } else {
                     OnboardingFlow()
                 }
             }
-            // Preview flag "chrome.style" (David picks): now = blue back/close/alert buttons;
-            // B = black like iOS (label color); C = gray. Switches, links and main buttons stay blue.
+            // Back, close and alert buttons in the label color like iOS; switches, links and main buttons stay blue.
             .tint(ChromeStyle.tint)
             .toggleStyle(SwitchToggleStyle(tint: Theme.accent))
             .preferredColorScheme(Appearance(rawValue: appearanceRaw)?.scheme)

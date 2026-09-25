@@ -172,43 +172,25 @@ extension Date {
 }
 
 
-/// Preview flag "icons.markerStyle" for map pins and people initials (David picks A/B/C):
-/// circle = Apple Maps/Contacts round (default), square = Settings-style rounded square, outlined = round with white ring like Apple Maps markers.
+/// Map pins and people initials: round with a white ring, like Apple Maps markers.
 struct MarkerBackground<S: ShapeStyle>: ViewModifier {
     var fill: S
     var size: CGFloat
-    /// Map pins: People initials still follow the preview flag.
-    var isMapPin = false
-    @AppStorage("icons.markerStyle") private var flagStyle = "outlined"  // David: round, C outlined like map pins (Sep 24)
-    private var style: String { isMapPin ? "outlined" : flagStyle }
     func body(content: Content) -> some View {
-        switch style {
-        case "square":
-            content.background(fill, in: .rect(cornerRadius: size * 0.24, style: .continuous))
-        case "outlined":
-            content.background(fill, in: .circle).overlay(Circle().stroke(.white, lineWidth: max(2, size * 0.08)))
-        default:
-            content.background(fill, in: .circle)
-        }
+        content.background(fill, in: .circle).overlay(Circle().stroke(.white, lineWidth: max(2, size * 0.08)))
     }
 }
 
 extension View {
     func markerBackground<S: ShapeStyle>(_ fill: S, size: CGFloat, isMapPin: Bool = false) -> some View {
-        frame(width: size, height: size).modifier(MarkerBackground(fill: fill, size: size, isMapPin: isMapPin))
+        frame(width: size, height: size).modifier(MarkerBackground(fill: fill, size: size))
     }
 }
 
 
 enum ChromeStyle {
-    static var tint: Color {
-        // "A" keeps the old blue for comparison.
-        switch UserDefaults.standard.string(forKey: "chrome.style") ?? "B" {
-        case "A", "now": return Theme.accent
-        case "C": return Color.secondary
-        default: return Color.primary
-        }
-    }
+    /// Toolbar buttons (back excepted) use the primary label color, like Apple's apps.
+    static var tint: Color { Color.primary }
 }
 
 /// Large title for the root of each tab, sitting right under the status bar like iOS large titles,
@@ -244,45 +226,3 @@ extension Font {
 }
 
 
-/// Screenshot-only ("-demo.rings"): Today cards for sample days, so ring shades can be compared side by side.
-struct RingSamplesView: View {
-    struct Sample { var title: String; var score: Int; var lost: Int; var madeUp: Int = 0; var good: Double }
-    static let samples: [Sample] = [
-        Sample(title: "On track", score: 62, lost: 0, good: 0.95),
-        Sample(title: "Missed the gym (best 90)", score: 48, lost: 10, good: 0.7),
-        Sample(title: "Best still 75", score: 44, lost: 25, good: 0.55),
-        Sample(title: "Best still 50", score: 30, lost: 50, good: 0.4),
-        Sample(title: "Best still 20", score: 12, lost: 80, good: 0.2),
-        Sample(title: "Catching up (journaled)", score: 58, lost: 25, madeUp: 18, good: 0.75),
-    ]
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 10) {
-                Text("Ring shades").font(.largeTitle.bold()).padding(.top, 8)
-                ForEach(Self.samples.indices, id: \.self) { i in
-                    let x = Self.samples[i]
-                    let pace = ScoreEngine.Pace(lost: x.lost, madeUp: x.madeUp, good: x.good)
-                    HStack(spacing: 14) {
-                        ScoreRing(score: x.score, size: 64, lost: pace.net, good: pace.good)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(x.title).font(.headline)
-                            Text("Score \(x.score) · best still possible \(100 - pace.net)").font(.subheadline).foregroundStyle(.secondary)
-                        }
-                        Spacer()
-                    }
-                    .padding(12).background(.background, in: .rect(cornerRadius: 20))
-                }
-                Text("New words instead of \u{201C}Pick it up\u{201D}").font(.headline).padding(.top, 6)
-                HStack(spacing: 8) {
-                    ForEach(StatusPhrase.altOptions.indices, id: \.self) { i in
-                        Text("\(i + 1). \(StatusPhrase.altOptions[i])").font(.subheadline.weight(.semibold))
-                            .foregroundStyle(Theme.bad).padding(.horizontal, 10).padding(.vertical, 6)
-                            .background(Theme.bad.opacity(0.14), in: .capsule)
-                    }
-                }
-            }
-            .padding(.horizontal, 16)
-        }
-        .background(Color(.systemGroupedBackground))
-    }
-}
