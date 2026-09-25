@@ -101,7 +101,8 @@ enum JournalSearch {
                 let text = [e.text, e.title ?? "", place].joined(separator: " ").lowercased()
                 if keys.allSatisfy({ SearchSuggestions.matches($0, in: text) }) {
                     let k = keys[0]
-                    let why = e.kind == .voice ? "Voice memo: \u{201C}\(e.text.prefix(48))\u{201D}" : (place.lowercased().contains(k) ? "Place name" : "Journal: \u{201C}\(e.text.prefix(48))\u{201D}")
+                    let why = e.kind == .voice ? "Voice memo: \u{201C}\(e.text.prefix(48))\u{201D}" :
+                        (e.kind == .photo ? "Photo in your journal" : "Journal: \u{201C}\(e.text.prefix(48))\u{201D}")
                     hits.append(SearchHit(place: place, date: e.date, reason: why, symbol: v?.category.symbol ?? "doc.text.fill", thumbnail: e.kind == .photo ? e.thumbnail : nil, coordinate: e.coordinate ?? v?.coordinate))
                     continue
                 }
@@ -476,7 +477,7 @@ struct SearchPlaceView: View {
             Map(initialPosition: .camera(MapCamera(centerCoordinate: coordinate, distance: 1000))) {
                 Marker(hit.place, coordinate: coordinate).tint(Theme.accent)
             }
-            .mapStyle(.standard)
+            .mapStyle(.standard(pointsOfInterest: .excludingAll))
             .environment(\.colorScheme, SystemMapAppearance.scheme)
             .frame(height: design == 3 ? 160 : 205)
             .clipShape(.rect(cornerRadius: Theme.cardRadius))
