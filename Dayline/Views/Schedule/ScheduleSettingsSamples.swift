@@ -50,11 +50,22 @@ struct ScheduleSettingsSamples: View {
          Habit(title: "Drink Water", symbol: "drop.fill", detail: "Water logged in Apple Health", on: $water)]
     }
 
-    private func icon(_ s: String) -> some View {
-        Image(systemName: s).font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.accent)
-            .frame(width: 30, height: 30).background(Theme.accent.opacity(0.14), in: .circle)
+    @ViewBuilder private func icon(_ s: String) -> some View {
+        if style == "1" {
+            // iOS Settings icon: white glyph on a filled rounded square.
+            Image(systemName: s).font(.system(size: 15, weight: .medium)).foregroundStyle(.white)
+                .frame(width: 29, height: 29).background(Theme.accent, in: .rect(cornerRadius: 7, style: .continuous))
+        } else {
+            Image(systemName: s).font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.accent)
+                .frame(width: 30, height: 30).background(Theme.accent.opacity(0.14), in: .circle)
+        }
     }
-    private func placeRow(_ title: String, _ symbol: String, _ value: String) -> some View {
+    @ViewBuilder private func placeRow(_ title: String, _ symbol: String, _ value: String) -> some View {
+        if style == "1" {
+            NavigationLink { EmptyView() } label: {
+                LabeledContent { Text(value).lineLimit(1) } label: { Label { Text(title) } icon: { icon(symbol) } }
+            }
+        } else {
         HStack(spacing: 12) {
             icon(symbol)
             Text(title)
@@ -62,11 +73,17 @@ struct ScheduleSettingsSamples: View {
             Text(value).foregroundStyle(value == "Add" ? Theme.accent : .secondary).lineLimit(1)
             Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(.tertiary)
         }
+        }
     }
     private func place(for title: String) -> String? {
         switch title { case "Gym": gymPlace; case "Work": workPlace; case "School": schoolPlace; default: nil }
     }
     private func habitToggle(_ h: Habit, detail: Bool = true) -> some View {
+        Group {
+        if style == "1" {
+            // One line per row, like a switch in iOS Settings. The place shows in Places below.
+            Toggle(isOn: h.on.animation()) { Label { Text(h.title) } icon: { icon(h.symbol) } }
+        } else {
         Toggle(isOn: h.on.animation()) {
             HStack(spacing: 12) {
                 icon(h.symbol)
@@ -78,6 +95,8 @@ struct ScheduleSettingsSamples: View {
                 }
             }
         }
+        }
+        }
         .accessibilityIdentifier("habit-\(h.title)")
     }
     private var addPlaceMenu: some View {
@@ -85,7 +104,9 @@ struct ScheduleSettingsSamples: View {
             if !gym { Button("Gym", systemImage: "dumbbell") {} }
             if !school { Button("School", systemImage: "graduationcap") {} }
             Button("Custom Place…", systemImage: "mappin") {}
-        } label: { Label("Add Place", systemImage: "plus") }
+        } label: {
+            if style == "1" { Text("Add Place\u{2026}").foregroundStyle(Theme.accent) } else { Label("Add Place", systemImage: "plus") }
+        }
     }
 
     @ViewBuilder private var placesSection: some View {
@@ -147,7 +168,7 @@ struct ScheduleSettingsSamples: View {
         }) { a in
             NavigationStack {
                 AddPlaceView(title: "Your \(a.id)", prompt: "Search for your \(a.id.lowercased())",
-                             categories: a.id == "Gym" ? [.fitnessCenter] : nil) { item in
+                             categories: a.id == "Gym" ? [.fitnessCenter] : a.id == "School" ? [.school, .university] : nil) { item in
                     let name = item.name ?? a.id
                     withAnimation {
                         switch a.id { case "Gym": gymPlace = name; case "Work": workPlace = name; default: schoolPlace = name }

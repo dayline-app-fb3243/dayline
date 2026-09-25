@@ -260,11 +260,11 @@ struct DayActivityList: View {
     @Query(sort: \JournalEntry.date) private var journal: [JournalEntry]
 
     @Query(sort: \PlanItem.start) private var plans: [PlanItem]
-    /// Preview flag "today.schedule": A (default) = plain list, no taps. B = timeline with a line through
+    /// Preview flag "today.schedule": C (default, with layout 4d) = only what happened. A = plain list, no taps. B = timeline with a line through
     /// category symbols, plus plans still to come today in gray. C = only what actually happened, built fresh
     /// each day: places (home stays too), journal entries away from a place, plans you finished, and a "?" row
     /// for time Dayline knows nothing about, with a guess. Tap any row to open it.
-    @AppStorage("today.schedule") private var style = "A"
+    @AppStorage("today.schedule") private var style = "C"
     @State private var open: String?
 
     struct Row: Identifiable {
@@ -432,7 +432,7 @@ struct DayActivityList: View {
     /// a = 4 with that fix. b = one line runs through all blocks. c = the icon sits inside a wider block.
     /// d = no time column, the range under the title. e = each stay is a tinted card sized by how long it took.
     /// f = every row the same height.
-    @AppStorage("schedule.layout") var layout = ""
+    @AppStorage("schedule.layout") var layout = "4d"
 
     var body: some View {
         switch style {
