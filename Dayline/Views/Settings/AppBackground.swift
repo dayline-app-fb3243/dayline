@@ -289,31 +289,33 @@ struct ProfileView: View {
                     }
                 }
                 profileHeader("Look")
-                Card(padding: 0) {
-                    VStack(spacing: 0) {
-                        NavigationLink { BackgroundPickerView() } label: {
-                            ProfileRow(symbol: "paintpalette.fill", title: "Background")
-                        }
-                        .accessibilityIdentifier("backgroundRow")
-                        Divider().padding(.leading, 57)
-                        Menu {
-                            Picker("Appearance", selection: $appearanceRaw) {
-                                ForEach(Appearance.allCases, id: \.rawValue) { Text($0.rawValue).tag($0.rawValue) }
+                VStack(alignment: .leading, spacing: 4) {
+                    Card(padding: 0) {
+                        VStack(spacing: 0) {
+                            NavigationLink { BackgroundPickerView() } label: {
+                                ProfileRow(symbol: "paintpalette.fill", title: "Background")
                             }
-                        } label: {
-                            ProfileRow(symbol: "circle.lefthalf.filled", title: "Appearance")
+                            .accessibilityIdentifier("backgroundRow")
+                            Divider().padding(.leading, 57)
+                            Menu {
+                                Picker("Appearance", selection: $appearanceRaw) {
+                                    ForEach(Appearance.allCases, id: \.rawValue) { Text($0.rawValue).tag($0.rawValue) }
+                                }
+                            } label: {
+                                ProfileRow(symbol: "circle.lefthalf.filled", title: "Appearance")
+                            }
+                            Divider().padding(.leading, 57)
+                            HStack(spacing: 13) {
+                                ProfileIcon(symbol: "star.fill")
+                                Toggle("Show Symbols", isOn: $showSymbols)
+                            }
+                            .padding(.horizontal, 14).padding(.vertical, 7)
+                            .accessibilityIdentifier("showSymbolsToggle")
                         }
-                        Divider().padding(.leading, 57)
-                        HStack(spacing: 13) {
-                            ProfileIcon(symbol: "star.fill")
-                            Toggle("Show Symbols", isOn: $showSymbols)
-                        }
-                        .padding(.horizontal, 14).padding(.vertical, 7)
-                        .accessibilityIdentifier("showSymbolsToggle")
                     }
+                    Text("Shows the blue symbols next to places and score items.")
+                        .font(.footnote).helperText().padding(.horizontal, 16)
                 }
-                Text("Shows the blue symbols next to places and score items.")
-                    .font(.footnote).helperText().padding(.horizontal, 16).padding(.top, 6)
                 profileHeader("Tracking")
                 Card(padding: 0) {
                     VStack(spacing: 0) {
