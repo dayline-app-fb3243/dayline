@@ -682,6 +682,39 @@ final class DemoTourTests: XCTestCase {
         tab(app, "Today"); pause(1.5); shot("63-today-sunset")
     }
 
+    /// Add the actual extension from SpringBoard; gallery rendering does not count.
+    func testInstalledHomeWidget() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo"]
+        app.launch(); pause(5)
+        XCUIDevice.shared.press(.home); pause(2)
+        let sb = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        shot("widget-install-home-before")
+        sb.coordinate(withNormalizedOffset: CGVector(dx: 0.78, dy: 0.67)).press(forDuration: 1.5)
+        pause(1); shot("widget-install-edit-mode")
+        let edit = sb.buttons["Edit"].firstMatch
+        if edit.waitForExistence(timeout: 3) { edit.tap(); pause(0.5) }
+        let add = sb.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'Add Widget'")).firstMatch
+        let plus = sb.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'Add' OR label == '+' ")).firstMatch
+        if add.waitForExistence(timeout: 2) { add.tap() }
+        else if plus.waitForExistence(timeout: 2) { plus.tap() }
+        else { try (sb.debugDescription).write(toFile: Self.shotDir + "/widget-home-hierarchy.txt", atomically: true, encoding: .utf8); XCTFail("SpringBoard Add Widget action missing"); return }
+        pause(1.5); shot("widget-install-gallery")
+        let search = sb.searchFields.firstMatch
+        if search.waitForExistence(timeout: 3) { search.tap(); search.typeText("Dayline") }
+        pause(1); shot("widget-install-search")
+        let dayline = sb.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS[c] 'Dayline'")).firstMatch
+        XCTAssertTrue(dayline.waitForExistence(timeout: 5), "Dayline missing from iOS widget gallery")
+        dayline.tap(); pause(1.5); shot("widget-install-preview")
+        let addWidget = sb.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'Add Widget'")).firstMatch
+        XCTAssertTrue(addWidget.waitForExistence(timeout: 5), "Add Widget button missing")
+        addWidget.tap(); pause(2)
+        let done = sb.buttons["Done"].firstMatch
+        if done.waitForExistence(timeout: 3) { done.tap() }
+        pause(3); shot("widget-installed-home")
+        try sb.debugDescription.write(toFile: Self.shotDir + "/widget-installed-hierarchy.txt", atomically: true, encoding: .utf8)
+    }
+
     /// Home Screen shot to check the real app icon (Icon Composer .icon) as iOS draws it.
     func testHomeIcon() throws {
         let app = XCUIApplication()
