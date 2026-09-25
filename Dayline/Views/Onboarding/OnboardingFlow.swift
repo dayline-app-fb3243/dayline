@@ -459,8 +459,11 @@ struct AppleSignInDemoSheet: View {
             HStack {
                 Text("Sign in with Apple").font(.title2.bold())
                 Spacer()
-                Button { dismiss() } label: { Image(systemName: "xmark").font(.body.weight(.semibold)).frame(width: 44, height: 44) }
-                    .buttonStyle(.glass).buttonBorderShape(.circle)
+                Button { dismiss() } label: {
+                    Image(systemName: "xmark").font(.body.weight(.semibold)).foregroundStyle(.primary)
+                        .frame(width: 44, height: 44)
+                }
+                .buttonStyle(.glass).buttonBorderShape(.circle).accessibilityLabel("Close")
             }
             HStack(spacing: 14) {
                 AppMark(size: 56)
