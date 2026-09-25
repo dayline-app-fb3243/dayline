@@ -14,20 +14,26 @@ struct WeekWidgetContent: View {
                     Text("Day score").font(.system(.caption, design: .default)).foregroundStyle(.secondary)
                 }
             }
-            HStack(alignment: .bottom, spacing: 6) {
-                ForEach(0..<7, id: \.self) { i in
-                    let score = i < scores.count ? min(100, max(0, scores[i])) : 0
-                    VStack(spacing: 3) {
+            GeometryReader { geometry in
+                HStack(alignment: .bottom, spacing: 6) {
+                    ForEach(0..<7, id: \.self) { i in
+                        let score = i < scores.count ? min(100, max(0, scores[i])) : 0
                         Capsule()
                             .fill(score < 45 ? Color.orange : blue(for: score))
-                            .frame(height: max(23, CGFloat(score) * 0.55))
-                        Text(["S", "M", "T", "W", "T", "F", "S"][i])
-                            .font(.system(.caption2, design: .default)).foregroundStyle(.secondary)
+                            .frame(height: geometry.size.height * CGFloat(score) / 100)
+                            .frame(maxWidth: .infinity)
                     }
-                    .frame(maxWidth: .infinity)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+            }
+            HStack(spacing: 6) {
+                ForEach(0..<7, id: \.self) { i in
+                    Text(["S", "M", "T", "W", "T", "F", "S"][i])
+                        .font(.system(.caption2, design: .default))
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity)
                 }
             }
-            .frame(maxHeight: .infinity, alignment: .bottom)
         }
         .padding(16)
     }
