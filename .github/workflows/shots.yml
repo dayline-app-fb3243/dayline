@@ -26,6 +26,13 @@ jobs:
           for R in Default Dark ClearLight ClearDark TintedLight TintedDark; do
             "$ICTOOL" "$I" --export-image --output-file "shots/$N-$R.png" --platform iOS --rendition "$R" --width 512 --height 512 --scale 2 || echo "fail $N $R"
           done; done
+          for R in Default Dark ClearLight ClearDark TintedLight TintedDark; do
+            "$ICTOOL" Dayline/Resources/AppIcon.icon --export-image --output-file "shots/Shipped-$R.png" --platform iOS --rendition "$R" --width 512 --height 512 --scale 2 || echo "fail shipped $R"
+          done
+          # What the app build actually ships: compile the .icon like Xcode does and list its renditions.
+          mkdir -p /tmp/ac && xcrun actool Dayline/Resources/AppIcon.icon --compile /tmp/ac --platform iphonesimulator --minimum-deployment-target 26.0 --app-icon AppIcon --output-partial-info-plist /tmp/ac/p.plist --output-format human-readable-text 2>&1 | tail -20 || true
+          ls -la /tmp/ac; xcrun assetutil --info /tmp/ac/Assets.car > shots/icon-assetutil.json 2>&1 || true
+          python3 -c "import json;d=json.load(open('shots/icon-assetutil.json'));print(sorted(set((x.get('Name'),x.get('Appearance'),x.get('AssetType')) for x in d[1:] )))" || head -c 3000 shots/icon-assetutil.json
           ls -la shots
 
       - name: Tools
