@@ -843,8 +843,11 @@ final class DemoTourTests: XCTestCase {
         shot("search-back-results")
     }
 
-    func testPlaceFiveFreshOptions() throws {
-        for n in 4...8 {
+    func testPlaceFreshOption6() throws { captureFreshPlace([6]) }
+    func testPlaceFreshOption7() throws { captureFreshPlace([7]) }
+    func testPlaceFreshOption8() throws { captureFreshPlace([8]) }
+    private func captureFreshPlace(_ options: [Int]) {
+        for n in options {
             let app = XCUIApplication()
             app.launchArguments = ["-demo", "-journalSearch", "Blue Door Coffee", "-placeDesign", "\(n)"]
             app.launch(); tab(app, "Journal"); pause(0.5)
