@@ -110,7 +110,7 @@ struct NewEntryView: View {
         GeometryReader { editor in
         ScrollView {
             VStack(alignment: .leading, spacing: 10) {
-                Text("\(startedAt.formatted(.dateTime.weekday(.wide).month(.abbreviated).day())) · \(startedAt.shortTime) · \(placeName)")
+                Text("\(startedAt.formatted(.dateTime.weekday(.wide).month(.abbreviated).day())) · \(startedAt.shortTime)")
                     .font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
                 TextField("Title", text: $title, axis: .vertical)
                     .font(.title2.bold()).focused($titleFocused)
