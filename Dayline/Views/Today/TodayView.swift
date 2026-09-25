@@ -50,11 +50,9 @@ struct TodayView: View {
                 .padding(.horizontal, 18)
                 .padding(.bottom, 24)
             }
-            // A light base behind the floating glass keeps scrolling content from
-            // ghosting through the tab bar without clipping the visible list above it.
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                AppBackgroundView().frame(height: 60)
-            }
+            // Reserve the glass tab bar's footprint in the scroll viewport itself.
+            // Unlike a background safe-area inset, this does not wash out the rows.
+            .padding(.bottom, 60)
             .background(AppBackgroundView())
             .tabRoot()
             .sheet(item: $capture) { mode in CaptureSheet(mode: mode) }
