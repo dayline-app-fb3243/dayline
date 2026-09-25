@@ -172,6 +172,7 @@ struct GymDetailView: View {
                     case 3: overlaid
                     case 4: withStats
                     case 5: withWeek
+                    case 6, 7, 8: combined(variant)
                     default: place
                     }
                 }
@@ -291,24 +292,55 @@ struct GymDetailView: View {
         visits(4, times: true)
     }
 
+    /// 6-8. Requested combinations of the original page and its weekly checkmarks.
+    @ViewBuilder private func combined(_ style: Int) -> some View {
+        map(height: style == 8 ? 190 : 210).clipShape(.rect(cornerRadius: Theme.cardRadius, style: .continuous))
+        nextCard
+        if style == 6 {
+            Header(text: "This Week")
+            weekStrip
+            Header(text: "Recent Visits")
+            visits(3)
+        } else if style == 7 {
+            Header(text: "Recent Visits")
+            visits(3)
+            Header(text: "This Week")
+            weekStrip
+        } else {
+            Card(padding: 0) {
+                VStack(spacing: 0) {
+                    HStack {
+                        Text("This Week").font(.subheadline.weight(.semibold))
+                        Spacer()
+                        Text("3 visits").font(.subheadline).foregroundStyle(.secondary)
+                    }.padding(.horizontal, 16).padding(.top, 14).padding(.bottom, 7)
+                    weekSymbols.padding(.horizontal, 16).padding(.bottom, 14)
+                }
+            }
+            Header(text: "Recent Visits")
+            visits(3)
+        }
+    }
+    private var weekStrip: some View { Card { weekSymbols } }
+    private var weekSymbols: some View {
+        HStack(spacing: 0) {
+            ForEach(Array(["S", "M", "T", "W", "T", "F", "S"].enumerated()), id: \.offset) { i, d in
+                let went = [1, 3, 5].contains(i), today = i == 5
+                VStack(spacing: 6) {
+                    Text(d).font(.caption.weight(.semibold)).foregroundStyle(today ? Theme.accent : .secondary)
+                    Image(systemName: went ? "checkmark.circle.fill" : "circle")
+                        .font(.title2).foregroundStyle(went ? Theme.accent : Color(.tertiaryLabel))
+                }.frame(maxWidth: .infinity)
+            }
+        }
+    }
+
     /// 5. Map, next visit, this week's gym days, visits.
     @ViewBuilder private var withWeek: some View {
         map(height: 190).clipShape(.rect(cornerRadius: Theme.cardRadius, style: .continuous))
         nextCard
         Header(text: "This Week")
-        Card {
-            HStack(spacing: 0) {
-                ForEach(Array(["S", "M", "T", "W", "T", "F", "S"].enumerated()), id: \.offset) { i, d in
-                    let went = [1, 3, 5].contains(i), today = i == 5
-                    VStack(spacing: 6) {
-                        Text(d).font(.caption.weight(.semibold)).foregroundStyle(today ? Theme.accent : .secondary)
-                        Image(systemName: went ? "checkmark.circle.fill" : "circle")
-                            .font(.title2).foregroundStyle(went ? Theme.accent : Color(.tertiaryLabel))
-                    }
-                    .frame(maxWidth: .infinity)
-                }
-            }
-        }
+        weekStrip
         Header(text: "Recent Visits")
         visits(3)
     }

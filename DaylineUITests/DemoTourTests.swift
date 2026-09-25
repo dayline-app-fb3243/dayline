@@ -588,6 +588,18 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Three combinations of Gym's map/Next/visits and weekly checkmarks.
+    func testGymCombined() throws {
+        for n in 6...8 {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-detailVariant", "\(n)"]
+            app.launch(); pause(1.2)
+            tapID(app, "nextTile"); pause(2)
+            shot("gc\(n)")
+            app.terminate()
+        }
+    }
+
     /// Option 2 with three thicker ring widths in light and dark appearance.
     func testWidgetThickRings() throws {
         for n in 13...15 {
