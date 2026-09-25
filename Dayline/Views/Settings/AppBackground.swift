@@ -278,12 +278,12 @@ struct ProfileView: View {
                 Card(padding: 0) {
                     VStack(spacing: 0) {
                         NavigationLink { YourScheduleView() } label: {
-                            ProfileRow(symbol: "clock.fill", title: "Your Schedule", value: UserSchedule.current.rangeText)
+                            ProfileRow(symbol: "clock.fill", title: "Your Schedule")
                         }
                         .accessibilityIdentifier("yourScheduleRow")
                         Divider().padding(.leading, 57)
                         NavigationLink { PlacesView() } label: {
-                            ProfileRow(symbol: "mappin.and.ellipse", title: "Places", value: UserSchedule.current.home == nil ? "Add Home" : "Home \u{00B7} Work")
+                            ProfileRow(symbol: "mappin.and.ellipse", title: "Places")
                         }
                         .accessibilityIdentifier("placesRow")
                     }
@@ -292,7 +292,7 @@ struct ProfileView: View {
                 Card(padding: 0) {
                     VStack(spacing: 0) {
                         NavigationLink { BackgroundPickerView() } label: {
-                            ProfileRow(symbol: "paintpalette.fill", title: "Background", value: BackgroundPreset(rawValue: presetRaw)?.title ?? "Photo")
+                            ProfileRow(symbol: "paintpalette.fill", title: "Background")
                         }
                         .accessibilityIdentifier("backgroundRow")
                         Divider().padding(.leading, 57)
@@ -301,7 +301,7 @@ struct ProfileView: View {
                                 ForEach(Appearance.allCases, id: \.rawValue) { Text($0.rawValue).tag($0.rawValue) }
                             }
                         } label: {
-                            ProfileRow(symbol: "circle.lefthalf.filled", title: "Appearance", value: appearanceRaw)
+                            ProfileRow(symbol: "circle.lefthalf.filled", title: "Appearance")
                         }
                         Divider().padding(.leading, 57)
                         HStack(spacing: 13) {
@@ -318,7 +318,7 @@ struct ProfileView: View {
                 Card(padding: 0) {
                     VStack(spacing: 0) {
                         NavigationLink { CheckLocationView() } label: {
-                            ProfileRow(symbol: "location.circle.fill", title: "Check Location", value: checkText)
+                            ProfileRow(symbol: "location.circle.fill", title: "Check Location")
                         }
                         .accessibilityIdentifier("checkLocationRow")
                         Divider().padding(.leading, 57)
@@ -387,7 +387,6 @@ struct ProfileView: View {
     @State private var confirmSignOut = false
 
     @AppStorage(LocationService.intervalKey) private var checkMinutes = 5
-    private var checkText: String { checkMinutes == 1 ? "Every 1 min" : "Every \(checkMinutes) min" }
 
     private var locationText: String {
         if DemoData.isDemo { return "Always" }
@@ -420,7 +419,7 @@ struct ProfileIcon: View {
 struct ProfileRow: View {
     var symbol: String
     var title: String
-    var value: String
+    var value: String = ""
     var siriMark = false
     var body: some View {
         HStack(spacing: 13) {
@@ -434,8 +433,7 @@ struct ProfileRow: View {
             }
             Text(title).foregroundStyle(.primary)
             Spacer()
-            Text(value).foregroundStyle(.secondary).lineLimit(1)
-            Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(.tertiary)
+            if !value.isEmpty { Text(value).foregroundStyle(.secondary).lineLimit(1) }
         }
         .padding(.horizontal, 14).padding(.vertical, 11)
         .contentShape(.rect)

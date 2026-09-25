@@ -202,6 +202,18 @@ final class DemoTourTests: XCTestCase {
         shot("gym-name-search")
     }
 
+    func testProfileCleanNavigationRows() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-onboarding.done", "YES", "-appearance", "dark"]
+        app.launch(); pause(1)
+        app.tabBars.buttons["Profile"].tap(); pause(1)
+        for id in ["yourScheduleRow", "placesRow", "backgroundRow", "checkLocationRow"] {
+            let row = app.descendants(matching: .any)[id].firstMatch
+            XCTAssertTrue(row.exists)
+        }
+        shot("profile-clean-navigation-rows")
+    }
+
     func testDefaultWorkHoursWeekdays() {
         let app = XCUIApplication()
         app.launchArguments = ["-onboarding.done", "YES"]
