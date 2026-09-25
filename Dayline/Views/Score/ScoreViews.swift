@@ -248,6 +248,7 @@ struct DayPickerSheet: View {
 
 /// What you actually did on a day, built from visits (no manual entries).
 struct DayActivityList: View {
+    @Environment(\.colorScheme) private var mapScheme
     @AppStorage("symbols.show") private var showSymbols = true
     var day: Date
     @Environment(\.modelContext) private var context
@@ -395,6 +396,7 @@ struct DayActivityList: View {
                     Marker(r.title, systemImage: r.symbol, coordinate: place).tint(Theme.accent)
                 }
                 .mapStyle(.standard(pointsOfInterest: .excludingAll))
+                .environment(\.colorScheme, mapScheme)
                 .allowsHitTesting(false)
                 .frame(height: 120).clipShape(.rect(cornerRadius: 12))
             }

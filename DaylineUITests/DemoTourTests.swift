@@ -922,6 +922,19 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Live splash and Timeline tiles follow the system dark appearance.
+    func testAllMapsDark() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo", "-onboarding", "-splash.map", "loop"]
+        app.launch(); pause(3)
+        shot("dark-map-splash")
+        app.terminate()
+        app.launchArguments = ["-demo"]
+        app.launch(); pause(1)
+        tab(app, "Timeline"); pause(3)
+        shot("dark-map-timeline")
+    }
+
     /// The chosen wallpaper is the same in the app and the widget preview.
     func testWidgetBackgroundMatch() throws {
         let app = XCUIApplication()

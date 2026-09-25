@@ -161,6 +161,7 @@ struct StepsDetailView: View {
 // MARK: - Gym
 
 struct GymDetailView: View {
+    @Environment(\.colorScheme) private var mapScheme
     /// Picked: the place page (map, next visit, recent visits). -detailVariant 1-5 = variations of it.
     var variant = TileDetailOption.variant
     var body: some View {
@@ -188,6 +189,7 @@ struct GymDetailView: View {
             Marker("Iron Works Gym", systemImage: "dumbbell.fill", coordinate: GymDemo.place).tint(Theme.accent)
         }
         .mapStyle(.standard(pointsOfInterest: .excludingAll))
+        .environment(\.colorScheme, mapScheme)
         .frame(height: height).allowsHitTesting(false)
     }
 

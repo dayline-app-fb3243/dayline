@@ -432,6 +432,7 @@ struct SearchLandingOption: View {
 /// Search keeps its own navigation stack. Back returns to the exact query and results,
 /// while directions open Apple Maps only when the user taps the explicit Maps link.
 struct SearchPlaceView: View {
+    @Environment(\.colorScheme) private var mapScheme
     let hit: SearchHit
     let visits: [Visit]
     @Environment(\.modelContext) private var context
@@ -457,6 +458,7 @@ struct SearchPlaceView: View {
                         Marker(hit.place, coordinate: coordinate).tint(Theme.accent)
                     }
                     .mapStyle(.standard)
+                    .environment(\.colorScheme, mapScheme)
                     .frame(height: 220)
                     .clipShape(.rect(cornerRadius: Theme.cardRadius))
                     .allowsHitTesting(false)

@@ -4,6 +4,7 @@ import MapKit
 /// Map preview for Profile > Check Location: the same demo walk, drawn from one point every N minutes,
 /// so you can see how rough the day route gets at each check rate.
 struct IntervalRouteMap: View {
+    @Environment(\.colorScheme) private var mapScheme
     var minutes: Int
     var interactive = false
     /// Show a dot at every location check, so you can see how precise each rate is.
@@ -36,6 +37,7 @@ struct IntervalRouteMap: View {
             }
         }
         .mapStyle(.standard(pointsOfInterest: .excludingAll))
+        .environment(\.colorScheme, mapScheme)
         .mapControlVisibility(.hidden)
         .allowsHitTesting(interactive)
         .task { await load() }

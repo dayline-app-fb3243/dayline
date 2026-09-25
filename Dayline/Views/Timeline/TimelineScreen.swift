@@ -6,6 +6,7 @@ enum MapRange: String, CaseIterable, Identifiable { case day = "Day", week = "We
 
 /// Map of everywhere you went (day / week / month / year) plus the day's timeline.
 struct TimelineScreen: View {
+    @Environment(\.colorScheme) private var mapScheme
     @AppStorage("symbols.show") private var showSymbols = true
     @Query(sort: \Visit.arrival) private var visits: [Visit]
     @Query(sort: \LocationSample.timestamp) private var samples: [LocationSample]
@@ -244,6 +245,7 @@ struct TimelineScreen: View {
         }
         .mapStyle((is3D || interactive) && !showsControls ? .standard(elevation: .realistic, pointsOfInterest: .excludingAll)
                                          : .standard(emphasis: .muted, pointsOfInterest: .excludingAll))
+        .environment(\.colorScheme, mapScheme)
         .mapControls { MapCompass(); MapScaleView() }
         .mapControlVisibility(showsControls ? .automatic : .hidden)
         .onMapCameraChange(frequency: .onEnd) { context in

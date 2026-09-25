@@ -237,13 +237,14 @@ struct SplashView: View {
     }
 
     /// Preview flag "splash.map" (awaiting David's pick): A/B/C = real Apple Maps with a street-following route.
-    @AppStorage("splash.map") private var liveMap = ""
+    @AppStorage("splash.map") private var liveMap = "loop"
 
+    @Environment(\.colorScheme) private var mapScheme
     private var splashMap: some View {
         VStack(alignment: .leading, spacing: 0) {
             Color.clear.frame(maxWidth: .infinity).frame(height: 560)
                 .overlay(alignment: .top) {
-                    if liveMap.isEmpty { Image("SplashMap").resizable().scaledToFill() }
+                    if liveMap.isEmpty { SplashLoop().frame(height: 560).allowsHitTesting(false) }
                     else if liveMap == "loop" { SplashLoop().frame(height: 560).allowsHitTesting(false) }
                     else { SplashLiveMap(style: liveMap).frame(height: 560).allowsHitTesting(false) }
                 }
@@ -1033,6 +1034,7 @@ final class SplashPinTracks {
 }
 
 struct SplashLiveMap: View {
+    @Environment(\.colorScheme) private var mapScheme
     var style: String
     /// Slow camera move (turn, tilt, push in) for the splash loop.
     var drifting = false
@@ -1156,6 +1158,7 @@ struct SplashLiveMap: View {
                   style == "E" ? .hybrid(elevation: .realistic, pointsOfInterest: .excludingAll) :
                   style == "F" ? .standard(elevation: .realistic, emphasis: .muted, pointsOfInterest: .excludingAll) :
                   .standard(pointsOfInterest: .excludingAll))
+        .environment(\.colorScheme, mapScheme)
         .mapControlVisibility(.hidden)
         .mapCameraKeyframeAnimator(trigger: drift) { cam in
             // Route mode: a slow turn around the place itself, pushing in a little and tilting a touch more.
@@ -1320,11 +1323,14 @@ struct MapReadyProbe: UIViewRepresentable {
     func makeUIView(context: Context) -> MKMapView {
         let m = MKMapView()
         m.delegate = context.coordinator
+        m.overrideUserInterfaceStyle = UITraitCollection.current.userInterfaceStyle
         m.pointOfInterestFilter = .excludingAll
         m.camera = MKMapCamera(lookingAtCenter: center, fromDistance: 600, pitch: 45, heading: 60)
         return m
     }
-    func updateUIView(_ uiView: MKMapView, context: Context) {}
+    func updateUIView(_ uiView: MKMapView, context: Context) {
+        uiView.overrideUserInterfaceStyle = UITraitCollection.current.userInterfaceStyle
+    }
     final class Coordinator: NSObject, MKMapViewDelegate {
         let onReady: () -> Void
         var done = false
