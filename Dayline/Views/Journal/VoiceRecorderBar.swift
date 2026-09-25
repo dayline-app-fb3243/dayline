@@ -99,7 +99,15 @@ struct VoiceRecorderBar<Tools: View, Leading: View>: View {
                         .transition(.scale(scale: 0.2, anchor: .trailing).combined(with: .opacity))
                 }
                 if !readyToSend && !recordingUI && !hintVisible {
-                    Circle().fill(Color.clear)
+                    Button {
+                        hintVisible = true
+                        hintTask?.cancel()
+                        hintTask = Task { @MainActor in
+                            try? await Task.sleep(for: .seconds(1.5))
+                            if !Task.isCancelled { hintVisible = false }
+                        }
+                    } label: {
+                        Circle().fill(Color.clear)
                         .frame(width: 58, height: 58)
                         .overlay {
                             Image(systemName: "mic.fill")
@@ -110,6 +118,8 @@ struct VoiceRecorderBar<Tools: View, Leading: View>: View {
                                 .allowsHitTesting(false)
                         }
                         .contentShape(Circle())
+                    }
+                        .buttonStyle(.plain)
                         .transition(.scale(scale: 0.2, anchor: .trailing).combined(with: .opacity))
                         .gesture(LongPressGesture(minimumDuration: minimumHold, maximumDistance: cancelDistance)
                             .onEnded { _ in
@@ -122,15 +132,6 @@ struct VoiceRecorderBar<Tools: View, Leading: View>: View {
                                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                                 }
                             })
-                        .onTapGesture {
-                            guard !readyToSend, !recordingUI else { return }
-                            hintVisible = true
-                            hintTask?.cancel()
-                            hintTask = Task { @MainActor in
-                                try? await Task.sleep(for: .seconds(1.5))
-                                if !Task.isCancelled { hintVisible = false }
-                            }
-                        }
                         .accessibilityLabel("Voice memo")
                         .accessibilityHint("Hold to record, then tap Stop to review and send")
                         .accessibilityIdentifier("voiceMic")
