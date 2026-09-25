@@ -1,14 +1,7 @@
 import Foundation
-import FoundationModels
 
-/// Siri features only exist on iPhones with the new Siri (iOS 27 + Apple Intelligence).
-/// Older iPhones get no Siri section at all.
+/// App Shortcuts use App Intents on every supported iOS version; Apple Intelligence
+/// is not required to show the available Siri/Shortcuts examples in Profile.
 enum SiriSupport {
-    static var isAvailable: Bool {
-        // Demo tour shows how it looks on a supported iPhone.
-        if ProcessInfo.processInfo.arguments.contains("-demo") { return true }
-        guard #available(iOS 27, *) else { return false }
-        if case .available = SystemLanguageModel.default.availability { return true }
-        return false
-    }
+    static var isAvailable: Bool { true }
 }
