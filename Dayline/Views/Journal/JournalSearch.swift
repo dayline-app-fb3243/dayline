@@ -453,6 +453,10 @@ struct SearchPlaceView: View {
     let visits: [Visit]
     @Environment(\.modelContext) private var context
     @State private var recalled: RecalledPlace?
+    @State private var callPrompt = false
+    @State private var showHours = false
+    @State private var hoursLines: [String] = []
+    @Environment(\.openURL) private var openURL
     private var match: Visit? {
         let candidates = visits.filter { $0.placeName == hit.place }
         return candidates.min { abs($0.arrival.timeIntervalSince(hit.date)) < abs($1.arrival.timeIntervalSince(hit.date)) }
@@ -471,6 +475,11 @@ struct SearchPlaceView: View {
         guard let i = args.firstIndex(of: "-placeDesign"), i + 1 < args.count else { return 1 }
         return Int(args[i + 1]) ?? 1
     }
+    private var phoneURL: URL? { recalled?.phoneURL ?? match?.phoneNumber.flatMap { number in
+        let digits = number.filter { $0.isNumber || $0 == "+" }
+        return digits.isEmpty ? nil : URL(string: "tel:\(digits)")
+    } }
+    private var phoneLabel: String { recalled?.phone ?? match?.phoneNumber ?? "No phone number available" }
     private var visitLabel: String { "Visited \(hit.date.formatted(.dateTime.weekday(.wide).month(.abbreviated).day().hour().minute()))" }
     @ViewBuilder private var placeMap: some View {
         if let coordinate = location {
@@ -497,6 +506,122 @@ struct SearchPlaceView: View {
             .accessibilityLabel("GO: directions in Apple Maps")
             .accessibilityIdentifier("placeGoButton")
         }
+    }
+    private var actionRow: some View {
+        HStack(spacing: 10) {
+            directions
+            Button { callPrompt = true } label: {
+                Image(systemName: "phone.fill").frame(width: 50, height: 50)
+            }
+            .buttonStyle(.glass)
+            .clipShape(Circle())
+            .accessibilityLabel("Call place")
+            .accessibilityIdentifier("placeCallButton")
+            Button { showHours = true } label: {
+                Image(systemName: "clock").frame(width: 50, height: 50)
+            }
+            .buttonStyle(.glass)
+            .clipShape(Circle())
+            .accessibilityLabel("Store hours")
+            .accessibilityIdentifier("placeHoursButton")
+        }
+    }
+    private var visitJournalLine: some View {
+        HStack(spacing: 6) {
+            Text(countLabel)
+            Text("·")
+            Text(hit.reason)
+        }
+        .font(.subheadline).foregroundStyle(.secondary)
+    }
+    private var combinedPhoto: some View {
+        Group {
+            if let image = placePhoto {
+                Image(uiImage: image).resizable().scaledToFill()
+                    .frame(maxWidth: .infinity).frame(height: 195)
+                    .clipped().clipShape(.rect(cornerRadius: Theme.cardRadius))
+            } else { photos }
+        }
+    }
+    @ViewBuilder private var combinedPage: some View {
+        switch design {
+        case 9:
+            Text(hit.place).font(.largeTitle.weight(.regular))
+            Text(visitLabel).font(.subheadline).foregroundStyle(.secondary)
+            placeMap
+            visitJournalLine
+            actionRow
+            Text("Photos").font(.headline)
+            combinedPhoto
+        case 10:
+            Text(hit.place).font(.largeTitle.weight(.regular))
+            Text(visitLabel).font(.subheadline).foregroundStyle(.secondary)
+            placeMap
+            actionRow
+            visitJournalLine
+            Text("Photos").font(.headline)
+            combinedPhoto
+        case 11:
+            Text(hit.place).font(.largeTitle.weight(.regular))
+            placeMap
+            Text(visitLabel).font(.subheadline).foregroundStyle(.secondary)
+            visitJournalLine
+            Text("Photos").font(.headline)
+            combinedPhoto
+            actionRow
+        case 12:
+            Text(hit.place).font(.largeTitle.weight(.regular))
+            Text(visitLabel).font(.subheadline).foregroundStyle(.secondary)
+            placeMap
+            HStack {
+                Text("Your place").font(.headline)
+                Spacer()
+                visitJournalLine
+            }
+            Text("Photos").font(.headline)
+            combinedPhoto
+            actionRow
+        default:
+            Text(hit.place).font(.largeTitle.weight(.regular))
+            Text(visitLabel).font(.subheadline).foregroundStyle(.secondary)
+            placeMap
+            VStack(alignment: .leading, spacing: 12) {
+                visitJournalLine
+                actionRow
+            }
+            .padding(14)
+            .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: Theme.cardRadius))
+            Text("Photos").font(.headline)
+            combinedPhoto
+        }
+    }
+    private var demoHours: [String] {
+        // A clearly marked mock schedule, never presented as live business data.
+        ["Sample hours (demo only)", "Monday–Friday 7:00 AM–6:00 PM", "Saturday–Sunday 8:00 AM–5:00 PM"]
+    }
+    private func fetchHours() async {
+        guard !SampleMode.on, let coordinate = location, let key = GymHours.apiKey else {
+            hoursLines = SampleMode.on ? demoHours : ["Hours unavailable. Check the place before visiting."]
+            return
+        }
+        var request = URLRequest(url: URL(string: "https://places.googleapis.com/v1/places:searchText")!)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue(key, forHTTPHeaderField: "X-Goog-Api-Key")
+        request.setValue("places.displayName,places.regularOpeningHours.weekdayDescriptions", forHTTPHeaderField: "X-Goog-FieldMask")
+        let body: [String: Any] = ["textQuery": hit.place, "maxResultCount": 1,
+            "locationBias": ["circle": ["center": ["latitude": coordinate.latitude, "longitude": coordinate.longitude], "radius": 200.0]]]
+        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+        guard let (data, response) = try? await URLSession.shared.data(for: request),
+              (response as? HTTPURLResponse)?.statusCode == 200,
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let place = (json["places"] as? [[String: Any]])?.first,
+              let descriptions = (place["regularOpeningHours"] as? [String: Any])?["weekdayDescriptions"] as? [String],
+              !descriptions.isEmpty else {
+            hoursLines = ["Hours unavailable. Check the place before visiting."]
+            return
+        }
+        hoursLines = descriptions
     }
     private var placePhoto: UIImage? { hit.thumbnail.flatMap(UIImage.init(data:)) }
     private var countLabel: String { recalled.map { "\($0.timesVisited) visit\($0.timesVisited == 1 ? "" : "s")" } ?? "Your visit" }
@@ -580,6 +705,7 @@ struct SearchPlaceView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 switch design {
+                case 9...13: combinedPage
                 case 4: photoFirstPage
                 case 5: mapFocusPage
                 case 6: journalPage
@@ -636,6 +762,14 @@ struct SearchPlaceView: View {
         .navigationTitle(hit.place).navigationBarTitleDisplayMode(.inline)
         .toolbarVisibility(.hidden, for: .tabBar)
         .accessibilityIdentifier("searchPlacePage")
+        .confirmationDialog("Call \(hit.place)?", isPresented: $callPrompt, titleVisibility: .visible) {
+            if let phoneURL { Button("Call \(phoneLabel)") { openURL(phoneURL) } }
+            Button("Cancel", role: .cancel) {}
+        }
+        .alert("Store hours", isPresented: $showHours) {
+            Button("OK", role: .cancel) {}
+        } message: { Text(hoursLines.joined(separator: "\n")) }
+        .task { await fetchHours() }
         .task {
             if let match { recalled = await PlaceRecall.card(for: match, context: context) }
         }
