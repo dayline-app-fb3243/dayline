@@ -208,7 +208,14 @@ enum ModelStore {
     @MainActor
     static let container: ModelContainer = {
         let inMemory = SampleMode.on
+        // A real signed Apple team, private CloudKit container, schema audit and two-device
+        // restore test are required before enabling this flag. Simulator preview builds stay local.
+        #if DAYLINE_CLOUDKIT_ENABLED
+        let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: inMemory,
+                                        cloudKitDatabase: .private("iCloud.app.dayline"))
+        #else
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: inMemory)
+        #endif
         do {
             return try ModelContainer(for: schema, configurations: config)
         } catch {

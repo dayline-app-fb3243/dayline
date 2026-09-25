@@ -118,7 +118,7 @@ struct AccountView: View {
             Button("Cancel", role: .cancel) {}
             Button("Sign Out", role: .destructive) { auth.signOut(); dismiss() }
         } message: {
-            Text("Your timeline stays on this iPhone. Sign in again to turn backup back on.")
+            Text("Your timeline stays on this iPhone. iCloud sync is not configured in this build.")
         }
     }
 
