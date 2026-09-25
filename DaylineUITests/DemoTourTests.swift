@@ -634,6 +634,18 @@ final class DemoTourTests: XCTestCase {
         shot("fm4-all-off")
     }
 
+    /// Timeline photo cards open their entry.
+    func testTimelinePhotoOpens() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo"]
+        app.launch(); pause(1.5)
+        tab(app, "Timeline"); pause(3)
+        shot("tp0-timeline")
+        let photos = app.descendants(matching: .any).matching(identifier: "timelinePhoto")
+        if photos.count > 1 { photos.element(boundBy: 1).tap(); pause(2); shot("tp2-second") ; app.navigationBars.buttons.element(boundBy: 0).tap(); pause(1.5) }
+        if photos.firstMatch.waitForExistence(timeout: 3) { photos.firstMatch.tap(); pause(2); shot("tp1-first") }
+    }
+
     /// Tapping a photo or journal pin on the full map opens that entry.
     func testMapPinOpens() throws {
         let app = XCUIApplication()

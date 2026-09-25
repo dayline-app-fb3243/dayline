@@ -85,19 +85,21 @@ struct TimelineScreen: View {
     }
     // MARK: Day, Week / Month / Year pages
 
-    private var photoItems: [(image: UIImage, date: Date)] {
+    private var photoItems: [(image: UIImage, date: Date, entry: JournalEntry)] {
         journal.filter { interval.contains($0.date) && $0.kind == .photo }
             .sorted { $0.date < $1.date }
-            .compactMap { e in e.thumbnail.flatMap(UIImage.init(data:)).map { ($0, e.date) } }
+            .compactMap { e in e.thumbnail.flatMap(UIImage.init(data:)).map { ($0, e.date, e) } }
     }
-    private func placeName(at date: Date) -> String? {
-        visits.first { date >= $0.arrival && date <= ($0.departure ?? .now) }?.placeName
+    /// The entry's saved place, else the visit closest to where the photo was taken.
+    private func placeName(of entry: JournalEntry) -> String? {
+        JournalGroup.placeName(for: entry, visits: visits)
     }
-    private func photoCaption(_ date: Date) -> String {
+    private func photoCaption(_ entry: JournalEntry) -> String {
+        let date = entry.date
         switch range {
-        case .day: [placeName(at: date), DayActivityList.clock.string(from: date)].compactMap { $0 }.joined(separator: " · ")
-        case .week: [date.formatted(.dateTime.weekday(.abbreviated)), placeName(at: date)].compactMap { $0 }.joined(separator: " · ")
-        case .month: [date.formatted(.dateTime.month(.abbreviated).day()), placeName(at: date)].compactMap { $0 }.joined(separator: " · ")
+        case .day: [placeName(of: entry), DayActivityList.clock.string(from: date)].compactMap { $0 }.joined(separator: " · ")
+        case .week: [date.formatted(.dateTime.weekday(.abbreviated)), placeName(of: entry)].compactMap { $0 }.joined(separator: " · ")
+        case .month: [date.formatted(.dateTime.month(.abbreviated).day()), placeName(of: entry)].compactMap { $0 }.joined(separator: " · ")
         case .year: date.formatted(.dateTime.month(.wide))
         }
     }
@@ -106,15 +108,23 @@ struct TimelineScreen: View {
         return ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 10) {
                 ForEach(items.indices, id: \.self) { k in
+                    // Opens the photo's journal entry: full photo, place and time, and any words or voice note.
+                    NavigationLink {
+                        JournalEntryView(group: JournalGroup(entries: [items[k].entry], place: placeName(of: items[k].entry)))
+                    } label: {
                     Image(uiImage: items[k].image).resizable().scaledToFill().frame(width: width, height: height)
                         .overlay(alignment: .bottomLeading) {
                             if captions {
-                                Text(photoCaption(items[k].date)).font(.caption.weight(.semibold)).foregroundStyle(.white)
+                                Text(photoCaption(items[k].entry)).font(.caption.weight(.semibold)).foregroundStyle(.white)
                                     .lineLimit(1).padding(10).frame(maxWidth: .infinity, alignment: .leading)
                                     .background(LinearGradient(colors: [.clear, .black.opacity(0.55)], startPoint: .top, endPoint: .bottom))
                             }
                         }
                         .clipShape(.rect(cornerRadius: 18))
+                        .contentShape(.rect(cornerRadius: 18))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("timelinePhoto")
                 }
             }
         }
@@ -369,7 +379,7 @@ struct TimelineScreen: View {
             .sheet(item: $openedEntry) { entry in
                 NavigationStack {
                     JournalEntryView(group: JournalGroup(entries: [entry],
-                                                         place: JournalGroup.placeName(for: entry, visits: rangeVisits)))
+                                                         place: placeName(of: entry)))
                         .toolbar {
                             ToolbarItem(placement: .topBarTrailing) {
                                 Button("Done", systemImage: "xmark") { openedEntry = nil }
