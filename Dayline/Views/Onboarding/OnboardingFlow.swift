@@ -568,10 +568,18 @@ struct GoogleSignInDemoSheet: View {
             }
             .padding(.horizontal, 24).frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color(.systemBackground))
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("Cancel") { dismiss() }
+            .safeAreaInset(edge: .top) {
+                HStack {
+                    Button { dismiss() } label: {
+                        Image(systemName: "xmark")
+                            .font(.body.weight(.semibold)).foregroundStyle(.primary)
+                            .frame(width: 44, height: 44)
+                    }
+                    .buttonStyle(.glass).buttonBorderShape(.circle)
+                    .accessibilityLabel("Close")
+                    Spacer()
                 }
+                .padding(.horizontal, 20).padding(.top, 8)
             }
         }
     }
