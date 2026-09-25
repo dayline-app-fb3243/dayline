@@ -85,11 +85,11 @@ struct SeamlessWidgetScoreRing: View {
                 // In tinted/clear widgets iOS flattens colored views to white.
                 // Place the score in the open center rather than on a white stroke.
                 Text("\(score)")
-                    .font(.system(size: size * 0.27, weight: .semibold, design: .rounded))
+                    .font(.system(size: size * 0.27, weight: .semibold, design: .default))
                     .monospacedDigit()
             } else if score > 0 {
                 Text("\(score)")
-                    .font(.system(size: width * 0.47, weight: .bold, design: .rounded))
+                    .font(.system(size: width * 0.47, weight: .bold, design: .default))
                     .minimumScaleFactor(0.7).lineLimit(1).monospacedDigit()
                     // iOS renders the tinted/clear ring white. Keep the endpoint
                     // numeral dark there so it remains distinct from the stroke.
