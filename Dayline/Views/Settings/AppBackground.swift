@@ -251,7 +251,7 @@ struct ProfileView: View {
                             }
                             VStack(alignment: .leading, spacing: 3) {
                                 Text(auth.isSignedIn ? auth.displayName : "Sign In").font(.title3.weight(.semibold)).foregroundStyle(.primary).lineLimit(1)
-                                Text(auth.isSignedIn ? "Account, Backup, and Sign-In" : "Back up your timeline and use it on other devices")
+                                Text(auth.isSignedIn ? "Account and Sign-In" : "Sign in to Dayline")
                                     .font(.subheadline).foregroundStyle(.secondary).lineLimit(2)
                             }
                             Spacer(minLength: 8)
@@ -367,7 +367,7 @@ struct ProfileView: View {
             Button("Cancel", role: .cancel) {}
             Button("Sign Out", role: .destructive) { auth.signOut() }
         } message: {
-            Text("Your timeline stays on this iPhone. Sign in again anytime to back it up.")
+            Text("Your timeline stays on this iPhone. iCloud backup is not configured in this build.")
         }
     }
 
@@ -435,16 +435,16 @@ struct PrivacyView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     @State private var confirmDelete = false
-    private let storedText = "Your places, route, photos and journal are kept on this iPhone. Voice memos are turned into text on the device. With Back Up Timeline on, a copy is kept in your own iCloud."
+    private let storedText = "Your places, route, photos and journal are kept on this iPhone. Voice memos can be turned into text with Speech permission. iCloud backup and restore are not configured in this build."
     private var deleteText: String {
-        auth.isSignedIn ? "Deletes your account, your iCloud backup and everything Dayline saved on this iPhone. This can't be undone."
-                        : "Deletes everything Dayline saved on this iPhone. This can't be undone."
+        auth.isSignedIn ? "Deletes local Dayline account data on this iPhone. No iCloud backup is configured. This can't be undone."
+                        : "Deletes Dayline's local data on this iPhone. This can't be undone."
     }
 
     private var deleteButton: some View {
         Card(padding: 0) {
             Button(role: .destructive) { confirmDelete = true } label: {
-                Text(auth.isSignedIn ? "Delete Account & Backup" : "Delete Data on This iPhone").foregroundStyle(.red).frame(maxWidth: .infinity).frame(minHeight: 52)
+                Text(auth.isSignedIn ? "Delete Local Account Data" : "Delete Data on This iPhone").foregroundStyle(.red).frame(maxWidth: .infinity).frame(minHeight: 52)
             }
             .accessibilityIdentifier("deleteAccount")
         }
@@ -467,11 +467,11 @@ struct PrivacyView: View {
         .background(AppBackgroundView())
         .navigationTitle("Your data")
         .backgroundNavBar()
-        .alert(auth.isSignedIn ? "Delete Account & Backup?" : "Delete Data?", isPresented: $confirmDelete) {
+        .alert(auth.isSignedIn ? "Delete Local Account Data?" : "Delete Data?", isPresented: $confirmDelete) {
             Button("Delete", role: .destructive) { Task { await deleteEverything() } }
             Button("Cancel", role: .cancel) {}
-        } message: { Text(auth.isSignedIn ? "Your account, iCloud backup, timeline, journal and photos will be deleted. This can't be undone."
-                                          : "Your timeline, journal and photos will be deleted. This can't be undone.") }
+        } message: { Text(auth.isSignedIn ? "Your local account state, timeline, journal and locally stored media will be deleted. This can't be undone."
+                                          : "Your local timeline, journal and locally stored media will be deleted. This can't be undone.") }
         .toolbarVisibility(.hidden, for: .tabBar)
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -555,15 +555,15 @@ struct PrivacyPolicyView: View {
     @Environment(\.dismiss) private var dismiss
     private let sections: [(String, String)] = [
         ("The short version", "Your places, routes, photos and journal stay on your iPhone. We don\u{2019}t sell your data and there are no ads."),
-        ("What Dayline collects", "Location, to build your timeline of places and routes. Photos you allow, to show them on your day. Microphone, only while you record a voice memo; it\u{2019}s turned into text on your iPhone."),
-        ("What leaves your iPhone", "If Back Up Timeline is on, your timeline and journal are saved in your own iCloud account. Dayline can\u{2019}t see it. If you share with friends, they see only your streak number."),
-        ("How we use it", "Only to run Dayline for you: building your timeline, backing it up and showing your streak to people you choose. We don\u{2019}t use it for ads or sell it to anyone."),
+        ("What Dayline collects", "Location, to build your timeline of places and routes. Photos you allow, to show them on your day. Microphone, while you record a voice memo. Speech transcription needs permission and has not been verified on a device."),
+        ("What leaves your iPhone", "iCloud backup and friend sharing are not configured in this build. Your timeline and journal are stored locally."),
+        ("How we use it", "To build your local timeline. Backup and friend sharing need setup before launch. We don\u{2019}t use your data for ads or sell it to anyone."),
         ("Siri", "When you ask Siri about a place, Dayline answers from the data on your iPhone."),
-        ("Keeping it safe", "Your iCloud backup is protected by Apple and encrypted in transit and at rest. Only you can restore it."),
-        ("Your choices", "Change what Dayline can use at any time in Settings. Delete your account and backup from Profile > Your Data."),
+        ("Keeping it safe", "Your data is stored on this iPhone. iCloud backup and restore are not configured in this build."),
+        ("Your choices", "Change permissions in Settings. Delete local Dayline data from Profile > Your data."),
         ("Children", "Dayline isn\u{2019}t meant for children under 13."),
         ("Changes", "If this policy changes, we\u{2019}ll show you what changed in the app."),
-        ("Contact", "Questions? Email privacy@dayline.app."),
+        ("Contact", "Privacy contact and support information need setup before launch."),
     ]
     var body: some View {
         NavigationStack {

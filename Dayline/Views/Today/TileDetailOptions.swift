@@ -102,14 +102,10 @@ struct StepsDetailView: View {
                 Header(text: "Highlights")
                 Card { Text(line).font(.body).frame(maxWidth: .infinity, alignment: .leading) }
             }
-            Card(padding: 0) {
-                VStack(spacing: 0) {
-                    if DemoData.isDemo {
-                        Row(symbol: "point.topleft.down.to.point.bottomright.curvepath.fill", title: "Distance", value: "4.3 km"); Divider().padding(.leading, 59)
-                        Row(symbol: "stairs", title: "Flights Climbed", value: "6"); Divider().padding(.leading, 59)
-                    }
-                    Row(symbol: "chart.bar.fill", title: "Daily Average", value: weekAverage.formatted())
-                }
+            if range == "D" && weekAverage > 0 {
+                Text("Last 7 days: \(weekAverage.formatted()) steps a day on average")
+                    .font(.footnote).foregroundStyle(.secondary)
+                    .padding(.horizontal, 16)
             }
         }
         .accessibilityIdentifier("stepsDetail")
