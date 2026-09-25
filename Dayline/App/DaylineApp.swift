@@ -9,6 +9,7 @@ struct DaylineApp: App {
     @Environment(\.scenePhase) private var scenePhase
     private let isDemo = SampleMode.on
     @AppStorage("onboarding.done") private var onboardingDone = false
+    @AppStorage("auth.userID") private var signedInUserID = ""
 
     init() {
         let args = ProcessInfo.processInfo.arguments
@@ -51,7 +52,7 @@ struct DaylineApp: App {
                     WidgetConceptsGallery(concept: n)
                 } else if let d = Self.galleryDesign {
                     WidgetDesignGalleryView(design: d, page: Self.galleryPage)
-                } else if onboardingDone {
+                } else if onboardingDone && !signedInUserID.isEmpty {
                     RootView().task { await startUp() }
                 } else {
                     OnboardingFlow()

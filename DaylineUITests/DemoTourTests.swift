@@ -98,6 +98,38 @@ final class DemoTourTests: XCTestCase {
     }
 
 
+    func testSignOutAndReturningSignIn() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo"]
+        app.launch(); pause(1)
+        tab(app, "Profile"); pause(1)
+        tapID(app, "accountRow"); pause(1)
+        tapID(app, "accountSignOut")
+        app.alerts.buttons["Sign Out"].tap(); pause(2)
+        XCTAssertTrue(app.descendants(matching: .any)["splash"].firstMatch.waitForExistence(timeout: 8))
+        XCTAssertFalse(app.tabBars.buttons["Profile"].exists)
+        shot("auth-after-sign-out")
+        tapID(app, "splashSignIn"); pause(1)
+        shot("auth-returning-sign-in")
+        tapID(app, "signInContinue"); pause(1)
+        let demo = app.buttons["appleDemoContinue"]
+        XCTAssertTrue(demo.waitForExistence(timeout: 5))
+        demo.tap(); pause(3)
+        XCTAssertFalse(app.descendants(matching: .any)["splash"].firstMatch.exists)
+        XCTAssertTrue(app.tabBars.buttons["Profile"].exists)
+        shot("auth-returning-restored")
+    }
+
+    func testNewAccountSplashPaths() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo", "-onboarding"]
+        app.launch(); pause(2)
+        XCTAssertTrue(app.buttons["splashContinue"].exists)
+        XCTAssertTrue(app.buttons["splashGoogle"].exists)
+        XCTAssertTrue(app.buttons["splashSignIn"].exists)
+        shot("auth-first-launch-splash")
+    }
+
     func testCheckLocationInteractionVideo() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-demo", "-appearance", "light"]

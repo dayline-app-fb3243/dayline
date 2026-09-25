@@ -72,6 +72,15 @@ final class AuthService: ObservableObject {
     }
 
     private func finish(userID: String, name: String, email: String, provider: Provider, idToken: String?, photoURL: String = "") async {
+        // This prototype stores timeline data locally, not per account. Never open it
+        // under a different identity after sign-out.
+        if let previous = UserDefaults.standard.string(forKey: "auth.localOwnerID"),
+           previous != userID {
+            errorMessage = "This iPhone already has another Dayline account's local data. Sign in with the original account to access it."
+            return
+        }
+        UserDefaults.standard.set(userID, forKey: "auth.localOwnerID")
+        errorMessage = nil
         self.userID = userID
         self.photoURL = photoURL
         self.name = name

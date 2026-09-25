@@ -7,7 +7,7 @@ import Contacts
 import Photos
 import AuthenticationServices
 
-/// First launch: splash -> sign-in sheet (Apple / Google / Email) -> phone -> code -> permissions -> app.
+/// First launch sets up the app; a returning local owner signs in from the splash without repeating setup.
 struct OnboardingFlow: View {
     @AppStorage("onboarding.done") private var done = false
     @State private var step: Step = .splash
@@ -16,8 +16,9 @@ struct OnboardingFlow: View {
     var body: some View {
         ZStack {
             switch step {
-            case .splash: SplashView(next: { withAnimation(.smooth) { step = .phone } },
-                                     email: { withAnimation(.smooth) { step = .email } })
+            case .splash: SplashView(next: {
+                if !done { withAnimation(.smooth) { step = .phone } }
+            }, email: { withAnimation(.smooth) { step = .email } })
             case .email: EmailView(next: { withAnimation(.smooth) { step = .emailCode } },
                                    back: { withAnimation(.smooth) { step = .splash } })
             case .emailCode: EmailCodeView(next: { withAnimation(.smooth) { step = .phone } },
@@ -62,6 +63,9 @@ struct SplashView: View {
     var next: () -> Void
     var email: () -> Void
     @State private var showSignIn = false
+    @State private var signInMode: SignInSheet.Mode = .create
+    @State private var selectedProvider: SignInSheet.Option = .apple
+    @AppStorage("onboarding.done") private var hasFinishedSetup = false
 
     /// Preview flag "splash.style" (awaiting David's pick): "map" = faded map (now), A = clean white with the icon,
     /// B = full color map with a glass card, C = soft blue gradient with a big icon.
@@ -83,7 +87,8 @@ struct SplashView: View {
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("splash")
         .sheet(isPresented: $showSignIn) {
-            SignInSheet(next: { showSignIn = false; next() }, email: { showSignIn = false; email() })
+            SignInSheet(next: { showSignIn = false; next() }, email: { showSignIn = false; email() },
+                        mode: signInMode, initialChoice: selectedProvider)
         }
     }
 
@@ -92,10 +97,29 @@ struct SplashView: View {
             Text("Your day,\nremembered.").font(.largeTitle.bold())
         }
     }
+    private func open(_ mode: SignInSheet.Mode, _ provider: SignInSheet.Option = .apple) {
+        signInMode = mode
+        selectedProvider = provider
+        showSignIn = true
+    }
     private var continueButton: some View {
-        Button { showSignIn = true } label: { Text("Continue").font(.headline).frame(maxWidth: .infinity) }
+        VStack(spacing: 10) {
+            if !hasFinishedSetup {
+            Button { open(.create, .apple) } label: {
+                Label("Continue with Apple", systemImage: "apple.logo").font(.headline).frame(maxWidth: .infinity)
+            }
             .buttonStyle(.glassProminent).tint(Theme.accent).controlSize(.extraLarge)
             .accessibilityIdentifier("splashContinue")
+            Button { open(.create, .google) } label: {
+                HStack(spacing: 8) { GoogleG().frame(width: 18, height: 18); Text("Continue with Google") }
+                    .font(.headline).frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.glass).controlSize(.large)
+            .accessibilityIdentifier("splashGoogle")
+            }
+            Button { open(.existing) } label: { Text("Sign in").font(.body.weight(.medium)) }
+                .buttonStyle(.plain).padding(.top, 6).accessibilityIdentifier("splashSignIn")
+        }
     }
     private var bigIcon: some View {
         Image("AppIconImage").resizable().interpolation(.high).frame(width: 120, height: 120)
@@ -250,10 +274,7 @@ struct SplashView: View {
             }
             .padding(.horizontal, 28)
             .padding(.bottom, 28)
-            Button { showSignIn = true } label: { Text("Continue").font(.headline).frame(maxWidth: .infinity) }
-                .buttonStyle(.glassProminent).tint(Theme.accent).controlSize(.extraLarge)
-                .padding(.horizontal, 24).padding(.bottom, 16)
-                .accessibilityIdentifier("splashContinue")
+            continueButton.padding(.horizontal, 24).padding(.bottom, 16)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(alignment: .top) {
@@ -286,6 +307,9 @@ struct SignInSheet: View {
     var next: () -> Void
     var email: () -> Void
     enum Option: String, CaseIterable { case apple = "Apple", google = "Google", email = "Email" }
+    enum Mode { case create, existing }
+    var mode: Mode = .create
+    var initialChoice: Option = .apple
     @State private var choice: Option = .apple
     @State private var showAppleDemo = false
     @State private var showGoogleDemo = false
@@ -299,7 +323,7 @@ struct SignInSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .center) {
-                Text("Sign In to Dayline").font(.title2.bold())
+                Text(mode == .existing ? "Sign In to Dayline" : "Create Your Account").font(.title2.bold())
                 Spacer()
                 Button { dismiss() } label: {
                     Image(systemName: "xmark.circle.fill")
@@ -313,14 +337,14 @@ struct SignInSheet: View {
             }
             HStack(spacing: 14) {
                 AppMark(size: 56)
-                Text("Choose how you want to sign in. Your timeline stays on your iPhone.").font(.subheadline)
+                Text(mode == .existing ? "Use the same account to return to your day on this iPhone." : "Choose an account. Your timeline stays on this iPhone.").font(.subheadline)
             }
             .padding(.top, 10)
             VStack(spacing: 0) {
-                ForEach(Option.allCases, id: \.self) { o in
+                ForEach(mode == .existing ? [.apple, .google] : Option.allCases, id: \.self) { o in
                     Button { choice = o } label: { row(o) }.buttonStyle(.plain)
                         .accessibilityIdentifier("signInOption-\(o.rawValue)")
-                    if o != .email { Divider().padding(.leading, 60) }
+                    if o != (mode == .existing ? .google : .email) { Divider().padding(.leading, 60) }
                 }
             }
             .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 24, style: .continuous))
@@ -328,12 +352,13 @@ struct SignInSheet: View {
             if let error = auth.errorMessage {
                 Text(error).font(.footnote).foregroundStyle(.red).frame(maxWidth: .infinity).padding(.top, 8)
             }
-            Button(action: go) { Text("Continue").font(.headline).padding(.horizontal, 30) }
+            Button(action: go) { Text(mode == .existing ? "Sign In" : "Continue").font(.headline).padding(.horizontal, 30) }
                 .buttonStyle(.glassProminent).tint(Theme.accent).controlSize(.large)
                 .frame(maxWidth: .infinity).padding(.top, 18)
                 .accessibilityIdentifier("signInContinue")
         }
         .padding(.horizontal, 20).padding(.top, 12).padding(.bottom, 24)
+        .onAppear { choice = initialChoice }
         .fixedSize(horizontal: false, vertical: true)
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { fitHeight = $0 }
         // Button near the sheet's bottom edge like Apple's sheets: lay out through the home-indicator area
