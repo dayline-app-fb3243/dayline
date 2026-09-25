@@ -38,7 +38,7 @@ struct AccountAvatar: View {
 /// Opens from the top row on Profile: who is signed in, backup, and Sign Out.
 struct AccountView: View {
     @ObservedObject private var auth = AuthService.shared
-    @AppStorage("backup.enabled") private var backupOn = true
+    @AppStorage("backup.enabled") private var backupOn = false
     @AppStorage("backup.last") private var lastBackup: Double = 0
     @State private var confirmSignOut = false
     @Environment(\.dismiss) private var dismiss
@@ -81,14 +81,10 @@ struct AccountView: View {
                 SectionHeader("Backup")
                 Card(padding: 0) {
                     VStack(spacing: 0) {
-                        Toggle("Back Up Timeline", isOn: $backupOn)
-                            .padding(.horizontal, 16).frame(minHeight: 52)
-                            .accessibilityIdentifier("backupToggle")
-                        Divider().padding(.leading, 16)
-                        row("Last Backup", lastText)
+                        row("iCloud Backup", "Not configured")
                     }
                 }
-                footnote("Your timeline, journal and photos are backed up to your iCloud, so you can restore them on a new iPhone.")
+                footnote("Dayline data stays on this iPhone. iCloud backup needs setup before it can protect or restore your data.")
 
                 Card(padding: 0) {
                     Button { if let url = URL(string: "https://account.apple.com") { openURL(url) } } label: {

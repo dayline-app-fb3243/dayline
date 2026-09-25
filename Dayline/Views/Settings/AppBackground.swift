@@ -695,6 +695,16 @@ extension View {
 /// Profile > Notifications: which notifications Dayline sends, one native switch per kind.
 /// Sounds and banners stay in the Settings app.
 struct NotificationsView: View {
+    @AppStorage("notify.journal.daily") private var journalDaily = false
+    @AppStorage("notify.journal.hour") private var journalHour = -1
+    @AppStorage("notify.journal.minute") private var journalMinute = -1
+    @State private var pickingReminderTime = false
+    @State private var selectedReminderTime = Date()
+    private var reminderTimeText: String {
+        guard journalHour >= 0, journalMinute >= 0 else { return "Choose a time" }
+        let components = DateComponents(hour: journalHour, minute: journalMinute)
+        return Calendar.current.date(from: components)?.formatted(date: .omitted, time: .shortened) ?? "Choose a time"
+    }
     @AppStorage("notify.follows") private var follows = true
     @AppStorage("notify.score80") private var score80 = true
     @AppStorage(CheckInService.enabledKey) private var checkIns = false
@@ -707,6 +717,17 @@ struct NotificationsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 8) {
+                header("Journal")
+                group([("Daily Journal Reminder", $journalDaily)])
+                .disabled(journalHour < 0 || journalMinute < 0)
+                Button { pickingReminderTime = true } label: {
+                    HStack { Text("Reminder Time"); Spacer(); Text(reminderTimeText).foregroundStyle(.secondary) }
+                        .padding(.horizontal, 16).frame(minHeight: 52)
+                        .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: Theme.cardRadius))
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("journalReminderTime")
+                note(journalDaily ? "Daily on this iPhone." : "Choose a time, then turn on the reminder.")
                 header("Questions")
                 group([("Going to Sleep?", $sleepQ), ("Up Already?", $morningQ)])
                 note("Press and hold a question to answer Yes or No.")
@@ -724,6 +745,32 @@ struct NotificationsView: View {
         .navigationBarTitleDisplayMode(.inline)
         .backgroundNavBar()
         .toolbarVisibility(.hidden, for: .tabBar)
+        .sheet(isPresented: $pickingReminderTime) {
+            NavigationStack {
+                Form {
+                    DatePicker("Reminder Time", selection: $selectedReminderTime, displayedComponents: .hourAndMinute)
+                        .datePickerStyle(.wheel)
+                }
+                .navigationTitle("Journal Reminder")
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) { Button("Cancel") { pickingReminderTime = false } }
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Save") {
+                            let time = Calendar.current.dateComponents([.hour, .minute], from: selectedReminderTime)
+                            journalHour = time.hour ?? 20
+                            journalMinute = time.minute ?? 0
+                            pickingReminderTime = false
+                            if journalDaily { Task { await Notifications.scheduleJournalReminder() } }
+                        }
+                    }
+                }
+            }
+            .presentationDetents([.medium])
+        }
+        .onChange(of: journalDaily) { _, on in
+            if !on { Notifications.cancelJournalReminder() }
+            else { Task { await Notifications.scheduleJournalReminder() } }
+        }
         .onChange(of: checkIns) { _, on in if on { Task { await Notifications.requestPermission() } } }
         .accessibilityIdentifier("notificationsScreen")
     }

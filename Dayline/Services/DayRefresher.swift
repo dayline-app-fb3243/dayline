@@ -67,6 +67,31 @@ enum Notifications {
         _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])
     }
 
+    /// The reminder is opt-in. No hour is assumed on the user's behalf.
+    static func cancelJournalReminder() {
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ["journal-daily"])
+    }
+
+    static func scheduleJournalReminder() async {
+        cancelJournalReminder()
+        guard !DemoData.isDemo, UserDefaults.standard.bool(forKey: "notify.journal.daily"),
+              let hour = UserDefaults.standard.object(forKey: "notify.journal.hour") as? Int,
+              (0...23).contains(hour),
+              let minute = UserDefaults.standard.object(forKey: "notify.journal.minute") as? Int,
+              (0...59).contains(minute) else { return }
+        await requestPermission()
+        let content = UNMutableNotificationContent()
+        content.title = "A moment for your journal"
+        content.body = "How did your day go? Add a note, photo or voice memo."
+        content.sound = .default
+        var components = DateComponents()
+        components.hour = hour
+        components.minute = minute
+        let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: true)
+        try? await UNUserNotificationCenter.current().add(
+            UNNotificationRequest(identifier: "journal-daily", content: content, trigger: trigger))
+    }
+
     /// Only two notifications exist: someone asks to follow you, and today hits 80.
     /// Also clears the old morning recap / 9 PM check-in from earlier installs.
     static func scoreReached(_ score: Int, day today: Date) async {
