@@ -245,7 +245,7 @@ struct TimelineScreen: View {
         }
         .mapStyle((is3D || interactive) && !showsControls ? .standard(elevation: .realistic, pointsOfInterest: .excludingAll)
                                          : .standard(emphasis: .muted, pointsOfInterest: .excludingAll))
-        .environment(\.colorScheme, mapScheme)
+        .environment(\.colorScheme, SystemMapAppearance.scheme)
         .mapControls { MapCompass(); MapScaleView() }
         .mapControlVisibility(showsControls ? .automatic : .hidden)
         .onMapCameraChange(frequency: .onEnd) { context in

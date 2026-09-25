@@ -1158,7 +1158,7 @@ struct SplashLiveMap: View {
                   style == "E" ? .hybrid(elevation: .realistic, pointsOfInterest: .excludingAll) :
                   style == "F" ? .standard(elevation: .realistic, emphasis: .muted, pointsOfInterest: .excludingAll) :
                   .standard(pointsOfInterest: .excludingAll))
-        .environment(\.colorScheme, mapScheme)
+        .environment(\.colorScheme, SystemMapAppearance.scheme)
         .mapControlVisibility(.hidden)
         .mapCameraKeyframeAnimator(trigger: drift) { cam in
             // Route mode: a slow turn around the place itself, pushing in a little and tilting a touch more.
@@ -1323,13 +1323,13 @@ struct MapReadyProbe: UIViewRepresentable {
     func makeUIView(context: Context) -> MKMapView {
         let m = MKMapView()
         m.delegate = context.coordinator
-        m.overrideUserInterfaceStyle = context.environment.colorScheme == .dark ? .dark : .light
+        m.overrideUserInterfaceStyle = SystemMapAppearance.interfaceStyle
         m.pointOfInterestFilter = .excludingAll
         m.camera = MKMapCamera(lookingAtCenter: center, fromDistance: 600, pitch: 45, heading: 60)
         return m
     }
     func updateUIView(_ uiView: MKMapView, context: Context) {
-        uiView.overrideUserInterfaceStyle = context.environment.colorScheme == .dark ? .dark : .light
+        uiView.overrideUserInterfaceStyle = SystemMapAppearance.interfaceStyle
     }
     final class Coordinator: NSObject, MKMapViewDelegate {
         let onReady: () -> Void

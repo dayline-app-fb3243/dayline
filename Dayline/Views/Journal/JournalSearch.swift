@@ -161,10 +161,10 @@ struct JournalSearchView: View {
                 .padding(.horizontal, 16).padding(.top, 8).padding(.bottom, 6)
             ScrollView {
                 if query.isEmpty {
-                    SearchLandingOption(style: previewStyle) { selected in query = selected; searchFocused = false }
+                    SearchLandingOption(style: previewStyle) { selected in query = selected; searchFocused = true }
                         .padding(.horizontal, 16).padding(.top, 8)
                 } else {
-                    SearchResultsList(query: query, entries: entries, visits: visits, onPick: { query = $0; searchFocused = false })
+                    SearchResultsList(query: query, entries: entries, visits: visits, onPick: { query = $0; searchFocused = true })
                         .padding(.horizontal, 16).padding(.top, 8)
                 }
             }
@@ -458,7 +458,7 @@ struct SearchPlaceView: View {
                         Marker(hit.place, coordinate: coordinate).tint(Theme.accent)
                     }
                     .mapStyle(.standard)
-                    .environment(\.colorScheme, mapScheme)
+                    .environment(\.colorScheme, SystemMapAppearance.scheme)
                     .frame(height: 220)
                     .clipShape(.rect(cornerRadius: Theme.cardRadius))
                     .allowsHitTesting(false)

@@ -737,6 +737,14 @@ final class DemoTourTests: XCTestCase {
         shot("week-widget-size")
     }
 
+    func testSearchSuggestionFill() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo", "-searchDesign", "1", "-searchKeyboard"]
+        app.launch(); tab(app, "Journal"); tapID(app, "journalSearch"); pause(1)
+        app.buttons["Where was I 4 days ago?"].firstMatch.tap(); pause(1)
+        shot("search-suggestion-filled")
+    }
+
     /// Five landing options on an actual phone keyboard; live autocomplete and typo recovery.
     func testSearchDesigns() throws {
         for n in 1...5 {

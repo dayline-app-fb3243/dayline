@@ -37,7 +37,7 @@ struct IntervalRouteMap: View {
             }
         }
         .mapStyle(.standard(pointsOfInterest: .excludingAll))
-        .environment(\.colorScheme, mapScheme)
+        .environment(\.colorScheme, SystemMapAppearance.scheme)
         .mapControlVisibility(.hidden)
         .allowsHitTesting(interactive)
         .task { await load() }

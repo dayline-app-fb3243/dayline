@@ -176,7 +176,7 @@ struct RouteSnapshot {
         let rect = route.polyline.boundingMapRect
         options.mapRect = rect.insetBy(dx: -rect.width * 0.25 - 400, dy: -rect.height * 0.35 - 400)
         options.size = CGSize(width: 340, height: 170)
-        options.traitCollection = UITraitCollection(userInterfaceStyle: UITraitCollection.current.userInterfaceStyle)
+        options.traitCollection = UITraitCollection(userInterfaceStyle: SystemMapAppearance.interfaceStyle)
         options.pointOfInterestFilter = .excludingAll
         guard let snap = try? await MKMapSnapshotter(options: options).start() else { return nil }
         let img = UIGraphicsImageRenderer(size: options.size).image { ctx in
@@ -206,7 +206,7 @@ struct RouteSnapshot {
         let options = MKMapSnapshotter.Options()
         options.region = MKCoordinateRegion(center: c, latitudinalMeters: 600, longitudinalMeters: 600)
         options.size = CGSize(width: 132, height: 132)
-        options.traitCollection = UITraitCollection(userInterfaceStyle: UITraitCollection.current.userInterfaceStyle)
+        options.traitCollection = UITraitCollection(userInterfaceStyle: SystemMapAppearance.interfaceStyle)
         guard let snap = try? await MKMapSnapshotter(options: options).start() else { return nil }
         return UIGraphicsImageRenderer(size: options.size).image { ctx in
             snap.image.draw(at: .zero)

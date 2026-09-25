@@ -188,7 +188,7 @@ struct GymDetailView: View {
             Marker("Iron Works Gym", systemImage: "dumbbell.fill", coordinate: GymDemo.place).tint(Theme.accent)
         }
         .mapStyle(.standard(pointsOfInterest: .excludingAll))
-        .environment(\.colorScheme, mapScheme)
+        .environment(\.colorScheme, SystemMapAppearance.scheme)
         .frame(height: height).allowsHitTesting(false)
     }
 
