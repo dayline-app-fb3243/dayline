@@ -437,7 +437,7 @@ struct FactorRow: View {
         let bad = factor.effect == .pending || factor.points <= 0
         HStack(spacing: 12) {
             // Symbol in a light round circle when Show Symbols is on, nothing when off. Blue when it added points,
-            // orange when it took points away. factorIcons = "bare" (preview for David): the symbol alone, no circle.
+            // orange when it took points away. factorIcons = "bare" (preview): the symbol alone, no circle.
             if showSymbols {
                 let tint = factor.points < 0 ? Theme.bad : Theme.accent
                 Image(systemName: symbol).font(.subheadline.weight(.semibold)).foregroundStyle(tint)

@@ -15,6 +15,9 @@ struct TimelineScreen: View {
     @State private var showRoute = true
     @State private var showPhotos = true
     @State private var showJournal = true
+    @State private var showPlaces = true
+    /// Photo or journal pin tapped on the full map; opens that entry.
+    @State private var openedEntry: JournalEntry?
     @State private var expanded = false
     @State private var region: MKCoordinateRegion?
     /// Route detail follows the Check Location setting: one point per check, snapped to streets.
@@ -187,13 +190,13 @@ struct TimelineScreen: View {
                     }
                 }
             }
-            if range == .day {
+            if showPlaces && range == .day {
                 ForEach(rangeVisits) { v in
                     Annotation("", coordinate: v.coordinate, anchor: .bottom) {
                         ApplePin(symbol: v.category.symbol, color: Theme.accent, big: false, dot: true)
                     }
                 }
-            } else {
+            } else if showPlaces {
                 // Every place you went in the range; bigger dot = more time there.
                 ForEach(placeClusters, id: \.key) { cluster in
                     Annotation("", coordinate: cluster.coordinate) {
@@ -206,14 +209,22 @@ struct TimelineScreen: View {
             if showJournal {
                 ForEach(rangeNotes.suffix(40)) { entry in
                     Annotation("", coordinate: entry.coordinate!, anchor: .bottom) {
-                        ApplePin(symbol: "doc.text.fill", color: Theme.accent, big: false, dot: true)
+                        Button { openedEntry = entry } label: {
+                            ApplePin(symbol: "doc.text.fill", color: Theme.accent, big: false, dot: true)
+                        }
+                        .buttonStyle(.plain).allowsHitTesting(interactive)
+                        .accessibilityLabel("Journal entry").accessibilityIdentifier("mapJournalPin")
                     }
                 }
             }
             if showPhotos { ForEach(rangePhotos.suffix(40)) { entry in
                 Annotation("", coordinate: entry.coordinate!, anchor: .bottom) {
                     if let data = entry.thumbnail, let image = UIImage(data: data) {
-                        ApplePhotoPin(image: image, big: false, dot: true)
+                        Button { openedEntry = entry } label: {
+                            ApplePhotoPin(image: image, big: false, dot: true)
+                        }
+                        .buttonStyle(.plain).allowsHitTesting(interactive)
+                        .accessibilityLabel("Photo").accessibilityIdentifier("mapPhotoPin")
                     }
                 }
             } }
@@ -355,6 +366,18 @@ struct TimelineScreen: View {
             // frames your places in the space above the panel.
             .safeAreaPadding(.bottom, Self.panelTop + 8)
             .ignoresSafeArea()
+            .sheet(item: $openedEntry) { entry in
+                NavigationStack {
+                    JournalEntryView(group: JournalGroup(entries: [entry],
+                                                         place: JournalGroup.placeName(for: entry, visits: rangeVisits)))
+                        .toolbar {
+                            ToolbarItem(placement: .topBarTrailing) {
+                                Button("Done", systemImage: "xmark") { openedEntry = nil }
+                                    .accessibilityIdentifier("closeEntry")
+                            }
+                        }
+                }
+            }
             .overlay(alignment: .top) {
                 HStack {
                     Button { expanded = false } label: {
@@ -438,6 +461,8 @@ struct TimelineScreen: View {
                         findMyRow("Photos", rowSubtitle(.photos), $showPhotos)
                         Divider().padding(.leading, 20)
                         findMyRow("Route", rowSubtitle(.route), $showRoute)
+                        Divider().padding(.leading, 20)
+                        findMyRow("Places", rowSubtitle(.places), $showPlaces)
                     }
                     .findMyCard()
                     .padding(.horizontal, 12)
@@ -519,12 +544,13 @@ struct TimelineScreen: View {
                 .distance(from: CLLocation(latitude: pair.1.latitude, longitude: pair.1.longitude))
         }
     }
-    private enum RowKind { case notes, photos, route }
+    private enum RowKind { case notes, photos, route, places }
     private func rowSubtitle(_ kind: RowKind) -> String {
         switch kind {
         case .notes: "Shows where you journaled"
         case .photos: "Shows your photos on the map"
         case .route: "Shows the way you went"
+        case .places: "Shows the places you spent time"
         }
     }
 
@@ -556,14 +582,6 @@ struct TimelineScreen: View {
         }
     }
 
-    private var layerToggles: some View {
-        HStack(spacing: 6) {
-            layerToggle("Route", "point.topleft.down.to.point.bottomright.curvepath", Theme.route, $showRoute)
-            layerToggle("Photos", "photo", Theme.photos, $showPhotos)
-            layerToggle("Journal", "doc.text", Theme.journal, $showJournal)
-        }
-    }
-
     private var daySummary: String {
         let places = Set(rangeVisits.filter { $0.category != .home }.map(\.placeKey)).count
         let km = zip(rangeSamples, rangeSamples.dropFirst()).reduce(0.0) { total, pair in
@@ -572,18 +590,6 @@ struct TimelineScreen: View {
         } / 1000
         _ = km
         return "\(places) place\(places == 1 ? "" : "s") · \(distanceText)"
-    }
-
-    private func layerToggle(_ title: String, _ symbol: String, _ color: Color, _ on: Binding<Bool>) -> some View {
-        Button { withAnimation(.snappy) { on.wrappedValue.toggle() } } label: {
-            Label(title, systemImage: symbol).font(.footnote.weight(.semibold)).labelStyle(.titleOnly)
-                .padding(.horizontal, 11).padding(.vertical, 7)
-                .foregroundStyle(on.wrappedValue ? .white : .primary)
-                .background(on.wrappedValue ? AnyShapeStyle(color) : AnyShapeStyle(.clear), in: .capsule)
-        }
-        .buttonStyle(.plain)
-        .glassEffect(on.wrappedValue ? .identity : .regular.interactive(), in: .capsule)
-        .accessibilityIdentifier("toggle\(title)")
     }
 
     private var title: String {

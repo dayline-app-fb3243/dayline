@@ -622,6 +622,34 @@ final class DemoTourTests: XCTestCase {
         if card.waitForExistence(timeout: 3) { card.coordinate(withNormalizedOffset: CGVector(dx: 0.4, dy: 0.5)).tap() }
         pause(2.5); shot("fm1-day")
         tapSegment(app, "Week"); pause(2.5); shot("fm2-week")
+        // Every layer off -> clean map.
+        let grabber = app.descendants(matching: .any)["mapGrabber"].firstMatch
+        if grabber.waitForExistence(timeout: 2) { grabber.tap(); pause(1.5) }
+        shot("fm3-layers")
+        for name in ["Journal", "Photos", "Route", "Places"] {
+            let row = app.descendants(matching: .any)["layer\(name)"].firstMatch
+            if row.exists { row.switches.firstMatch.tap(); pause(0.4) }
+        }
+        if grabber.exists { grabber.tap(); pause(1.5) }
+        shot("fm4-all-off")
+    }
+
+    /// Tapping a photo or journal pin on the full map opens that entry.
+    func testMapPinOpens() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo"]
+        app.launch(); pause(1.5)
+        tab(app, "Timeline"); pause(3)
+        let card = app.descendants(matching: .any)["mapCard"].firstMatch
+        if card.waitForExistence(timeout: 3) { card.coordinate(withNormalizedOffset: CGVector(dx: 0.4, dy: 0.5)).tap() }
+        pause(2.5)
+        let photo = app.descendants(matching: .any)["mapPhotoPin"].firstMatch
+        if photo.waitForExistence(timeout: 3) { photo.tap(); pause(2); shot("mp1-photo")
+            let close = app.buttons["closeEntry"].firstMatch
+            if close.exists { close.tap(); pause(1.5) }
+        }
+        let note = app.descendants(matching: .any)["mapJournalPin"].firstMatch
+        if note.waitForExistence(timeout: 3) { note.tap(); pause(2); shot("mp2-journal") }
     }
 
     /// White background: should look like Settings (light gray page, white cards).

@@ -17,6 +17,7 @@ struct DaylineApp: App {
         // Every demo run starts on the default Dayline background (the tour picks Sunset later on).
         if args.contains("-demo") { UserDefaults.standard.removeObject(forKey: "background.preset") }
         if let i = args.firstIndex(of: "-background"), i + 1 < args.count { UserDefaults.standard.set(args[i + 1], forKey: "background.preset") }
+        if let i = args.firstIndex(of: "-factorIcons"), i + 1 < args.count { UserDefaults.standard.set(args[i + 1], forKey: "factorIcons") }
         // Demo tour runs as a signed-in sample user (so Sign Out shows); onboarding runs start signed out.
         if args.contains("-demo") {
             let d = UserDefaults.standard
