@@ -717,6 +717,41 @@ final class DemoTourTests: XCTestCase {
     }
 
     /// Sign-in: small "Continue" pill + ring mark colors (no icon square).
+    /// Sign out on Profile, then tap Sign In: the sign-in sheet opens and signs you back in (Apple and Email).
+    func testSignOutSignIn() throws {
+        for path in ["Apple", "Email"] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo"]
+            app.launchEnvironment["TZ"] = Self.morningZone
+            app.launch(); pause(1.5)
+            tab(app, "Profile"); pause(1.2)
+            app.swipeUp(); app.swipeUp(); pause(0.8)
+            tapID(app, "signOutRow"); pause(1)
+            let confirm = app.alerts.buttons["Sign Out"].firstMatch
+            if confirm.waitForExistence(timeout: 2) { confirm.tap() }
+            pause(1); app.swipeDown(); app.swipeDown(); pause(1)
+            shot("so-\(path)-1-signed-out")
+            tapID(app, "accountRow"); pause(1.5); shot("so-\(path)-2-sheet")
+            if path == "Apple" {
+                tapID(app, "signInContinue"); pause(1.5); shot("so-\(path)-3-apple")
+                tapID(app, "appleDemoContinue"); pause(2.5)
+            } else {
+                tapID(app, "signInOption-Email"); pause(0.5); tapID(app, "signInContinue"); pause(1.5)
+                let field = app.textFields["emailField"].firstMatch
+                if field.waitForExistence(timeout: 3) { field.tap(); field.typeText("me@example.com") }
+                shot("so-\(path)-3-email")
+                app.buttons["Continue"].firstMatch.tap(); pause(1.5)
+                let code = app.textFields["emailCodeField"].firstMatch
+                if code.waitForExistence(timeout: 3) { code.typeText("123456") }
+                shot("so-\(path)-4-code")
+                app.buttons["Continue"].firstMatch.tap(); pause(2.5)
+            }
+            shot("so-\(path)-5-signed-in")
+            tapID(app, "accountRow"); pause(1.5); shot("so-\(path)-6-account")
+            app.terminate()
+        }
+    }
+
     func testSignInMarkDemo() throws {
         for v in ["icon", "blue", "ink", "sky", "duo"] {
             let app = XCUIApplication()

@@ -426,6 +426,8 @@ struct ProfileView: View {
     @Environment(\.openURL) private var openURL
     /// Preview "profile.page" 1-5: Profile layouts ("" = the current page). Sample-only until one is picked.
     @AppStorage("profile.page") private var pPage = ""
+    @State private var showAccount = false
+    @State private var showSignIn = false
 
     var body: some View {
         if pPage.isEmpty { classicBody } else { ProfilePageSample(page: pPage) }
@@ -435,7 +437,8 @@ struct ProfileView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 10) {
                 TabTitle("Profile")
-                NavigationLink { if auth.isSignedIn { AccountView() } else { PrivacyView() } } label: {
+                // Signed in: account page. Signed out: the same sign-in sheet as setup, so you can sign back in.
+                Button { if auth.isSignedIn { showAccount = true } else { showSignIn = true } } label: {
                     // Same shape as the Apple Account card at the top of iOS Settings.
                     Card(padding: 0) {
                         HStack(spacing: 14) {
@@ -574,6 +577,8 @@ struct ProfileView: View {
         .navigationTitle("Profile")
         .tabRoot()
         .navigationDestination(isPresented: $showSiriDemo) { SiriDemoView() }
+        .navigationDestination(isPresented: $showAccount) { AccountView() }
+        .sheet(isPresented: $showSignIn) { ProfileSignInFlow() }
         .sheet(isPresented: $showPolicy) { PrivacyPolicyView() }
         .alert("Sign Out?", isPresented: $confirmSignOut) {
             Button("Cancel", role: .cancel) {}
@@ -687,7 +692,7 @@ struct PrivacyView: View {
     private var deleteButton: some View {
         Card(padding: 0) {
             Button(role: .destructive) { confirmDelete = true } label: {
-                Text("Delete Account & Backup").foregroundStyle(.red).frame(maxWidth: .infinity).frame(minHeight: 52)
+                Text(auth.isSignedIn ? "Delete Account & Backup" : "Delete Data on This iPhone").foregroundStyle(.red).frame(maxWidth: .infinity).frame(minHeight: 52)
             }
             .accessibilityIdentifier("deleteAccount")
         }
@@ -737,7 +742,7 @@ struct PrivacyView: View {
             }
             Card(padding: 0) {
                 Button(role: .destructive) { confirmDelete = true } label: {
-                    Text("Delete Account & Backup").foregroundStyle(.red).frame(maxWidth: .infinity).frame(minHeight: 52)
+                    Text(auth.isSignedIn ? "Delete Account & Backup" : "Delete Data on This iPhone").foregroundStyle(.red).frame(maxWidth: .infinity).frame(minHeight: 52)
                 }
                 .accessibilityIdentifier("deleteAccount")
             }
@@ -1166,3 +1171,22 @@ struct NotificationsView: View {
 private let segmentedSelectedTint: Void = {
     UISegmentedControl.appearance().setTitleTextAttributes([.foregroundColor: UIColor(Theme.accent)], for: .selected)
 }()
+
+
+/// Sign in again from Profile (after signing out): the setup sign-in sheet; Email goes on to the code step.
+struct ProfileSignInFlow: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var step = 0
+    var body: some View {
+        switch step {
+        case 0:
+            SignInSheet(next: { dismiss() }, email: { withAnimation { step = 1 } })
+        case 1:
+            EmailView(next: { withAnimation { step = 2 } }, back: { withAnimation { step = 0 } })
+                .presentationDetents([.large])
+        default:
+            EmailCodeView(next: { dismiss() }, back: { withAnimation { step = 1 } })
+                .presentationDetents([.large])
+        }
+    }
+}
