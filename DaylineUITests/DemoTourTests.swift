@@ -1543,9 +1543,9 @@ final class DemoTourTests: XCTestCase {
             return
         }
         shot("journal-voice-recording-red")
-        let stop = app.descendants(matching: .any)["voiceStop"].firstMatch
-        guard stop.waitForExistence(timeout: 4) else { XCTFail("Recording should expose Stop"); return }
-        stop.tap(); pause(0.5)
+        // SwiftUI's parent capsule can own accessibility for the child Stop button.
+        // Tap the visible control at the right edge of the verified red bar.
+        red.coordinate(withNormalizedOffset: CGVector(dx: 0.94, dy: 0.5)).tap(); pause(0.5)
         let blue = app.descendants(matching: .any)["audioReadyBar"].firstMatch
         guard blue.waitForExistence(timeout: 4) else { XCTFail("Stop did not enter review"); return }
         shot("journal-voice-ready-blue")

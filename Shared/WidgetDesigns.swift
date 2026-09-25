@@ -102,7 +102,7 @@ struct SeamlessWidgetScoreRing: View {
                 Text("\(score)")
                     .font(.system(size: width * 0.47, weight: .bold, design: .default))
                     .minimumScaleFactor(0.7).lineLimit(1).monospacedDigit()
-                    .foregroundStyle(.white)
+                    .foregroundStyle(renderingMode == .accented ? .black : .white)
                     .frame(width: width * 0.9)
                     .offset(x: radius * cos(angle), y: radius * sin(angle))
                     .widgetAccentable(false)
