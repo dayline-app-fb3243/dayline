@@ -916,14 +916,20 @@ struct SplashLoop: View {
             if routePin && shown {
                 TimelineView(.animation) { ctx in
                     let p = routePoint(at: ctx.date)
+                    let c = crossFraction(at: ctx.date)
                     ZStack(alignment: .topLeading) {
                         Color.clear
+                        // The blue line is drawn here, on top of the map, from the same route the pin rides,
+                        // so buildings and trees never hide it and the pin's dot always sits on it.
+                        RouteLine(paths: tracks.track(current).screenPaths()).opacity(1 - c)
+                        if let n = next, c > 0 { RouteLine(paths: tracks.track(n).screenPaths()).opacity(c) }
                         if let p {
                             ApplePin(symbol: pinSymbol, color: Theme.accent, hero: 104)
                                 .scaleEffect(pinPulse ? 0.94 : 1, anchor: .bottom)
                                 .alignmentGuide(.top) { d in d[.bottom] }
                                 .alignmentGuide(.leading) { d in d[HorizontalAlignment.center] }
-                                .offset(x: p.x, y: p.y)
+                                // Lower the pin by half its dot, so the dot's center (not its bottom edge) is on the line.
+                                .offset(x: p.x, y: p.y + 104 * 0.125)
                         }
                     }
                 }
@@ -979,6 +985,13 @@ struct SplashLoop: View {
         }
     }
 
+    /// 0 before the crossfade, 1 when the next scene has fully taken over (eased).
+    private func crossFraction(at now: Date) -> Double {
+        guard next != nil, let cs = crossStart else { return 0 }
+        let raw = min(1, max(0, now.timeIntervalSince(cs) / 1.6))
+        return raw * raw * (3 - 2 * raw)
+    }
+
     /// Where the riding pin is on screen: on the current scene's line, blended toward the next scene's line during the crossfade.
     private func routePoint(at now: Date) -> CGPoint? {
         let a = tracks.track(current).point(at: now)
@@ -1023,6 +1036,16 @@ final class SplashPinTrack {
         let a = route[i - 1], b = route[i]
         return .init(latitude: a.latitude + (b.latitude - a.latitude) * f, longitude: a.longitude + (b.longitude - a.longitude) * f)
     }
+    /// The route on screen, split wherever a spot can't be placed (off the edge of the map).
+    func screenPaths() -> [[CGPoint]] {
+        guard let convert, route.count > 1 else { return [] }
+        var out: [[CGPoint]] = [], cur: [CGPoint] = []
+        for c in route {
+            if let p = convert(c) { cur.append(p) } else if !cur.isEmpty { out.append(cur); cur = [] }
+        }
+        if !cur.isEmpty { out.append(cur) }
+        return out
+    }
     func point(at now: Date) -> CGPoint? {
         guard let convert, route.count > 1, heroIndex < cum.count else { return nil }
         let end = cum[heroIndex]
@@ -1031,6 +1054,21 @@ final class SplashPinTrack {
         let t = 1 - pow(1 - raw, 3)  // ease out: slows as it arrives
         guard let c = coordinate(at: begin + (end - begin) * t) else { return nil }
         return convert(c)
+    }
+}
+
+/// The walked route as Apple Maps draws directions: blue with a white edge, drawn over the map in screen space.
+struct RouteLine: View {
+    var paths: [[CGPoint]]
+    var body: some View {
+        Canvas { ctx, _ in
+            for pts in paths where pts.count > 1 {
+                var path = Path(); path.addLines(pts)
+                ctx.stroke(path, with: .color(.white), style: StrokeStyle(lineWidth: 11, lineCap: .round, lineJoin: .round))
+                ctx.stroke(path, with: .color(Theme.accent), style: StrokeStyle(lineWidth: 7, lineCap: .round, lineJoin: .round))
+            }
+        }
+        .allowsHitTesting(false)
     }
 }
 
@@ -1097,7 +1135,8 @@ struct SplashLiveMap: View {
     var body: some View {
         MapReader { proxy in
         Map(initialPosition: position, interactionModes: []) {
-            if route.count > 1 {
+            // splash.pin "route" draws the line on top of the map instead (see RouteLine), so skip it here.
+            if route.count > 1 && track == nil {
                 if ["D", "J", "K", "L", "M", "N", "P", "Q", "R"].contains(style) {
                     // D: thick route with a white edge, close and steep, like Apple Maps directions.
                     MapPolyline(coordinates: route).stroke(.white, style: StrokeStyle(lineWidth: 11, lineCap: .round, lineJoin: .round))
