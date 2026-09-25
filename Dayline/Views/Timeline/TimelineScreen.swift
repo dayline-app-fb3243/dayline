@@ -391,9 +391,9 @@ struct TimelineScreen: View {
             .frame(height: height)
             .clipShape(.rect(cornerRadius: Theme.cardRadius, style: .continuous))
             .contentShape(.rect(cornerRadius: Theme.cardRadius))
-            .onTapGesture { expanded = true }
+            .onTapGesture { if hasMapAnchor { expanded = true } }
             .overlay(alignment: .topTrailing) {
-                Button { expanded = true } label: {
+                if hasMapAnchor { Button { expanded = true } label: {
                     Image(systemName: "arrow.up.left.and.arrow.down.right").font(.scaled(size: 13, weight: .bold))
                         .foregroundStyle(.primary).frame(width: 34, height: 34)
                 }
@@ -401,6 +401,7 @@ struct TimelineScreen: View {
                 .glassEffect(.regular.interactive(), in: .circle)
                 .accessibilityLabel("Open map")
                 .padding(10)
+                }
             }
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier("mapCard")
