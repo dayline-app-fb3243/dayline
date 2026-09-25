@@ -225,7 +225,7 @@ final class DemoTourTests: XCTestCase {
 
     private func emptyTabs(_ scheme: String) {
         let app = XCUIApplication()
-        app.launchArguments = ["-onboarding.done", "YES", "-appearance", scheme.lowercased()]
+        app.launchArguments = ["-onboarding.done", "YES", "-testSignedIn", "-appearance", scheme.lowercased()]
         app.launch(); pause(2)
         let locationPrompt = XCUIApplication(bundleIdentifier: "com.apple.springboard")
         let allowLocation = locationPrompt.buttons["Allow While Using App"]
@@ -244,7 +244,7 @@ final class DemoTourTests: XCTestCase {
 
     func testJournalMediaDialogDark() {
         let app = XCUIApplication()
-        app.launchArguments = ["-onboarding.done", "YES", "-appearance", "dark"]
+        app.launchArguments = ["-onboarding.done", "YES", "-testSignedIn", "-appearance", "dark"]
         app.launch()
         app.tabBars.buttons["Journal"].tap()
         tapID(app, "newEntry")
@@ -279,7 +279,7 @@ final class DemoTourTests: XCTestCase {
 
     func testProfileCleanNavigationRows() {
         let app = XCUIApplication()
-        app.launchArguments = ["-onboarding.done", "YES", "-appearance", "dark"]
+        app.launchArguments = ["-onboarding.done", "YES", "-testSignedIn", "-appearance", "dark"]
         app.launch(); pause(1)
         app.tabBars.buttons["Profile"].tap(); pause(1)
         for id in ["yourScheduleRow", "placesRow", "backgroundRow", "checkLocationRow"] {
@@ -291,7 +291,7 @@ final class DemoTourTests: XCTestCase {
 
     func testDefaultWorkHoursWeekdays() {
         let app = XCUIApplication()
-        app.launchArguments = ["-onboarding.done", "YES"]
+        app.launchArguments = ["-onboarding.done", "YES", "-testSignedIn"]
         app.launch(); pause(1)
         app.tabBars.buttons["Profile"].tap(); pause(1)
         tapID(app, "Your Schedule"); pause(1)
@@ -320,7 +320,7 @@ final class DemoTourTests: XCTestCase {
 
     func testOneJournalMultipleMediaOneScheduleRow() throws {
         let app = XCUIApplication()
-        app.launchArguments = ["-onboarding.done", "YES", "-appearance", "dark", "-testJournalMediaGroup"]
+        app.launchArguments = ["-onboarding.done", "YES", "-testSignedIn", "-appearance", "dark", "-testJournalMediaGroup"]
         app.launch(); pause(1)
         let schedule = app.descendants(matching: .any)["todaySchedule"].firstMatch
         XCTAssertTrue(schedule.waitForExistence(timeout: 8))

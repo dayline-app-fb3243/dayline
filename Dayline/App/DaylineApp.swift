@@ -22,6 +22,10 @@ struct DaylineApp: App {
         if let i = args.firstIndex(of: "-background"), i + 1 < args.count { UserDefaults.standard.set(args[i + 1], forKey: "background.preset") }
         if let i = args.firstIndex(of: "-factorIcons"), i + 1 < args.count { UserDefaults.standard.set(args[i + 1], forKey: "factorIcons") }
         // Demo tour runs as a signed-in sample user (so Sign Out shows); onboarding runs start signed out.
+        // UI tests for a fresh non-demo home can bypass only the sign-in screen.
+        if args.contains("-testSignedIn") {
+            UserDefaults.standard.set("ui-test-local", forKey: "auth.userID")
+        }
         if SampleMode.on {
             let d = UserDefaults.standard
             if args.contains("-onboarding") { ["auth.userID", "auth.name", "auth.email", "auth.provider"].forEach { d.removeObject(forKey: $0) } }
