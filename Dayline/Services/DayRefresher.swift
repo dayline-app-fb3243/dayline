@@ -57,6 +57,8 @@ enum DayRefresher {
                                                          name: f.name, streak: f.current)
                                         }))
         WidgetCenter.shared.reloadAllTimelines()
+        if AuthService.shared.userID.isEmpty { await DaylineSearchIndex.clear() }
+        else { await DaylineSearchIndex.refresh(context: context) }
         await Notifications.scoreReached(result.score, day: today)
     }
 }

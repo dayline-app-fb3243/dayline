@@ -623,6 +623,7 @@ extension PrivacyView {
         try? context.delete(model: PlanItem.self)
         try? context.delete(model: DayScore.self)
         try? context.save()
+        await DaylineSearchIndex.clear()
         for folder in ["Voice", "Video"] {
             try? FileManager.default.removeItem(at: URL.documentsDirectory.appending(path: folder))
         }
