@@ -50,12 +50,10 @@ struct TodayView: View {
                 .padding(.horizontal, 18)
                 .padding(.bottom, 24)
             }
-            // Keep scrolling rows out of the floating tab bar's glass. Mask only
-            // scroll content; the page background continues behind the bar.
-            .mask {
-                GeometryReader { viewport in
-                    Rectangle().frame(height: max(0, viewport.size.height - 76), alignment: .top)
-                }
+            // A light base behind the floating glass keeps scrolling content from
+            // ghosting through the tab bar without clipping the visible list above it.
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                AppBackgroundView().frame(height: 60)
             }
             .background(AppBackgroundView())
             .tabRoot()
