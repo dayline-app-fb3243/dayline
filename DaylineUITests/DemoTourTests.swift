@@ -1427,7 +1427,7 @@ final class DemoTourTests: XCTestCase {
         pause(1.8)
         XCTAssertFalse(app.descendants(matching: .any)["voiceHoldHint"].firstMatch.exists)
         shot("journal-mic-hint-collapsed")
-        mic.press(forDuration: 1.3)
+        mic.press(forDuration: 3.0)
         pause(0.5); shot("journal-mic-after-hold")
     }
 
