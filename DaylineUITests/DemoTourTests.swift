@@ -97,6 +97,14 @@ final class DemoTourTests: XCTestCase {
     }
 
 
+    func testDemoBannerPopIn() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo", "-demoBannerNow"]
+        app.launch()
+        XCTAssertTrue(app.descendants(matching: .any)["demoNotificationBanner"].firstMatch.waitForExistence(timeout: 8))
+        shot("demo-notification-pop-in")
+    }
+
     func testAllNotificationPreviews() throws {
         let app = XCUIApplication()
         let spring = XCUIApplication(bundleIdentifier: "com.apple.springboard")
