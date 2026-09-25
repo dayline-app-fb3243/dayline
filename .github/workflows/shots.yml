@@ -95,6 +95,7 @@ jobs:
           xcrun simctl ui "${{ steps.sim.outputs.udid }}" appearance light
           for TEST in ${{ inputs.tests || 'testChangedScreens' }}; do
             REC=""
+            case "$TEST" in *Dark) xcrun simctl ui "${{ steps.sim.outputs.udid }}" appearance dark; sleep 3;; *) xcrun simctl ui "${{ steps.sim.outputs.udid }}" appearance light;; esac
             case "$TEST" in *Video) xcrun simctl io "${{ steps.sim.outputs.udid }}" recordVideo --codec h264 --force "shots/$TEST.mp4" & REC=$!; sleep 2;; esac
             # One stuck test can't eat the whole run: each test gets at most 6 minutes, and the whole
             # process group (xcodebuild plus the test runner it starts) is killed, not just xcodebuild.

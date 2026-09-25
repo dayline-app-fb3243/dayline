@@ -499,6 +499,21 @@ final class DemoTourTests: XCTestCase {
         pause(1); shot("h1-home-icon")
     }
 
+    /// Same Home Screen shot with the Simulator in Dark mode (the workflow switches appearance for *Dark tests),
+    /// to check iOS uses the icon's dark version.
+    func testHomeIconDark() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo"]
+        app.launch(); pause(2)
+        XCUIDevice.shared.press(.home); pause(3)
+        let sb = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        for i in 0..<4 {
+            if sb.icons["Dayline"].exists && sb.icons["Dayline"].isHittable { break }
+            sb.swipeLeft(); pause(1.2); _ = i
+        }
+        pause(1.5); shot("h2-home-icon-dark")
+    }
+
     /// Timeline "Most visited" icon options for David: A none, B blue symbol, C round tint. Week, Month, Year each.
     func testVisitedDemo() throws {
         for v in ["A", "B", "C"] {
