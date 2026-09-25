@@ -154,7 +154,9 @@ struct VoiceRecorderBar<Tools: View>: View {
     /// The mic stays under the finger for the whole hold, even while the bar changes around it.
     private var micHitArea: some View {
         Color.clear
-            .frame(width: 62, height: 52)
+            .frame(maxWidth: .infinity)
+            .frame(height: 52)
+            .padding(.leading, 58) // Leave the separate add-media button tappable.
             .contentShape(.rect)
             .allowsHitTesting(!voice.isActive || holding)
             .gesture(
