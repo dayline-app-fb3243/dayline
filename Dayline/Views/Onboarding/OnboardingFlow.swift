@@ -1053,6 +1053,8 @@ struct SplashLiveMap: View {
     /// splash.pin "route": camera (so it can be moved once to frame the place) and the pin's spot on the walked route.
     @State private var cam: MapCameraPosition?
     @State private var pinCoord: CLLocationCoordinate2D?
+    /// Route mode: how far past the place the camera center sits (meters along the heading), from the framing step.
+    @State private var orbitLead: Double = 0
     private var routeMode: Bool { track != nil }
     /// Route mode: Apple's logo and Legal sit at the bottom of the map's safe area, so a tall bottom inset
     /// puts them in the top-left corner, small, instead of in the middle of the picture.
@@ -1156,33 +1158,38 @@ struct SplashLiveMap: View {
                   .standard(pointsOfInterest: .excludingAll))
         .mapControlVisibility(.hidden)
         .mapCameraKeyframeAnimator(trigger: drift) { cam in
-            // Route mode moves its own camera (orbit below), so this only drives the other styles.
-            KeyframeTrack(\MapCamera.heading) { LinearKeyframe(cam.heading + 18, duration: 12) }
-            KeyframeTrack(\MapCamera.distance) { LinearKeyframe(cam.distance * 0.85, duration: 12) }
+            if routeMode, let hero = stops.first(where: { $0.name == heroName }) {
+                // Route mode: a slow turn around the place itself, pushing in a little and tilting a touch more.
+                // MapKit plays these keyframes at the screen's frame rate, so the motion is smooth. The camera
+                // center rides an arc around the place, so the place and its pin stay put while the city turns.
+                let T = Self.orbitSeconds, n = 8.0
+                func arc(_ k: Double) -> CLLocationCoordinate2D {
+                    Self.shift(hero.c, meters: orbitLead * (1 - 0.14 * k / n), heading: cam.heading + Self.orbitDegrees * k / n)
+                }
+                KeyframeTrack(\MapCamera.centerCoordinate) {
+                    LinearKeyframe(arc(1), duration: T / n); LinearKeyframe(arc(2), duration: T / n)
+                    LinearKeyframe(arc(3), duration: T / n); LinearKeyframe(arc(4), duration: T / n)
+                    LinearKeyframe(arc(5), duration: T / n); LinearKeyframe(arc(6), duration: T / n)
+                    LinearKeyframe(arc(7), duration: T / n); LinearKeyframe(arc(8), duration: T / n)
+                }
+                KeyframeTrack(\MapCamera.heading) { LinearKeyframe(cam.heading + Self.orbitDegrees, duration: T) }
+                KeyframeTrack(\MapCamera.distance) { LinearKeyframe(cam.distance * 0.86, duration: T) }
+                KeyframeTrack(\MapCamera.pitch) { LinearKeyframe(cam.pitch + 4, duration: T) }
+            } else {
+                KeyframeTrack(\MapCamera.heading) { LinearKeyframe(cam.heading + 18, duration: 12) }
+                KeyframeTrack(\MapCamera.distance) { LinearKeyframe(cam.distance * 0.85, duration: 12) }
+            }
         }
         .safeAreaPadding(.bottom, routeMode ? Self.logoInset : 0)
         .task {
             if routeMode {
                 await loadRoute()
-                let lead = await frameForRoute()
-                // The camera turns slowly around the place and pushes in, like Apple's Maps splash. It orbits the
-                // place itself (the camera center swings around with the heading), so the place and its pin stay
-                // put on screen while the city turns behind them. The pin rides the line at the same ~30 fps.
-                let orbitStart = Date()
+                orbitLead = await frameForRoute()
+                if drifting { drift = true }
+                // The pin rides the line ~30 times a second while it glides, then stays still.
                 while !Task.isCancelled {
-                    if drifting, let c0 = position.camera, let hero = stops.first(where: { $0.name == heroName }) {
-                        let raw = min(1, Date().timeIntervalSince(orbitStart) / Self.orbitSeconds)
-                        let t = raw * raw * (3 - 2 * raw) * 0.5 + raw * 0.5  // gentle start, steady middle
-                        let ratio = 1 - 0.14 * t
-                        let heading = c0.heading + Self.orbitDegrees * t
-                        var tr = Transaction(); tr.disablesAnimations = true
-                        withTransaction(tr) {
-                            cam = .camera(MapCamera(centerCoordinate: Self.shift(hero.c, meters: lead * ratio, heading: heading),
-                                                    distance: c0.distance * ratio, heading: heading, pitch: c0.pitch + 4 * t))
-                        }
-                    }
                     if let track { pinCoord = track.coordinate(now: .now) }
-                    try? await Task.sleep(for: .milliseconds(33))
+                    try? await Task.sleep(for: .milliseconds(track?.gliding == true ? 16 : 250))
                 }
                 return
             }
