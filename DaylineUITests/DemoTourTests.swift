@@ -922,6 +922,18 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// The chosen wallpaper is the same in the app and the widget preview.
+    func testWidgetBackgroundMatch() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo", "-background", "sunset"]
+        app.launch(); pause(1.3)
+        shot("wallpaper-sunset-app")
+        app.terminate()
+        app.launchArguments = ["-demo", "-background", "sunset", "-widgetDesign", "14", "-widgetPage", "1"]
+        app.launch(); pause(1.2)
+        shot("wallpaper-sunset-widget")
+    }
+
     /// Four genuinely different icon treatments on the same Day score factor rows.
     func testFactorIconStyles() throws {
         for n in 1...4 {

@@ -36,6 +36,8 @@ enum DayRefresher {
         let recent = ((try? context.fetch(FetchDescriptor<DayScore>(sortBy: [SortDescriptor(\.day, order: .reverse)]))) ?? [])
             .prefix(6).reversed().map(\.score) + [result.score]
 
+        SharedBackgroundStore.defaults.set(UserDefaults.standard.string(forKey: SharedBackgroundStore.presetKey) ?? "system", forKey: SharedBackgroundStore.presetKey)
+        SharedBackgroundStore.defaults.set(UserDefaults.standard.string(forKey: SharedBackgroundStore.styleKey) ?? "blur", forKey: SharedBackgroundStore.styleKey)
         SharedStore.save(WidgetSnapshot(date: .now, score: result.score, label: result.label,
                                         summary: result.tip ?? result.summary, nextTitle: next?.title,
                                         nextStart: next?.start, streakDays: streak, recentScores: Array(recent),

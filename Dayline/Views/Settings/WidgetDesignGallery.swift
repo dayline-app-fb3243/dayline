@@ -6,9 +6,14 @@ struct WidgetDesignGalleryView: View {
     let page: Int
     private let friends = DaylineWidgetFriend.preview
     private var dark: Bool { page == 2 }
+    private var preset: BackgroundPreset {
+        let a = ProcessInfo.processInfo.arguments
+        guard let i = a.firstIndex(of: "-background"), i + 1 < a.count else { return .system }
+        return BackgroundPreset(rawValue: a[i + 1]) ?? .system
+    }
     var body: some View {
         ZStack {
-            Color(.systemGroupedBackground).ignoresSafeArea()
+            SharedBackgroundCanvas(preset: preset, style: .blur, photo: nil).ignoresSafeArea()
             VStack(spacing: 12) {
                 Text("\(design.id). \(design.name)").font(.headline)
                 Text(design.note).font(.footnote).foregroundStyle(.secondary)
@@ -18,7 +23,7 @@ struct WidgetDesignGalleryView: View {
                 }
                 card(352, 170) { WidgetScoreOption(d: design, score: 86, wide: true) }
                 card(352, 170) { WidgetFriendsOption(d: design, days: 6, friends: friends, wide: true) }
-                Text(dark ? "Dark appearance" : "Light appearance")
+                Text("\(preset.title) background · \(dark ? "Dark" : "Light") appearance")
                     .font(.footnote).foregroundStyle(.secondary).padding(.top, 6)
                 Spacer(minLength: 0)
             }
@@ -28,6 +33,6 @@ struct WidgetDesignGalleryView: View {
     }
     private func card<C: View>(_ width: CGFloat, _ height: CGFloat, @ViewBuilder content: () -> C) -> some View {
         content().padding(14).frame(width: width, height: height)
-            .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 24))
+            .background(SharedBackgroundCanvas(preset: preset, style: .blur, photo: nil), in: .rect(cornerRadius: 24))
     }
 }
