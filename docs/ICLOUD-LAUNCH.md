@@ -14,7 +14,7 @@ CI simulator builds and unsigned Xcode project zips do not prove iCloud sync.
 
 - Configure Google Cloud Places API and billing/restrictions for real place opening hours; the current build shows only clearly labeled demo hours or "Hours unavailable" without a key.
 - Replace `PeopleStore.inviteText`'s `https://dayline.app/invite` placeholder with a live, tested invite URL/domain. Native Messages composition is wired on capable iPhones; simulator fallback may be a share sheet.
-- Enroll in the Apple Developer Program (verify the current membership price and region with Apple), then supply the Team ID and CloudKit container/capabilities above.
+- Deferred until David asks for the launch/subscription list: Apple Developer Program membership (approximately US$99 per membership year; verify the current price and region with Apple before paying). This is needed for TestFlight, signed real-device installation, and hands-on Siri testing. Do not enroll or pay now. After enrollment, supply the Team ID and CloudKit container/capabilities above.
 - Verify native notification delivery, reminders, and permission persistence on a signed real device, including install/reinstall and Settings changes.
 
 ## Account and sign-in launch gate
