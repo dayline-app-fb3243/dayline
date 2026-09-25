@@ -683,9 +683,12 @@ final class DemoTourTests: XCTestCase {
     }
 
     /// Add the actual extension from SpringBoard; gallery rendering does not count.
-    func testInstalledHomeWidget() throws {
+    func testInstalledHomeWidget() throws { try installHomeWidget(demo: true) }
+    func testInstalledEmptyHomeWidget() throws { try installHomeWidget(demo: false) }
+
+    private func installHomeWidget(demo: Bool) throws {
         let app = XCUIApplication()
-        app.launchArguments = ["-demo"]
+        app.launchArguments = demo ? ["-demo"] : []
         app.launch(); pause(5)
         XCUIDevice.shared.press(.home); pause(2)
         let sb = XCUIApplication(bundleIdentifier: "com.apple.springboard")
@@ -711,8 +714,8 @@ final class DemoTourTests: XCTestCase {
         addWidget.tap(); pause(2)
         let done = sb.buttons["Done"].firstMatch
         if done.waitForExistence(timeout: 3) { done.tap() }
-        pause(3); shot("widget-installed-home")
-        try sb.debugDescription.write(toFile: Self.shotDir + "/widget-installed-hierarchy.txt", atomically: true, encoding: .utf8)
+        pause(3); shot(demo ? "widget-installed-home" : "widget-installed-empty-home")
+        try sb.debugDescription.write(toFile: Self.shotDir + (demo ? "/widget-installed-hierarchy.txt" : "/widget-installed-empty-hierarchy.txt"), atomically: true, encoding: .utf8)
     }
 
     /// Home Screen shot to check the real app icon (Icon Composer .icon) as iOS draws it.
