@@ -13,7 +13,10 @@ struct TimelineScreen: View {
     @Query(sort: \JournalEntry.date) private var journal: [JournalEntry]
     @State private var range: MapRange = .day
     @State private var anchor = Date.now
-    @State private var camera: MapCameraPosition = .userLocation(fallback: .automatic)
+    // An empty install can receive location permission before Core Location supplies its first fix.
+    // Keep a neighborhood-scale placeholder rather than letting MapKit frame the whole continent.
+    @State private var camera: MapCameraPosition = .camera(MapCamera(
+        centerCoordinate: CLLocationCoordinate2D(latitude: 40.7536, longitude: -73.9838), distance: 2200))
     @ObservedObject private var location = LocationService.shared
     @State private var showRoute = true
     @State private var showPhotos = true
@@ -282,8 +285,8 @@ struct TimelineScreen: View {
         if force { userMovedMap = false }
         guard let fix = location.lastLocation, fix.horizontalAccuracy >= 0,
               abs(fix.timestamp.timeIntervalSinceNow) < 15 * 60 else {
-            // MapKit waits for an authorized live fix rather than framing an empty continent.
-            camera = .userLocation(fallback: .automatic)
+            // No live fix: keep the local neighborhood frame already on screen. Do not
+            // label it as the user's location or display a fake blue location dot.
             return
         }
         myCoordinate = fix.coordinate
