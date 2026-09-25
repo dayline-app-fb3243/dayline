@@ -410,30 +410,17 @@ struct ProfileView: View {
     @ObservedObject private var auth = AuthService.shared
     @ObservedObject private var location = LocationService.shared
     @AppStorage("background.preset") private var presetRaw = BackgroundPreset.system.rawValue
-    /// Preview flag "notifications.style": now = opens iOS Settings (old); A/B/C = in-app page versions.
-    @AppStorage("notifications.style") private var notifStyle = "B1"
     @AppStorage("appearance") private var appearanceRaw = Appearance.system.rawValue
     @AppStorage(CheckInService.enabledKey) private var checkIns = false
-    /// The "Show Symbols" switch (on = C, off = A).
-    @AppStorage("symbols.preview") private var symbolsPreview = true
+    /// The "Show Symbols" switch.
     @AppStorage("symbols.show") private var showSymbols = true
-    /// Preview flag "settings.noHeaders" (awaiting David's OK): no section titles, just space, like iOS Settings.
-    @AppStorage("privacy.row") private var privacyRow = true
-    @AppStorage("settings.noHeaders") private var noHeaders = true
-    @ViewBuilder private func profileHeader(_ title: String) -> some View {
-        if noHeaders { Color.clear.frame(height: 14) } else { SectionHeader(title) }
-    }
+    /// No section titles, just space between groups, like iOS Settings.
+    private func profileHeader(_ title: String) -> some View { Color.clear.frame(height: 14) }
     @Environment(\.openURL) private var openURL
-    /// Preview "profile.page" 1-5: Profile layouts ("" = the current page). Sample-only until one is picked.
-    @AppStorage("profile.page") private var pPage = ""
     @State private var showAccount = false
     @State private var showSignIn = false
 
     var body: some View {
-        if pPage.isEmpty { classicBody } else { ProfilePageSample(page: pPage) }
-    }
-
-    private var classicBody: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 10) {
                 TabTitle("Profile")
@@ -490,21 +477,17 @@ struct ProfileView: View {
                         } label: {
                             ProfileRow(symbol: "circle.lefthalf.filled", title: "Appearance", value: appearanceRaw)
                         }
-                        if symbolsPreview {
-                            Divider().padding(.leading, 57)
-                            HStack(spacing: 13) {
-                                ProfileIcon(symbol: "star.fill")
-                                Toggle("Show Symbols", isOn: $showSymbols).font(.body.weight(.medium))
-                            }
-                            .padding(.horizontal, 14).padding(.vertical, 7)
-                            .accessibilityIdentifier("showSymbolsToggle")
+                        Divider().padding(.leading, 57)
+                        HStack(spacing: 13) {
+                            ProfileIcon(symbol: "star.fill")
+                            Toggle("Show Symbols", isOn: $showSymbols)
                         }
+                        .padding(.horizontal, 14).padding(.vertical, 7)
+                        .accessibilityIdentifier("showSymbolsToggle")
                     }
                 }
-                if symbolsPreview {
-                    Text("Shows the blue symbols next to places and score items.")
-                        .font(.footnote).helperText().padding(.horizontal, 16).padding(.top, 6)
-                }
+                Text("Shows the blue symbols next to places and score items.")
+                    .font(.footnote).helperText().padding(.horizontal, 16).padding(.top, 6)
                 profileHeader("Tracking")
                 Card(padding: 0) {
                     VStack(spacing: 0) {
@@ -513,16 +496,12 @@ struct ProfileView: View {
                         }
                         .accessibilityIdentifier("checkLocationRow")
                         Divider().padding(.leading, 57)
-                        if notifStyle == "now" {
-                            Button { openSettings() } label: { ProfileRow(symbol: "bell.fill", title: "Notifications", value: "Follows · 80 score") }
-                        } else {
-                            NavigationLink { NotificationsView() } label: { ProfileRow(symbol: "bell.fill", title: "Notifications", value: "") }
-                                .accessibilityIdentifier("notificationsRow")
-                        }
+                        NavigationLink { NotificationsView() } label: { ProfileRow(symbol: "bell.fill", title: "Notifications", value: "") }
+                            .accessibilityIdentifier("notificationsRow")
                         Divider().padding(.leading, 57)
                         HStack(spacing: 13) {
                             ProfileIcon(symbol: "questionmark.bubble.fill")
-                            Toggle("Check-in Questions", isOn: $checkIns).font(.body.weight(.medium))
+                            Toggle("Check-in Questions", isOn: $checkIns)
                         }
                         .padding(.horizontal, 14).padding(.vertical, 7)
                         .accessibilityIdentifier("checkInsToggle")
@@ -546,20 +525,10 @@ struct ProfileView: View {
                     NavigationLink { PrivacyView() } label: { ProfileRow(symbol: "lock.fill", title: "Your data", value: "On this iPhone") }
                         .simultaneousGesture(LongPressGesture(minimumDuration: 1.2).onEnded { _ in showSiriDemo = true })
                         .accessibilityIdentifier("yourDataRow")
-                    // "privacy.row" (on by default; David said "Perfect" 9/24): Privacy Policy is a row in this group, no footer.
-                    if privacyRow {
-                        Divider().padding(.leading, 57)
-                        Button { showPolicy = true } label: { ProfileRow(symbol: "hand.raised.fill", title: "Privacy Policy", value: "") }
-                            .accessibilityIdentifier("privacyPolicyRow")
-                    }
+                    Divider().padding(.leading, 57)
+                    Button { showPolicy = true } label: { ProfileRow(symbol: "hand.raised.fill", title: "Privacy Policy", value: "") }
+                        .accessibilityIdentifier("privacyPolicyRow")
                 } }
-                if !privacyRow {
-                    Text("Your places and photos stay on your iPhone. See our [Privacy Policy](dayline://privacy).")
-                        .font(.footnote).helperLinkText()
-                        .padding(.horizontal, 4).padding(.top, -3)
-                        .environment(\.openURL, OpenURLAction { _ in showPolicy = true; return .handled })
-                        .accessibilityIdentifier("privacyPolicyLink")
-                }
                 if auth.isSignedIn {
                     Button { confirmSignOut = true } label: {
                         Text("Sign Out").foregroundStyle(.red).frame(maxWidth: .infinity).frame(minHeight: 52)
@@ -679,14 +648,10 @@ struct PrivacyView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     @State private var confirmDelete = false
-    /// Preview flag "yourData.style" (David picks): now = card; A = gray note on top, button at the bottom, alert;
-    /// B = same layout, bottom action sheet; C = note under the button, both at the bottom, action sheet.
-    @AppStorage("yourData.style") private var style = "A"
     private let storedText = "Your places, route, photos and journal are kept on this iPhone. Voice memos are turned into text on the device. With Back Up Timeline on, a copy is kept in your own iCloud."
-    private let deleteText = "Deletes your account, your iCloud backup and everything Dayline saved on this iPhone. This can't be undone."
-
-    var body: some View {
-        if style == "now" { classic } else { simple }
+    private var deleteText: String {
+        auth.isSignedIn ? "Deletes your account, your iCloud backup and everything Dayline saved on this iPhone. This can't be undone."
+                        : "Deletes everything Dayline saved on this iPhone. This can't be undone."
     }
 
     private var deleteButton: some View {
@@ -698,16 +663,14 @@ struct PrivacyView: View {
         }
     }
 
-    private var simple: some View {
+    var body: some View {
         GeometryReader { geo in
             ScrollView {
                 VStack(alignment: .leading, spacing: 8) {
-                    if style != "C" {
-                        Text(storedText).font(.footnote).helperText().padding(.horizontal, 16)
-                    }
+                    Text(storedText).font(.footnote).helperText().padding(.horizontal, 16)
                     Spacer(minLength: 24)
                     deleteButton
-                    Text(style == "C" ? storedText + " " + deleteText : deleteText)
+                    Text(deleteText)
                         .font(.footnote).helperText().padding(.horizontal, 16)
                 }
                 .padding(18)
@@ -717,50 +680,11 @@ struct PrivacyView: View {
         .background(AppBackgroundView())
         .navigationTitle("Your data")
         .backgroundNavBar()
-        .alert("Delete Account & Backup?", isPresented: Binding(get: { confirmDelete && style == "A" }, set: { confirmDelete = $0 })) {
+        .alert(auth.isSignedIn ? "Delete Account & Backup?" : "Delete Data?", isPresented: $confirmDelete) {
             Button("Delete", role: .destructive) { Task { await deleteEverything() } }
             Button("Cancel", role: .cancel) {}
-        } message: { Text("Your account, iCloud backup, timeline, journal and photos will be deleted. This can't be undone.") }
-        .confirmationDialog("Your account, iCloud backup, timeline, journal and photos will be deleted. This can't be undone.",
-                            isPresented: Binding(get: { confirmDelete && style != "A" }, set: { confirmDelete = $0 }), titleVisibility: .visible) {
-            Button("Delete Account & Backup", role: .destructive) { Task { await deleteEverything() } }
-            Button("Cancel", role: .cancel) {}
-        }
-        .toolbarVisibility(.hidden, for: .tabBar)
-        .navigationBarTitleDisplayMode(.inline)
-    }
-
-    private var classic: some View {
-        ScrollView {
-          VStack(spacing: 12) {
-            Card {
-                VStack(alignment: .leading, spacing: 10) {
-                    Label("Stored on this iPhone", systemImage: "iphone").font(.headline)
-                    Text("Your places, route, photos and journal are kept on this iPhone. Voice memos are turned into text on the device. With Back Up Timeline on, a copy is kept in your own iCloud.")
-                        .font(.subheadline).foregroundStyle(.secondary)
-                }
-            }
-            Card(padding: 0) {
-                Button(role: .destructive) { confirmDelete = true } label: {
-                    Text(auth.isSignedIn ? "Delete Account & Backup" : "Delete Data on This iPhone").foregroundStyle(.red).frame(maxWidth: .infinity).frame(minHeight: 52)
-                }
-                .accessibilityIdentifier("deleteAccount")
-            }
-            .padding(.top, 10)
-            Text("Deletes your account, your iCloud backup and everything Dayline saved on this iPhone. This can't be undone.")
-                .font(.footnote).helperText().padding(.horizontal, 4)
-          }
-          .padding(18)
-        }
-        .background(AppBackgroundView())
-        .navigationTitle("Your data")
-        .backgroundNavBar()
-        .alert("Delete Account & Backup?", isPresented: $confirmDelete) {
-            Button("Delete", role: .destructive) { Task { await deleteEverything() } }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("Your account, backup, timeline, journal and photos saved in Dayline will be deleted. This can't be undone.")
-        }
+        } message: { Text(auth.isSignedIn ? "Your account, iCloud backup, timeline, journal and photos will be deleted. This can't be undone."
+                                          : "Your timeline, journal and photos will be deleted. This can't be undone.") }
         .toolbarVisibility(.hidden, for: .tabBar)
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -769,11 +693,7 @@ struct PrivacyView: View {
 /// Profile > Check Location: pick how often Dayline saves your location.
 struct CheckLocationView: View {
     @AppStorage(LocationService.intervalKey) private var minutes = 5
-    /// Preview flag "check.preview" (awaiting David's pick): map thumbnails of the day route at each rate.
-    /// A = thumbnail at the left of each row, B = three big previews on top (like wallpapers), C = thumbnail at the right.
-    /// C (phone on the right of each row) is the default.
-    @AppStorage("check.preview") private var preview = "C"
-    @AppStorage("check.big") private var bigStyle = "C"
+    /// A mini iPhone at the right of each row shows the day route at that rate; tap to zoom it up.
     @State private var enlarged: Int?
     /// Each preview is a mini iPhone screen (David: like Apple's Tips app examples), tap to enlarge.
     private func thumb(_ m: Int, w: CGFloat, h: CGFloat) -> some View {
@@ -790,21 +710,6 @@ struct CheckLocationView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                if preview == "B" {
-                    HStack(spacing: 12) {
-                        ForEach(options, id: \.0) { o in
-                            VStack(spacing: 18) {
-                                thumb(o.0, w: 96, h: 0)
-                                    .overlay(alignment: .bottom) {
-                                        if minutes == o.0 { Image(systemName: "checkmark.circle.fill").font(.title3).foregroundStyle(.white, Theme.accent).offset(y: 12) }
-                                    }
-                                Text(o.1).font(.footnote.weight(.semibold)).foregroundStyle(minutes == o.0 ? Theme.accent : .primary)
-                            }
-                            .frame(maxWidth: .infinity)
-                        }
-                    }
-                    .padding(.bottom, 18)
-                }
                 SectionHeader("Check every").padding(.bottom, 6)
                 Card(padding: 0) {
                     VStack(spacing: 0) {
@@ -814,7 +719,6 @@ struct CheckLocationView: View {
                                 LocationService.shared.setCheckMinutes(o.0)
                             } label: {
                                 HStack(spacing: 12) {
-                                    if preview == "A" { thumb(o.0, w: 44, h: 0) }
                                     VStack(alignment: .leading, spacing: 1) {
                                         Text(o.1).font(.body).foregroundStyle(.primary)
                                         Text(o.2).font(.subheadline).foregroundStyle(.secondary)
@@ -824,7 +728,7 @@ struct CheckLocationView: View {
                                     if minutes == o.0 {
                                         Image(systemName: "checkmark").font(.body.weight(.semibold)).foregroundStyle(Theme.accent)
                                     }
-                                    if preview == "C" { thumb(o.0, w: 44, h: 0) }
+                                    thumb(o.0, w: 44, h: 0)
                                 }
                                 .padding(.horizontal, 18).padding(.vertical, 11)
                                 .contentShape(.rect)
@@ -841,31 +745,13 @@ struct CheckLocationView: View {
         }
         .buttonStyle(.plain)
         .background(AppBackgroundView())
-        .sheet(item: Binding(get: { (bigStyle.isEmpty || bigStyle == "B") ? enlarged.map { IntervalID(id: $0) } : nil }, set: { enlarged = $0?.id })) { item in
-            if bigStyle == "B" {
-                IntervalRouteCard(minutes: item.id, style: "B") { enlarged = nil }
-                    .presentationDetents([.fraction(0.62)])
-                    .presentationDragIndicator(.visible)
-            } else {
-                IntervalRouteSheet(minutes: item.id)
-            }
-        }
         .overlay {
-            if let m = enlarged, bigStyle == "A" || bigStyle == "C" {
+            if let m = enlarged {
                 ZStack {
-                    Color.black.opacity(bigStyle == "C" ? 0.55 : 0.3).ignoresSafeArea()
-                        .onTapGesture { withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) { enlarged = nil } }
-                    if bigStyle == "A" {
-                        IntervalRouteCard(minutes: m, style: "A") { withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) { enlarged = nil } }
-                            .frame(height: 520)
-                            .background(Color(.systemBackground), in: .rect(cornerRadius: 34))
-                            .shadow(color: .black.opacity(0.2), radius: 30, y: 10)
-                            .padding(.horizontal, 20)
-                    } else {
-                        IntervalRouteCard(minutes: m, style: "C") { enlarged = nil }
-                            .onTapGesture { withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) { enlarged = nil } }
-                    }
+                    Color.black.opacity(0.55).ignoresSafeArea()
+                    IntervalRouteCard(minutes: m)
                 }
+                .onTapGesture { withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) { enlarged = nil } }
                 .transition(.opacity.combined(with: .scale(scale: 0.92)))
                 .accessibilityIdentifier("bigCard")
             }
@@ -876,7 +762,6 @@ struct CheckLocationView: View {
     }
 }
 
-private struct IntervalID: Identifiable { let id: Int }
 
 /// Full privacy policy, opened from the link under Profile > Privacy.
 struct PrivacyPolicyView: View {
@@ -1024,31 +909,30 @@ extension View {
 }
 
 
-/// Profile > Notifications: which notifications Dayline sends, as native switches.
-/// Versions (preview flag "notifications.style"): A = Settings-style rows with icon tiles and a note under each group;
-/// B = plain switches, one group, one note; C = like iOS Settings > Notifications: Allow Notifications on top, then the types.
+/// Profile > Notifications: which notifications Dayline sends, one native switch per kind.
+/// Sounds and banners stay in the Settings app.
 struct NotificationsView: View {
-    @AppStorage("notifications.style") private var style = "B1"
     @AppStorage("notify.follows") private var follows = true
     @AppStorage("notify.score80") private var score80 = true
     @AppStorage(CheckInService.enabledKey) private var checkIns = false
-    @AppStorage("notify.all") private var all = true
     @AppStorage("notify.sleepQ") private var sleepQ = true
     @AppStorage("notify.morningQ") private var morningQ = true
     @AppStorage("notify.lowScore") private var lowScore = true
     @AppStorage("notify.streakEnding") private var streakEnding = false
     @AppStorage("notify.friendPassed") private var friendPassed = false
-    @Environment(\.openURL) private var openURL
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 8) {
-                switch style {
-                case "B": versionB
-                case "C": versionC
-                case "B1", "B2", "B3": sectioned(style)
-                default: versionA
-                }
+                header("Questions")
+                group([("Going to Sleep?", $sleepQ), ("Up Already?", $morningQ)])
+                note("Press and hold a question to answer Yes or No.")
+                header("Day Score")
+                group([("You Reached 80", $score80), ("Low Score Reminder", $lowScore), ("Streak Ending Soon", $streakEnding)])
+                Spacer().frame(height: 8)
+                header("Friends")
+                group([("Follow Requests", $follows), ("Friend Passed You", $friendPassed)])
+                note("Sounds and banners are in the Settings app.")
             }
             .padding(18)
         }
@@ -1061,109 +945,20 @@ struct NotificationsView: View {
         .accessibilityIdentifier("notificationsScreen")
     }
 
-    private func tileRow(_ symbol: String, _ title: String, _ on: Binding<Bool>) -> some View {
-        HStack(spacing: 13) {
-            ProfileIcon(symbol: symbol)
-            Toggle(title, isOn: on).font(.body)
-        }
-        .padding(.horizontal, 14).padding(.vertical, 7)
-    }
-    private func plainRow(_ title: String, _ on: Binding<Bool>) -> some View {
-        Toggle(title, isOn: on).font(.body).padding(.horizontal, 16).padding(.vertical, 7)
+    private func header(_ t: String) -> some View {
+        Text(t).font(.subheadline.weight(.semibold)).helperText().padding(.horizontal, 16).padding(.top, 4)
     }
     private func note(_ t: String) -> some View {
         Text(t).font(.footnote).helperText().padding(.horizontal, 16).padding(.bottom, 14)
     }
-    private var group: some Shape { .rect(cornerRadius: Theme.cardRadius, style: .continuous) }
-
-    @ViewBuilder private var versionA: some View {
+    private func group(_ rows: [(String, Binding<Bool>)]) -> some View {
         VStack(spacing: 0) {
-            tileRow("person.2.fill", "Follow Requests", $follows)
-            Divider().padding(.leading, 57)
-            tileRow("star.fill", "Score Reaches 80", $score80)
-        }
-        .background(Color(.secondarySystemGroupedBackground), in: group)
-        note("Get a notification when someone asks to see your streak, and when today's score reaches 80.")
-        VStack(spacing: 0) { tileRow("questionmark.bubble.fill", "Check-in Questions", $checkIns) }
-            .background(Color(.secondarySystemGroupedBackground), in: group)
-        note("Quick yes/no questions, like \u{201C}Going to sleep now?\u{201D}, when Dayline isn't sure. Answer right from the notification.")
-    }
-
-    /// Round 3 (David: only on/off per kind, sounds and banners stay in the Settings app). B1 plain, B2 with a line under each, B3 with icons.
-    private struct Kind { var symbol: String; var color: Color; var title: String; var sub: String; var on: Binding<Bool> }
-    private func header(_ t: String) -> some View {
-        Text(t).font(.subheadline.weight(.semibold)).helperText().padding(.horizontal, 16).padding(.top, 4)
-    }
-    private func kindGroup(_ v: String, _ kinds: [Kind]) -> some View {
-        VStack(spacing: 0) {
-            ForEach(Array(kinds.enumerated()), id: \.offset) { i, k in
-                if i > 0 { Divider().padding(.leading, v == "B3" ? 57 : 16) }
-                HStack(spacing: 13) {
-                    if v == "B3" { ProfileIcon(symbol: k.symbol, color: k.color) }
-                    Toggle(isOn: k.on) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(k.title).font(.body)
-                            if v == "B2" { Text(k.sub).font(.footnote).foregroundStyle(.secondary) }
-                        }
-                    }
-                }
-                .padding(.horizontal, v == "B3" ? 14 : 16).padding(.vertical, v == "B2" ? 9 : 7)
+            ForEach(Array(rows.enumerated()), id: \.offset) { i, r in
+                if i > 0 { Divider().padding(.leading, 16) }
+                Toggle(r.0, isOn: r.1).padding(.horizontal, 16).padding(.vertical, 7)
             }
         }
-        .background(Color(.secondarySystemGroupedBackground), in: group)
-    }
-    @ViewBuilder private func sectioned(_ v: String) -> some View {
-        header("Questions")
-        kindGroup(v, [Kind(symbol: "moon.fill", color: .indigo, title: "Going to Sleep?", sub: "A yes/no question at night", on: $sleepQ),
-                      Kind(symbol: "sun.max.fill", color: .orange, title: "Up Already?", sub: "A yes/no question in the morning", on: $morningQ)])
-        if v != "B2" { note("Press and hold a question to answer Yes or No.") } else { Spacer().frame(height: 8) }
-        header("Day Score")
-        kindGroup(v, [Kind(symbol: "star.fill", color: .green, title: "You Reached 80", sub: "When your day score hits 80", on: $score80),
-                      Kind(symbol: "exclamationmark", color: .red, title: "Low Score Reminder", sub: "Around 5 PM if your score is still low", on: $lowScore),
-                      Kind(symbol: "flame.fill", color: Theme.accent, title: "Streak Ending Soon", sub: "In the evening if you're not at 80 yet", on: $streakEnding)])
-        if v == "B3" { note("The reminder comes in the late afternoon if your score is still low.") } else { Spacer().frame(height: 8) }
-        header("Friends")
-        kindGroup(v, [Kind(symbol: "person.badge.plus", color: Theme.accent, title: "Follow Requests", sub: "When someone asks to see your streak", on: $follows),
-                      Kind(symbol: "arrow.up.right", color: .teal, title: "Friend Passed You", sub: "When a friend beats your streak", on: $friendPassed)])
-        note("Sounds and banners are in the Settings app.")
-    }
-
-    @ViewBuilder private var versionB: some View {
-        VStack(spacing: 0) {
-            plainRow("Follow Requests", $follows)
-            Divider().padding(.leading, 16)
-            plainRow("Score Reaches 80", $score80)
-            Divider().padding(.leading, 16)
-            plainRow("Check-in Questions", $checkIns)
-        }
-        .background(Color(.secondarySystemGroupedBackground), in: group)
-        note("Choose what Dayline can notify you about. Check-in questions are quick yes/no questions you answer from the notification.")
-    }
-
-    @ViewBuilder private var versionC: some View {
-        VStack(spacing: 0) { plainRow("Allow Notifications", $all) }
-            .background(Color(.secondarySystemGroupedBackground), in: group)
-        note("Turn off to stop all Dayline notifications.")
-        if all {
-            Text("NOTIFY ME ABOUT").font(.footnote).helperText().padding(.horizontal, 16)
-            VStack(spacing: 0) {
-                plainRow("Follow Requests", $follows)
-                Divider().padding(.leading, 16)
-                plainRow("Score Reaches 80", $score80)
-                Divider().padding(.leading, 16)
-                plainRow("Check-in Questions", $checkIns)
-            }
-            .background(Color(.secondarySystemGroupedBackground), in: group)
-            .padding(.bottom, 14)
-        }
-        VStack(spacing: 0) {
-            Button { if let u = URL(string: UIApplication.openNotificationSettingsURLString) { openURL(u) } } label: {
-                HStack { Text("Sounds and Banners").foregroundStyle(.primary); Spacer(); Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(.tertiary) }
-                    .padding(.horizontal, 16).frame(minHeight: 50)
-            }
-        }
-        .background(Color(.secondarySystemGroupedBackground), in: group)
-        note("Opens iOS Settings for Dayline's sounds, banners and badges.")
+        .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: Theme.cardRadius, style: .continuous))
     }
 }
 

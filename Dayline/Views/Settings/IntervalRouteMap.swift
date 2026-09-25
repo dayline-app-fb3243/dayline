@@ -2,16 +2,13 @@ import SwiftUI
 import MapKit
 
 /// Map preview for Profile > Check Location: the same demo walk, drawn from one point every N minutes,
-/// so you can see how rough the day route gets at each check rate. Preview flag "check.preview".
+/// so you can see how rough the day route gets at each check rate.
 struct IntervalRouteMap: View {
     var minutes: Int
     var interactive = false
     /// Show a dot at every location check, so you can see how precise each rate is.
     var dots = false
     @State private var route: [CLLocationCoordinate2D] = []
-    /// "check.line": B (default) = dots only, a dot for every check. A = street line + small dots,
-    /// C = thin line + big dots, "" = the old line.
-    @AppStorage("check.line") private var lineStyle = "B"
     private static let stops: [CLLocationCoordinate2D] = [
         .init(latitude: 40.7489, longitude: -73.9857), .init(latitude: 40.7527, longitude: -73.9772),
         .init(latitude: 40.7580, longitude: -73.9712), .init(latitude: 40.7614, longitude: -73.9776),
@@ -29,29 +26,8 @@ struct IntervalRouteMap: View {
         Map(initialPosition: .region(MKCoordinateRegion(center: .init(latitude: 40.7552, longitude: -73.9790),
                                                          span: .init(latitudeDelta: 0.017, longitudeDelta: 0.017))),
             interactionModes: interactive ? .all : []) {
-            if lineStyle == "A" {
-                // A: smooth line along the streets, small dot per check.
-                if route.count > 1 {
-                    MapPolyline(coordinates: route).stroke(.white, style: StrokeStyle(lineWidth: 7, lineCap: .round, lineJoin: .round))
-                    MapPolyline(coordinates: route).stroke(Theme.accent, style: StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round))
-                }
-                if dots { checkDots(size: 5, ring: 1.5) }
-            } else if lineStyle == "B" {
-                // B: dots only, no line.
-                checkDots(size: 9, ring: 2.5)
-            } else if lineStyle == "C" {
-                // C: thin straight line between checks, bigger check dots.
-                if sampled.count > 1 {
-                    MapPolyline(coordinates: sampled).stroke(Theme.accent.opacity(0.55), style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
-                }
-                if dots { checkDots(size: 12, ring: 3) }
-            } else {
-            if sampled.count > 1 {
-                MapPolyline(coordinates: sampled)
-                    .stroke(Theme.accent, style: StrokeStyle(lineWidth: interactive ? 5 : (dots ? 4 : 3), lineCap: .round, lineJoin: .round))
-            }
-            if dots { checkDots(size: 8, ring: 2) }
-            }
+            // A dot for every check, no line.
+            checkDots(size: 9, ring: 2.5)
             // Same blue Apple-style pins as every other map, icon = place type.
             ForEach(Array(Self.stops.enumerated()), id: \.offset) { i, c in
                 Annotation("", coordinate: c, anchor: .bottom) {
@@ -105,56 +81,15 @@ struct IntervalRouteMap: View {
     }
 }
 
-/// Preview flag "check.big": tapping a mini iPhone opens it big but not full screen, with a dot at each check.
-/// A = floating card, B = half-height sheet, C = the mini iPhone zoomed up big.
+/// Tapping a mini iPhone zooms it up big, with a dot at each check.
 struct IntervalRouteCard: View {
     var minutes: Int
-    var style: String
-    var close: () -> Void
     private var checks: String { minutes == 1 ? "A dot for every check, once a minute" : "A dot for every check, every \(minutes) minutes" }
     var body: some View {
-        if style == "C" {
-            VStack(spacing: 18) {
-                MiniPhoneRoute(minutes: minutes, width: 250, dots: true)
-                Text(checks).font(.subheadline.weight(.medium)).foregroundStyle(.white)
-            }
-        } else {
-            VStack(spacing: 0) {
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Every \(minutes) min").font(.title3.weight(.bold))
-                        Text(checks).font(.subheadline).foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                    Button(action: close) {
-                        Image(systemName: "xmark").font(.system(size: 15, weight: .bold)).foregroundStyle(.secondary)
-                            .frame(width: 32, height: 32).background(Color.primary.opacity(0.08), in: .circle)
-                    }
-                    .buttonStyle(.plain).accessibilityLabel("Close")
-                }
-                .padding(.horizontal, 20).padding(.top, style == "B" ? 24 : 18).padding(.bottom, 14)
-                IntervalRouteMap(minutes: minutes, interactive: true, dots: true)
-                    .clipShape(.rect(cornerRadius: style == "A" ? 22 : 26))
-                    .padding(.horizontal, 12).padding(.bottom, 12)
-            }
+        VStack(spacing: 18) {
+            MiniPhoneRoute(minutes: minutes, width: 250, dots: true)
+            Text(checks).font(.subheadline).foregroundStyle(.white)
         }
-    }
-}
-
-/// Tap-to-enlarge sheet for a Check Location preview.
-struct IntervalRouteSheet: View {
-    var minutes: Int
-    @Environment(\.dismiss) private var dismiss
-    var body: some View {
-        IntervalRouteMap(minutes: minutes, interactive: true)
-            .ignoresSafeArea()
-            .overlay(alignment: .top) {
-                Text("Every \(minutes) min").font(.subheadline.weight(.semibold))
-                    .padding(.horizontal, 16).padding(.vertical, 10)
-                    .glassEffect(.regular, in: .capsule).padding(.top, 12)
-            }
-            .presentationDetents([.large])
-            .presentationDragIndicator(.visible)
     }
 }
 
