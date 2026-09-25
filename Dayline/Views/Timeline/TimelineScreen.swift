@@ -13,10 +13,9 @@ struct TimelineScreen: View {
     @Query(sort: \JournalEntry.date) private var journal: [JournalEntry]
     @State private var range: MapRange = .day
     @State private var anchor = Date.now
-    // An empty install can receive location permission before Core Location supplies its first fix.
-    // Keep a neighborhood-scale placeholder rather than letting MapKit frame the whole continent.
-    @State private var camera: MapCameraPosition = .camera(MapCamera(
-        centerCoordinate: CLLocationCoordinate2D(latitude: 40.7536, longitude: -73.9838), distance: 2200))
+    // Never display a guessed city as the owner's location. The empty map card stays
+    // in an honest waiting state until Core Location supplies a fresh fix.
+    @State private var camera: MapCameraPosition = .automatic
     @ObservedObject private var location = LocationService.shared
     @State private var showRoute = true
     @State private var showPhotos = true
@@ -199,6 +198,12 @@ struct TimelineScreen: View {
 
     private var map: some View { mapView(interactive: true) }
 
+    private var hasMapAnchor: Bool {
+        if !rangeVisits.isEmpty || !rangeSamples.isEmpty { return true }
+        guard let fix = location.lastLocation else { return false }
+        return fix.horizontalAccuracy >= 0 && abs(fix.timestamp.timeIntervalSinceNow) < 15 * 60
+    }
+
     private func mapView(interactive: Bool, showsControls: Bool = true) -> some View {
         Map(position: $camera, interactionModes: interactive ? .all : []) {
             UserAnnotation()
@@ -285,8 +290,11 @@ struct TimelineScreen: View {
         if force { userMovedMap = false }
         guard let fix = location.lastLocation, fix.horizontalAccuracy >= 0,
               abs(fix.timestamp.timeIntervalSinceNow) < 15 * 60 else {
-            // No live fix: keep the local neighborhood frame already on screen. Do not
-            // label it as the user's location or display a fake blue location dot.
+            // Wait for a fresh location or a recorded route rather than showing a
+            // continent-scale automatic camera or silently guessing a city.
+            if let point = rangeSamples.last?.coordinate ?? rangeVisits.last?.coordinate {
+                camera = .camera(MapCamera(centerCoordinate: point, distance: 2200))
+            }
             return
         }
         myCoordinate = fix.coordinate
@@ -372,7 +380,14 @@ struct TimelineScreen: View {
 
     /// Map card: tap anywhere to open the full-screen map.
     private func mapCard(height: CGFloat, hint: Bool) -> some View {
-        mapView(interactive: false, showsControls: false)
+        Group {
+            if hasMapAnchor { mapView(interactive: false, showsControls: false) }
+            else {
+                ContentUnavailableView("Location not available yet", systemImage: "location.slash",
+                                       description: Text("Your map will appear when Dayline receives your location."))
+                    .background(Color(.secondarySystemGroupedBackground))
+            }
+        }
             .frame(height: height)
             .clipShape(.rect(cornerRadius: Theme.cardRadius, style: .continuous))
             .contentShape(.rect(cornerRadius: Theme.cardRadius))
