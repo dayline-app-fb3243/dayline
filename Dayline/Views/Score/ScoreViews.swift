@@ -431,14 +431,18 @@ struct DayActivityList: View {
 struct FactorRow: View {
     var factor: ScoreFactor
     @AppStorage("symbols.show") private var showSymbols = true
+    @AppStorage("factorIcons") private var iconStyle = "circle"
     var body: some View {
         let symbol = Self.style(factor.title).0
         let bad = factor.effect == .pending || factor.points <= 0
         HStack(spacing: 12) {
-            // Blue symbol in a light round circle when Show Symbols is on, nothing when off.
+            // Symbol in a light round circle when Show Symbols is on, nothing when off. Blue when it added points,
+            // orange when it took points away. factorIcons = "bare" (preview for David): the symbol alone, no circle.
             if showSymbols {
-                Image(systemName: symbol).font(.subheadline.weight(.semibold)).foregroundStyle(Theme.accent)
-                    .frame(width: 34, height: 34).background(Theme.accent.opacity(0.14), in: .circle)
+                let tint = factor.points < 0 ? Theme.bad : Theme.accent
+                Image(systemName: symbol).font(.subheadline.weight(.semibold)).foregroundStyle(tint)
+                    .frame(width: 34, height: 34)
+                    .background(iconStyle == "bare" ? Color.clear : tint.opacity(0.14), in: .circle)
             }
             VStack(alignment: .leading, spacing: 1) {
                 Text(factor.title).font(.body)

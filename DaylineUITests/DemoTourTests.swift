@@ -600,6 +600,18 @@ final class DemoTourTests: XCTestCase {
         tapID(app, "dayTitle"); pause(2); shot("tc2-calendar")
     }
 
+    /// Day score breakdown: orange symbol on rows that took points away; circles vs bare symbols.
+    func testFactorIcons() throws {
+        for style in ["circle", "bare"] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-factorIcons", style]
+            app.launch(); pause(1.5)
+            tapID(app, "scoreCard"); pause(2)
+            app.swipeUp(); pause(1.2); shot("fi-\(style)")
+            app.terminate()
+        }
+    }
+
     /// White background: should look like Settings (light gray page, white cards).
     func testWhiteBackground() throws {
         let app = XCUIApplication()
