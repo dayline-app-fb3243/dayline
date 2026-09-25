@@ -63,6 +63,7 @@ struct TimelineScreen: View {
             .onChange(of: range) { onMyLocation = false; userMovedMap = false; centerOnCurrentLocation() }
             .onChange(of: anchor) { onMyLocation = false; userMovedMap = false; centerOnCurrentLocation() }
             .onChange(of: location.lastSample) { centerOnCurrentLocation() }
+            .onChange(of: location.authorization) { centerOnCurrentLocation() }
             .onAppear { centerOnCurrentLocation() }
             .onReceive(NotificationCenter.default.publisher(for: .showOnMap)) { _ in openJump() }
             .onAppear { openJump() }
