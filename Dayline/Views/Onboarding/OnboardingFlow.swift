@@ -2,6 +2,7 @@ import SwiftUI
 import MapKit
 import CoreMotion
 import AVFoundation
+import Speech
 import Photos
 import AuthenticationServices
 
@@ -577,7 +578,12 @@ struct PermissionsView: View {
                 try? await Task.sleep(for: .milliseconds(500))
             }
         case "photos": _ = await PHPhotoLibrary.requestAuthorization(for: .readWrite)
-        case "mic": _ = await AVAudioApplication.requestRecordPermission()
+        case "mic":
+            _ = await AVAudioApplication.requestRecordPermission()
+            // Voice-to-text uses a separate iOS Speech permission.
+            _ = await withCheckedContinuation { c in
+                SFSpeechRecognizer.requestAuthorization { status in c.resume(returning: status) }
+            }
         case "health": await HealthService.shared.requestAccess()
         case "reminders": _ = await RemindersService.shared.requestAccess()
         case "motion":
