@@ -2,12 +2,13 @@ import SwiftUI
 
 /// Profile > Use with Siri: a few examples so people learn to add "with Dayline".
 enum SiriExamples {
+    // Verbatim Siri utterances; each maps to a registered App Shortcut phrase.
     static let all = [
-        "Take me back to where I had pancakes last month with Dayline",
-        "Where did I eat on Friday with Dayline",
-        "Add my last 3 photos to my journal with Dayline",
-        "What\u{2019}s my streak with Dayline",
-        "How\u{2019}s my day going with Dayline",
+        "Hey Siri, take me back with Dayline",
+        "Hey Siri, where was I in Dayline",
+        "Hey Siri, journal in Dayline",
+        "Hey Siri, what's my streak with Dayline",
+        "Hey Siri, what's my Dayline score",
     ]
 }
 
@@ -18,7 +19,7 @@ struct SiriCommandsView: View {
                 Card(padding: 16) {
                     VStack(alignment: .leading, spacing: 8) {
                         Label { Text("Ask Siri") } icon: { SiriRowIcon() }.font(.headline)
-                        Text("Say \u{201C}Hey Siri\u{201D} and ask in your own words. Add \u{201C}with Dayline\u{201D} so Siri looks in your Dayline.")
+                        Text("Say a short phrase below, starting with \u{201C}Hey Siri.\u{201D}")
                             .font(.subheadline).foregroundStyle(.secondary)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -28,7 +29,8 @@ struct SiriCommandsView: View {
                     VStack(alignment: .leading, spacing: 0) {
                         ForEach(Array(SiriExamples.all.enumerated()), id: \.offset) { i, p in
                             if i > 0 { Divider().padding(.leading, 16) }
-                            Text("\u{201C}\(p)\u{201D}").font(.body).foregroundStyle(.primary)
+                            Text(p).font(.subheadline).foregroundStyle(.primary)
+                                .lineLimit(1).minimumScaleFactor(0.78)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding(.horizontal, 16).padding(.vertical, 13)
                         }

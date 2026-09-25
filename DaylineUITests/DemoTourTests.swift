@@ -646,6 +646,16 @@ final class DemoTourTests: XCTestCase {
         shot("compact-sleep-rows")
     }
 
+    /// Verbatim, one-line Siri phrases, with Hey Siri on every row.
+    func testShortSiriExamples() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo"]
+        app.launch(); pause(1)
+        tab(app, "Profile"); pause(1)
+        tapID(app, "useWithSiriRow"); pause(1.3)
+        shot("siri-short-phrases")
+    }
+
     /// Work and gym pickers are directly on Your Schedule; old habits are gone.
     func testScheduleLocations() throws {
         let app = XCUIApplication()

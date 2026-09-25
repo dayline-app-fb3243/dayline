@@ -158,6 +158,7 @@ struct DaylineShortcuts: AppShortcutsProvider {
         ], shortTitle: "Where Was I", systemImageName: "mappin.and.ellipse")
         AppShortcut(intent: StreakIntent(), phrases: [
             "What's my streak in \(.applicationName)",
+            "What's my streak with \(.applicationName)",
             "How long is my \(.applicationName) streak"
         ], shortTitle: "My Streak", systemImageName: "flame.fill")
         AppShortcut(intent: DayScoreIntent(), phrases: [
