@@ -645,6 +645,26 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Flip the real Profile switch, then revisit Timeline and the schedule without relaunching.
+    func testSymbolsToggleLive() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo", "-symbols.show", "YES"]
+        app.launchEnvironment["TZ"] = Self.morningZone
+        app.launch(); pause(1)
+        tab(app, "Profile"); pause(0.8)
+        let toggle = app.switches["Show Symbols"]
+        if toggle.waitForExistence(timeout: 3) { toggle.tap() }
+        pause(0.7); shot("symbols-switched-off-profile")
+        tab(app, "Timeline"); pause(1.5); shot("symbols-switched-off-timeline")
+        tab(app, "Today"); tapID(app, "scoreCard"); pause(1.3)
+        shot("symbols-switched-off-schedule")
+        goBack(app)
+        tab(app, "Profile")
+        if toggle.waitForExistence(timeout: 3) { toggle.tap() }
+        pause(0.6)
+        tab(app, "Timeline"); pause(1.3); shot("symbols-switched-on-timeline")
+    }
+
     /// Three Week-at-a-glance designs, each with an orange low day in light and dark.
     func testWeekWidgetVariations() throws { try captureWeekWidgets() }
     func testWeekWidgetVariationsDark() throws { try captureWeekWidgets() }
