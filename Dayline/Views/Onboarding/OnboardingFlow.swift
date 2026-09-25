@@ -270,10 +270,8 @@ struct SplashView: View {
             Color.clear.frame(maxWidth: .infinity).frame(height: 730)
                 .overlay(alignment: .top) {
                     ZStack {
-                        // Show a real map frame immediately; the live MapKit animation fades in
-                        // after its tiles render, so returning users never see a blank splash.
-                        Image("SplashMap").resizable().scaledToFill()
-                            .frame(maxWidth: .infinity).frame(height: 730).clipped()
+                        // The motion layer is first. Do not show the retired static SplashMap
+                        // while MapKit tiles load; a route-progress overlay covers that phase.
                         if liveMap.isEmpty || liveMap == "loop" {
                             SplashLoop().frame(height: 730).allowsHitTesting(false)
                         } else {
@@ -1008,6 +1006,12 @@ struct SplashLoop: View {
         }
         // 0.001, not 0: the map keeps loading its tiles while hidden.
         .opacity(shown ? 1 : 0.001)
+        .overlay {
+            if !shown {
+                SplashOpeningMotion()
+                    .transition(.opacity)
+            }
+        }
         .background {
             // An invisible map at the same spot tells us when the tiles are fully drawn.
             MapReadyProbe(center: CLLocationCoordinate2D(latitude: 40.7534, longitude: -73.9836)) { ready = true }
@@ -1061,6 +1065,38 @@ struct SplashLoop: View {
         let c = raw * raw * (3 - 2 * raw)  // ease in-out
         guard let a else { return b }
         return CGPoint(x: a.x + (b.x - a.x) * c, y: a.y + (b.y - a.y) * c)
+    }
+}
+
+/// First-frame motion before MapKit tiles arrive: the Dayline route draws continuously,
+/// then yields to the real live map. Never reuse the old static splash artwork.
+private struct SplashOpeningMotion: View {
+    @State private var drawing = false
+    var body: some View {
+        GeometryReader { geo in
+            ZStack {
+                Color(.systemBackground)
+                Path { p in
+                    let w = geo.size.width, h = geo.size.height
+                    p.move(to: CGPoint(x: w * 0.16, y: h * 0.72))
+                    p.addCurve(to: CGPoint(x: w * 0.42, y: h * 0.49),
+                               control1: CGPoint(x: w * 0.42, y: h * 0.7), control2: CGPoint(x: w * 0.14, y: h * 0.52))
+                    p.addCurve(to: CGPoint(x: w * 0.72, y: h * 0.28),
+                               control1: CGPoint(x: w * 0.74, y: h * 0.48), control2: CGPoint(x: w * 0.47, y: h * 0.31))
+                }
+                .trim(from: 0, to: drawing ? 1 : 0.02)
+                .stroke(Theme.accent, style: StrokeStyle(lineWidth: 6, lineCap: .round, lineJoin: .round))
+                Image(systemName: "location.fill")
+                    .font(.system(size: 28, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 66, height: 66)
+                    .background(Theme.accent, in: .circle)
+                    .offset(x: geo.size.width * 0.22, y: -geo.size.height * 0.22)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .onAppear { withAnimation(.linear(duration: 2).repeatForever(autoreverses: false)) { drawing = true } }
+        }
+        .allowsHitTesting(false)
     }
 }
 
