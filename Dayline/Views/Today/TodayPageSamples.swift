@@ -248,7 +248,7 @@ struct TodayStepsNextTiles: View {
         }
         .task {
             if DemoData.isDemo { steps = 5840; return }
-            steps = await UserSchedule.steps(from: Calendar.current.startOfDay(for: .now), to: .now)
+            steps = await StepGoal.steps(from: Calendar.current.startOfDay(for: .now), to: .now)
         }
     }
 }

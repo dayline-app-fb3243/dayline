@@ -113,8 +113,8 @@ struct TimelineScreen: View {
     /// c = captioned photos with stops grouped by part of day. "timeline.range4" shows Week / Month / Year in the same style.
     /// Day view: 4c is the default. "" = the page before that.
     @AppStorage("timeline.page") private var tlPage = "4c"
-    /// Preview "timeline.range4": Week / Month / Year in the sample-4 style. Off until David picks it.
-    @AppStorage("timeline.range4") private var range4 = false
+    /// "timeline.range4": Week / Month / Year in the sample-4 style. Now the default; set NO for the old look.
+    @AppStorage("timeline.range4") private var range4 = true
     private var dayVisits: [Visit] { rangeVisits.sorted { $0.arrival < $1.arrival } }
     private func photos(for v: Visit) -> [UIImage] {
         let end = v.departure ?? .now
