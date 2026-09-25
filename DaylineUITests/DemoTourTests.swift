@@ -1517,6 +1517,20 @@ final class DemoTourTests: XCTestCase {
         pause(2); shot("ib-year-open")
     }
 
+    /// Journal: current cards and three close variants (journal.near A/B/C), top and scrolled.
+    func testJournalNear() throws {
+        for v in ["", "A", "B", "C"] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-journal.near", v]
+            app.launch(); pause(1.5)
+            tab(app, "Journal"); pause(2.5)
+            shot("jn-\(v.isEmpty ? "now" : v)-1")
+            app.swipeUp(); pause(1.5)
+            shot("jn-\(v.isEmpty ? "now" : v)-2")
+            app.terminate()
+        }
+    }
+
     /// Timeline Day page samples 1-5 plus the current page (top and scrolled).
     func testTimelinePages() throws {
         for v in ["", "1", "2", "3", "4", "5"] {

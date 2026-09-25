@@ -161,6 +161,10 @@ struct JournalCard: View {
     let group: JournalGroup
     /// Photos inside the card with a white border, a big photo and a narrow one side by side.
     @AppStorage("journal.cardStyle") private var style = "inset"
+    /// Preview "journal.near" A/B/C: small takes on the current card ("" = now). Sample-only until David picks.
+    /// A = time top-right next to the heading, place under it, taller photos. B = photos run edge to edge at the top.
+    /// C = place with a pin and time on one line under the heading, slightly smaller photos.
+    @AppStorage("journal.near") private var near = ""
     private var heading: String { group.title ?? group.place ?? (group.kind == .voice ? "Voice memo" : group.kind == .photo ? "Photo" : "Journal") }
     private var meta: String { [group.title != nil ? group.place : nil, group.date.shortTime].compactMap { $0 }.joined(separator: " · ") }
 
@@ -184,7 +188,7 @@ struct JournalCard: View {
                             let w = images.count == 1 ? g.size.width : (i == 0 ? (g.size.width - gap) * 0.62 : (g.size.width - gap) * 0.38)
                             Color.clear.frame(width: w, height: g.size.height)
                                 .overlay { Image(uiImage: image).resizable().scaledToFill() }
-                                .clipShape(.rect(cornerRadius: 16, style: .continuous))
+                                .clipShape(.rect(cornerRadius: near == "B" ? 0 : 16, style: .continuous))
                                 .overlay {
                                     if group.videos.contains(i) {
                                         Image(systemName: "play.fill").font(.caption).foregroundStyle(.white)
@@ -194,19 +198,37 @@ struct JournalCard: View {
                         }
                     }
                 }
-                .frame(height: 150)
-                .padding([.horizontal, .top], 10)
+                .frame(height: near == "A" ? 180 : near == "C" ? 130 : 150)
+                .padding([.horizontal, .top], near == "B" ? 0 : 10)
             }
             VStack(alignment: .leading, spacing: 6) {
-                Text(heading).font(.headline)
-                textBlock
-                voiceBlock
-                Text(meta).font(.caption).foregroundStyle(.secondary)
+                switch near {
+                case "A":
+                    HStack(alignment: .firstTextBaseline) {
+                        Text(heading).font(.headline)
+                        Spacer()
+                        Text(group.date.shortTime).font(.caption).foregroundStyle(.secondary)
+                    }
+                    if group.title != nil, let place = group.place { Text(place).font(.caption).foregroundStyle(.secondary) }
+                    textBlock
+                    voiceBlock
+                case "C":
+                    Text(heading).font(.headline)
+                    Label(meta, systemImage: "mappin").font(.caption).foregroundStyle(.secondary)
+                    textBlock
+                    voiceBlock
+                default:
+                    Text(heading).font(.headline)
+                    textBlock
+                    voiceBlock
+                    Text(meta).font(.caption).foregroundStyle(.secondary)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(14)
         }
         .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: Theme.cardRadius, style: .continuous))
+        .clipShape(.rect(cornerRadius: Theme.cardRadius, style: .continuous))
     }
 
     private var styleA: some View {
