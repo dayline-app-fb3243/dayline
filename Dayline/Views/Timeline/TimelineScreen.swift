@@ -154,8 +154,10 @@ struct TimelineScreen: View {
                                    description: Text("Your places and photos will appear here as Dayline learns your day."))
                 .accessibilityIdentifier("timelineEmptyState")
         }
-        Text(title).font(.title2.bold()).padding(.horizontal, 2).padding(.top, 4)
-        photoRow(width: 150, height: 190, captions: true)
+        if DemoData.isDemo || !visits.isEmpty || !samples.isEmpty || !journal.isEmpty {
+            Text(title).font(.title2.bold()).padding(.horizontal, 2).padding(.top, 4)
+            photoRow(width: 150, height: 190, captions: true)
+        }
         let parts = [("Morning", 0, 12), ("Afternoon", 12, 17), ("Evening", 17, 24)]
         ForEach(parts.indices, id: \.self) { pi in
             let part = parts[pi]
@@ -174,9 +176,11 @@ struct TimelineScreen: View {
                                    description: Text("Your places and photos will appear here as Dayline learns your day."))
                 .accessibilityIdentifier("timelineEmptyState")
         }
-        Text(title).font(.title2.bold()).padding(.horizontal, 2).padding(.top, 4)
-        HStack(spacing: 6) {
-            infoChip("\(placeCount)", "places"); infoChip(distanceText, "moved"); infoChip("\(photoItems.count)", "photos")
+        if DemoData.isDemo || !visits.isEmpty || !samples.isEmpty || !journal.isEmpty {
+            Text(title).font(.title2.bold()).padding(.horizontal, 2).padding(.top, 4)
+            HStack(spacing: 6) {
+                infoChip("\(placeCount)", "places"); infoChip(distanceText, "moved"); infoChip("\(photoItems.count)", "photos")
+            }
         }
         if !photoItems.isEmpty {
             photoRow(width: 150, height: 190, captions: true)
