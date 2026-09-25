@@ -3,6 +3,7 @@ import MapKit
 import CoreMotion
 import AVFoundation
 import Speech
+import Contacts
 import Photos
 import AuthenticationServices
 
@@ -568,6 +569,9 @@ struct PermissionsView: View {
         Page(kind: "photos", title: "Turning on Photos lets Dayline:",
              rows: [("photo.on.rectangle", "Put your photos on the places you took them"), ("calendar", "Show them on your day")],
              note: "Your photos stay on your iPhone. You can change this later in Settings."),
+        Page(kind: "contacts", title: "Turning on Contacts lets Dayline:",
+             rows: [("person.2", "Find friends who are on Dayline"), ("person.crop.circle.badge.plus", "Choose who to follow and share streaks with")],
+             note: "Choose which contacts to share in the iPhone prompt. Friend matching will be available when accounts are connected."),
         Page(kind: "mic", title: "Turning on the Microphone lets Dayline:",
              rows: [("mic", "Record voice memos for your journal"), ("text.bubble", "Turn them into text on your iPhone")],
              note: "Dayline only listens while you record. You can change this later in Settings."),
@@ -630,6 +634,10 @@ struct PermissionsView: View {
                 try? await Task.sleep(for: .milliseconds(500))
             }
         case "photos": _ = await PHPhotoLibrary.requestAuthorization(for: .readWrite)
+        case "contacts":
+            // Real OS permission prompt, including iOS's limited-contact choice. Do not read or upload
+            // contacts until an account backend and privacy-preserving matching flow exist.
+            _ = try? await CNContactStore().requestAccess(for: .contacts)
         case "mic":
             _ = await AVAudioApplication.requestRecordPermission()
             // Voice-to-text uses a separate iOS Speech permission.

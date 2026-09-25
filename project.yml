@@ -43,6 +43,7 @@ targets:
         NSLocationAlwaysAndWhenInUseUsageDescription: Dayline checks your location in the background, as often as you pick in Profile (every 1, 5 or 10 minutes), to build your timeline. It stays on your iPhone.
         NSCameraUsageDescription: Dayline opens your camera so you can add a photo to your journal at the place you took it.
         NSPhotoLibraryUsageDescription: Dayline adds your photos to your timeline at the place they were taken.
+        NSContactsUsageDescription: Dayline can use the contacts you choose to help find friends once sharing is available. Contacts are not uploaded in this build.
         NSMotionUsageDescription: Dayline uses motion to tell when you fell asleep and woke up, so late nights count toward the right day. It stays on your iPhone.
         NSHealthShareUsageDescription: Dayline adds your runs, walks and workouts to your timeline and ticks off gym time on your schedule. It only reads workouts.
         NSHealthUpdateUsageDescription: Dayline never writes to Apple Health.

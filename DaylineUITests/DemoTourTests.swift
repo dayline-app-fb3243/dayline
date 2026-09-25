@@ -161,6 +161,7 @@ final class DemoTourTests: XCTestCase {
         let codeField = app.textFields["codeField"]; _ = codeField.waitForExistence(timeout: 5); codeField.tap(); codeField.typeText("4829"); pause(1); shot("06b-code")
         codeField.typeText("13"); tapID(app, "setupPrimary"); pause(1.5); shot("06-permissions")
         tapID(app, "permissionsContinue"); pause(1.2); shot("06b-permissions-photos")
+        tapID(app, "permissionsContinue"); pause(1.2); shot("06b2-permissions-contacts")
         tapID(app, "permissionsContinue"); pause(1.2); shot("06c-permissions-mic")
         tapID(app, "permissionsContinue"); pause(1.2); shot("06c2-permissions-motion")
         tapID(app, "permissionsContinue"); pause(1.2); shot("06c3-permissions-health")
