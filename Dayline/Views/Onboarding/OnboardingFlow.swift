@@ -1273,19 +1273,14 @@ struct SplashLiveMap: View {
     /// Route mode: the camera centers in the thin safe area at the top (because of the logo inset), which would put
     /// the place right under the status bar. Move the camera once, before the scene shows, so the place sits
     /// about a third of the way down the map, in the clear part above the white fade.
+    /// Route mode: center the camera on the place itself. The tall bottom safe-area inset (for the logo) makes
+    /// MapKit put the center coordinate in the middle of the top part, so the place sits in the clear area above
+    /// the white fade, centered left to right, and the slow turn pivots around it.
     private func frameForRoute() async {
-        guard let track, let c0 = (cam ?? position).camera else { return }
-        var tries = 0
-        while tries < 30 {
-            try? await Task.sleep(for: .milliseconds(100)); tries += 1
-            guard let hero = stops.first(where: { $0.name == heroName }), let hp = track.convert?(hero.c) else { continue }
-            let target: CGFloat = 190
-            guard let c = track.unproject?(CGPoint(x: hp.x, y: 2 * hp.y - target)) else { continue }
-            var t = Transaction(); t.disablesAnimations = true
-            withTransaction(t) { cam = .camera(MapCamera(centerCoordinate: c, distance: c0.distance, heading: c0.heading, pitch: c0.pitch)) }
-            try? await Task.sleep(for: .milliseconds(150))
-            return
-        }
+        guard let c0 = position.camera, let hero = stops.first(where: { $0.name == heroName }) else { return }
+        var t = Transaction(); t.disablesAnimations = true
+        withTransaction(t) { cam = .camera(MapCamera(centerCoordinate: hero.c, distance: c0.distance, heading: c0.heading, pitch: c0.pitch)) }
+        try? await Task.sleep(for: .milliseconds(150))
     }
 
     /// Walking routes are fetched once per scene and reused every time the loop comes back around.

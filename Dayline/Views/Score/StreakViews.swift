@@ -178,6 +178,42 @@ struct StreakView: View {
     }
 }
 
+/// Friends option 2 preview (score.friends "2"): the friends' streaks on the Day score page the Today ring opens.
+struct FriendsTodayCard: View {
+    @Environment(\.modelContext) private var context
+    @AppStorage("hiddenFriends") private var hiddenRaw = ""
+    var body: some View {
+        let streak = DayData.streak(context: context)
+        let hidden = Set(hiddenRaw.split(separator: ",").map(String.init))
+        let friends = FriendStore.friends.filter { !hidden.contains($0.name) }
+        if !friends.isEmpty {
+            SectionHeader("Friends today")
+            Card(padding: 0) {
+                let people: [StreakFriend?] = (friends.map { Optional($0) } + [nil]).sorted { ($0?.current ?? streak) > ($1?.current ?? streak) }
+                VStack(spacing: 0) {
+                    ForEach(Array(people.enumerated()), id: \.offset) { i, f in
+                        if let f {
+                            NavigationLink { FriendStreakView(friend: f, yourStreak: streak) } label: {
+                                FriendRow(initials: String(f.name.prefix(1)), color: f.color, name: f.name, best: f.best, current: f.current)
+                            }
+                            .buttonStyle(.plain)
+                        } else {
+                            FriendRow(initials: "Me", color: Theme.accent, name: "You", best: streak, current: streak)
+                        }
+                        Divider().padding(.leading, 58)
+                    }
+                    NavigationLink { StreakView() } label: {
+                        Text("See Streak").font(.subheadline.weight(.semibold)).foregroundStyle(Theme.accent)
+                            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).padding(.horizontal, 14).contentShape(.rect)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .accessibilityIdentifier("friendsToday")
+        }
+    }
+}
+
 private struct FriendRow: View {
     var initials: String
     var color: Color
