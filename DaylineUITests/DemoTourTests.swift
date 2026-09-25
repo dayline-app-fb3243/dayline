@@ -1575,6 +1575,25 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Font check: the real iOS Settings app next to Dayline's People and Day score pages, same simulator, same scale.
+    func testFontProof() throws {
+        let settings = XCUIApplication(bundleIdentifier: "com.apple.Preferences")
+        settings.launch(); pause(2.5); shot("fp-ios-settings")
+        let general = settings.staticTexts["General"].firstMatch
+        if general.waitForExistence(timeout: 4) { general.tap(); pause(2); shot("fp-ios-general") }
+        settings.terminate()
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo"]
+        app.launch(); pause(1.5)
+        tab(app, "Insights"); pause(1.5)
+        app.buttons["Month"].firstMatch.tap(); pause(1.2)
+        tapID(app, "streakCard"); pause(2)
+        tapID(app, "peopleButton"); pause(2); shot("fp-people")
+        app.terminate()
+        app.launch(); pause(1.5)
+        tab(app, "Today"); pause(1.5); tapID(app, "scoreCard"); pause(2); shot("fp-dayscore")
+    }
+
     func testInsightsBestDay() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-demo"]
