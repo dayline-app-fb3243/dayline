@@ -67,10 +67,7 @@ struct TodayView: View {
     /// Built from what you actually did today: where you went and when. No manual entries.
     private var scheduleSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 0) {
-                Text("Schedule").font(.subheadline.weight(.semibold))
-                Text(" · built from your day").font(.subheadline)
-            }
+            Text("Schedule").font(.subheadline.weight(.semibold))
             .foregroundStyle(.secondary)
                 .padding(.leading, 4).padding(.top, 6)
             DayActivityList(day: .now)
@@ -156,26 +153,25 @@ struct TodayStepsNextTiles: View {
     private var s: UserSchedule { UserSchedule.current }
     private var goal: Int { DemoData.isDemo ? 8200 : s.stepGoal }
 
-    private func clock(_ minutes: Int) -> String {
-        UserSchedule.date(minutes, on: .now).formatted(date: .omitted, time: .shortened)
-    }
     private func done(_ title: String) -> Bool {
         result.factors.contains { $0.title.hasPrefix(title) && $0.effect == .up }
     }
-    /// The next thing on the day: gym (if on and not done yet), then the walk, then the journal, then bedtime.
-    private var next: (title: String, symbol: String, when: String) {
+    /// The next thing on the day, named as itself: gym (if on and not done yet), then the walk, then the journal,
+    /// then bedtime; after bedtime, waking up.
+    private var next: (title: String, symbol: String) {
         let now = Calendar.current.component(.hour, from: .now) * 60 + Calendar.current.component(.minute, from: .now)
-        if DemoData.isDemo { return ("Gym", "dumbbell.fill", "Around 6:00 PM") }
-        if s.gym && !done("Gym") && now < s.gymDeadline { return ("Gym", "dumbbell.fill", "Before \(clock(s.gymDeadline))") }
-        if s.walk, let st = steps, st < goal { return ("Walk", "figure.walk", "\((goal - st).formatted()) steps to go") }
-        if s.journal && !done("Journal") { return ("Journal", "book.closed.fill", "Before bed") }
-        return ("Bedtime", "moon.fill", clock(s.bed))
+        if DemoData.isDemo && ProcessInfo.processInfo.arguments.contains("-detailVariant") { return ("Gym", "dumbbell.fill") }
+        let late = now < s.wake || now >= s.bed
+        if late { return ("Wake Up", "sunrise.fill") }
+        if s.gym && !done("Gym") && now < s.gymDeadline { return ("Gym", "dumbbell.fill") }
+        if s.walk, let st = steps, st < goal { return ("Walk", "figure.walk") }
+        if s.journal && !done("Journal") { return ("Journal", "book.closed.fill") }
+        return ("Bedtime", "moon.fill")
     }
-    private func tile(_ title: String, _ value: String, _ symbol: String, _ sub: String) -> some View {
+    private func tile(_ title: String, _ value: String, _ symbol: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Label(title, systemImage: symbol).font(.caption.weight(.semibold)).foregroundStyle(Theme.accent)
-            Text(value).font(.title3.bold()).monospacedDigit()
-            Text(sub).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+            Text(value).font(.title3.bold()).monospacedDigit().lineLimit(1)
         }
         .padding(14).frame(maxWidth: .infinity, alignment: .leading)
         .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 22, style: .continuous))
@@ -185,11 +181,14 @@ struct TodayStepsNextTiles: View {
         GlassEffectContainer(spacing: 12) {
             HStack(spacing: 12) {
                 NavigationLink { StepsDetailView() } label: {
-                    tile("Steps", steps.map { $0.formatted() } ?? "–", "figure.walk", "of \(goal.formatted()) on a usual day")
+                    tile("Steps", steps.map { $0.formatted() } ?? "–", "figure.walk")
                 }
                 .buttonStyle(.plain).accessibilityIdentifier("stepsTile")
-                NavigationLink { GymDetailView() } label: { tile("Next", n.title, n.symbol, n.when) }
+                NavigationLink {
+                    if n.title == "Walk" { StepsDetailView() } else { GymDetailView() }
+                } label: { tile("Next", n.title, n.symbol) }
                     .buttonStyle(.plain).accessibilityIdentifier("nextTile")
+                    .disabled(n.title != "Gym" && n.title != "Walk")
             }
         }
         .task {

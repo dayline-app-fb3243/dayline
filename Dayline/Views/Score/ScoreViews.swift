@@ -235,15 +235,17 @@ struct DayPickerSheet: View {
         let score = scores.first { cal.isDate($0.day, inSameDayAs: date) }?.score
         let selectable = inMonth && date <= today && date >= cal.startOfDay(for: earliest)
         let isSelected = cal.isDate(date, inSameDayAs: selected)
+        // Like Apple Calendar: the picked day is a filled circle; today is blue text when it isn't picked.
+        let isToday = cal.isDate(date, inSameDayAs: today)
         return Button { onPick(date) } label: {
-            VStack(spacing: 3) {
-                Text(date.formatted(.dateTime.day())).font(.body.weight(selectable ? .semibold : .regular))
-                    .foregroundStyle(isSelected ? Color.white : selectable ? Color.primary : Color.secondary.opacity(0.5))
+            VStack(spacing: 2) {
+                Text(date.formatted(.dateTime.day())).font(.body.weight(selectable ? .semibold : .regular)).monospacedDigit()
+                    .foregroundStyle(isSelected ? Color.white : isToday ? Theme.accent : selectable ? Color.primary : Color.secondary.opacity(0.5))
+                    .frame(width: 38, height: 38)
+                    .background(isSelected ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(.clear), in: .circle)
                 Circle().fill(score.map { $0 < 45 ? Theme.bad : Theme.accent } ?? .clear).frame(width: 5, height: 5)
-                    .opacity(isSelected ? 0 : 1)
             }
-            .frame(width: 40, height: 44)
-            .background(isSelected ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(.clear), in: .rect(cornerRadius: 12, style: .continuous))
+            .frame(width: 40, height: 46)
         }
         .buttonStyle(.plain)
         .disabled(!selectable)

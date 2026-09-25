@@ -590,6 +590,16 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Today tiles (just the number, Next named as the thing) and the Day score calendar (Apple Calendar circle).
+    func testTodayTilesCalendar() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo"]
+        app.launch(); pause(1.5)
+        shot("tc1-today")
+        tapID(app, "scoreCard"); pause(2)
+        tapID(app, "dayTitle"); pause(2); shot("tc2-calendar")
+    }
+
     /// White background: should look like Settings (light gray page, white cards).
     func testWhiteBackground() throws {
         let app = XCUIApplication()
