@@ -97,6 +97,18 @@ final class DemoTourTests: XCTestCase {
     }
 
 
+    func testNativeNotificationBanner() throws {
+        let app = XCUIApplication()
+        let spring = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        app.launchArguments = ["-demo", "-demoNativeBanner"]
+        app.launch()
+        let allow = spring.buttons["Allow"]
+        if allow.waitForExistence(timeout: 12) { allow.tap() }
+        let banner = spring.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", "Dayline notification test")).firstMatch
+        XCTAssertTrue(banner.waitForExistence(timeout: 20), "No native OS notification banner appeared")
+        shot("native-notification-banner")
+    }
+
     func testDemoBannerPopIn() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-demo", "-demoBannerNow"]

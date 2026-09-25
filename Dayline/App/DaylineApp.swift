@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import UserNotifications
 
 @main
 struct DaylineApp: App {
@@ -83,6 +84,21 @@ struct DaylineApp: App {
         let context = ModelStore.container.mainContext
         if isDemo {
             DemoData.seed(context)
+            if ProcessInfo.processInfo.arguments.contains("-demoNativeBanner") {
+                Task {
+                    await Notifications.requestPermission()
+                    // Permission dialog may remain open; the native banner is scheduled after it is dismissed.
+                    try? await Task.sleep(for: .seconds(4))
+                    let content = UNMutableNotificationContent()
+                    content.title = "Dayline notification test"
+                    content.body = "This is an iOS notification from Dayline."
+                    content.sound = .default
+                    let request = UNNotificationRequest(identifier: "demo-native-banner", content: content,
+                                                        trigger: UNTimeIntervalNotificationTrigger(timeInterval: 2, repeats: false))
+                    do { try await UNUserNotificationCenter.current().add(request) }
+                    catch { NSLog("Dayline notification request failed: %@", String(describing: error)) }
+                }
+            }
             if ProcessInfo.processInfo.arguments.contains("-demoAllNotifications") {
                 Task {
                     await Notifications.requestPermission()
