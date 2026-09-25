@@ -655,6 +655,16 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Picked Friends card on Today and full Streak page on tap.
+    func testFriendsCircleCard() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo"]
+        app.launch(); pause(1.5)
+        shot("fc1-today")
+        tapID(app, "friendsCircleCard"); pause(2)
+        shot("fc2-open")
+    }
+
     /// Five ways to reach streak and friends faster.
     func testFriendsEntry() throws {
         for n in 1...5 {

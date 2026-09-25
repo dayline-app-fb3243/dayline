@@ -82,3 +82,34 @@ struct FriendsTab: View {
         }
     }
 }
+
+/// Picked direction: Today card uses the exact multicolor ring from the Streak page.
+/// A single tap opens that page with the full ring, stats and history calendar.
+struct TodayFriendsCircleCard: View {
+    @Environment(\.modelContext) private var context
+    @AppStorage("hiddenFriends") private var hiddenRaw = ""
+    var body: some View {
+        let streak = DayData.streak(context: context)
+        let hidden = Set(hiddenRaw.split(separator: ",").map(String.init))
+        let friends = FriendStore.friends.filter { !hidden.contains($0.name) }
+        let arcs = [StreakRing.Arc(id: "you", value: streak, color: Theme.accent, showsBadge: false)]
+            + friends.map { StreakRing.Arc(id: $0.id, value: $0.current, color: $0.color, showsBadge: true) }
+        NavigationLink { StreakView() } label: {
+            Card {
+                HStack(spacing: 16) {
+                    StreakRing(arcs: arcs, center: streak, size: 98, lineWidthBase: 13)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("FRIENDS").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                        Text("Your streak").font(.title3.weight(.semibold)).foregroundStyle(.primary)
+                        Text(friends.isEmpty ? "See your streak" : friends.map(\.name).joined(separator: ", "))
+                            .font(.subheadline).foregroundStyle(.secondary).lineLimit(1)
+                    }
+                    Spacer(minLength: 0)
+                    Image(systemName: "chevron.right").font(.subheadline.weight(.semibold)).foregroundStyle(.tertiary)
+                }
+                .padding(.vertical, 3)
+            }
+        }
+        .buttonStyle(.plain).accessibilityIdentifier("friendsCircleCard")
+    }
+}

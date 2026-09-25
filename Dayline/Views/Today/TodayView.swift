@@ -25,6 +25,7 @@ struct TodayView: View {
                     if FriendsEntry.style == 3 { TodayStreakCard() }
                     TodayStepsNextTiles(result: result)
                     if FriendsEntry.style == 2 { TodayFriendsRow() }
+                    if FriendsEntry.style == 0 { TodayFriendsCircleCard() }
                     scheduleSection
                 }
                 .padding(.horizontal, 18)
