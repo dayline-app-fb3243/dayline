@@ -588,6 +588,19 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Five search landing designs. Each suggestion is an actual search action.
+    func testSearchDesigns() throws {
+        for n in 1...5 {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-searchDesign", "\(n)"]
+            app.launch(); pause(1.2)
+            tab(app, "Journal"); pause(1)
+            tapID(app, "journalSearch"); pause(1.5)
+            shot("search-\(n)")
+            app.terminate()
+        }
+    }
+
     /// Steps page (picked: Health-style chart), opened from the Steps tile: D and W.
     func testStepsPage() throws {
         let app = XCUIApplication()

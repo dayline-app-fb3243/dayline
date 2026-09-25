@@ -132,6 +132,11 @@ struct JournalSearchView: View {
     @State var query: String
     /// What the results show: set when you press Search on the keyboard (or tap a suggestion).
     @State private var submitted: String?
+    private var previewStyle: Int {
+        let args = ProcessInfo.processInfo.arguments
+        guard let i = args.firstIndex(of: "-searchDesign"), i + 1 < args.count else { return 1 }
+        return Int(args[i + 1]) ?? 1
+    }
     @Query(sort: \JournalEntry.date, order: .reverse) var entries: [JournalEntry]
     @Query var visits: [Visit]
 
@@ -140,7 +145,13 @@ struct JournalSearchView: View {
             JournalSearchField(query: $query, onSubmit: { submitted = query })
                 .padding(.horizontal, 16).padding(.top, 8).padding(.bottom, 6)
             ScrollView {
-                SearchResultsList(query: query.isEmpty ? "" : (submitted ?? ""), entries: entries, visits: visits, onPick: { query = $0; submitted = $0 }).padding(.horizontal, 16).padding(.top, 8)
+                if query.isEmpty && submitted == nil {
+                    SearchLandingOption(style: previewStyle) { selected in query = selected; submitted = selected }
+                        .padding(.horizontal, 16).padding(.top, 8)
+                } else {
+                    SearchResultsList(query: query.isEmpty ? "" : (submitted ?? ""), entries: entries, visits: visits, onPick: { query = $0; submitted = $0 })
+                        .padding(.horizontal, 16).padding(.top, 8)
+                }
             }
         }
         .background(AppBackgroundView())
@@ -219,5 +230,107 @@ struct SearchHitRow: View {
         .padding(12)
         .background(Color(.systemBackground).opacity(0.85), in: .rect(cornerRadius: 20))
         .accessibilityIdentifier("searchHit")
+    }
+}
+
+/// Five app-style ways to make the empty search page useful without changing search results.
+/// Every suggestion is a working search, never a decorative placeholder.
+struct SearchLandingOption: View {
+    let style: Int
+    let pick: (String) -> Void
+    private let suggestions: [(String, String)] = [
+        ("Where was I 4 days ago?", "calendar"),
+        ("The place I ate 4 days ago", "fork.knife"),
+        ("Croissant", "photo")
+    ]
+    private var lastPlaces: [(String, String)] {
+        [("Blue Door Coffee", "cup.and.saucer"), ("Gym", "dumbbell"), ("Office", "building.2")]
+    }
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            switch style {
+            case 2:
+                section("Search your day", systemImage: "magnifyingglass") {
+                    Text("Places, journal notes, and photos, all in one search.")
+                        .font(.subheadline).foregroundStyle(.secondary)
+                }
+                section("Try asking") { suggestionRows }
+            case 3:
+                section("Recent places") { placeRows }
+                section("Find something") { suggestionRows }
+            case 4:
+                SectionHeader("Search by")
+                HStack(spacing: 10) {
+                    category("Places", "mappin", "Blue Door Coffee")
+                    category("Photos", "photo", "Croissant")
+                    category("Journal", "text.book.closed", "Gym")
+                }
+                section("Try asking") { suggestionRows }
+            case 5:
+                section("Find a day") {
+                    VStack(spacing: 0) {
+                        row("Today", symbol: "sun.max", query: "Today")
+                        Divider().padding(.leading, 50)
+                        row("Yesterday", symbol: "clock.arrow.circlepath", query: "Yesterday")
+                        Divider().padding(.leading, 50)
+                        row("Last week", symbol: "calendar", query: "Last week")
+                    }
+                }
+                section("Recent places") { placeRows }
+            default:
+                section("Try asking") { suggestionRows }
+                section("Recent places") { placeRows }
+            }
+        }
+    }
+    private var suggestionRows: some View {
+        VStack(spacing: 0) {
+            ForEach(Array(suggestions.enumerated()), id: \.offset) { i, item in
+                row(item.0, symbol: item.1, query: item.0)
+                if i < suggestions.count - 1 { Divider().padding(.leading, 50) }
+            }
+        }
+    }
+    private var placeRows: some View {
+        VStack(spacing: 0) {
+            ForEach(Array(lastPlaces.enumerated()), id: \.offset) { i, item in
+                row(item.0, symbol: item.1, query: item.0)
+                if i < lastPlaces.count - 1 { Divider().padding(.leading, 50) }
+            }
+        }
+    }
+    private func section<C: View>(_ title: String, systemImage: String? = nil, @ViewBuilder content: () -> C) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                if let systemImage { Image(systemName: systemImage) }
+                Text(title)
+            }
+            .font(.subheadline.weight(.semibold)).foregroundStyle(.secondary).padding(.leading, 4)
+            content().frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: Theme.cardRadius))
+        }
+    }
+    private func row(_ title: String, symbol: String, query: String) -> some View {
+        Button { pick(query) } label: {
+            HStack(spacing: 14) {
+                Image(systemName: symbol).font(.body).foregroundStyle(Theme.accent)
+                    .frame(width: 34, height: 34)
+                    .background(Theme.accent.opacity(0.12), in: .circle)
+                Text(title).font(.body).foregroundStyle(.primary)
+                Spacer(minLength: 0)
+                Image(systemName: "arrow.up.left").font(.footnote).foregroundStyle(.tertiary)
+            }.padding(.horizontal, 14).padding(.vertical, 9).contentShape(.rect)
+        }.buttonStyle(.plain)
+    }
+    private func category(_ title: String, _ symbol: String, _ query: String) -> some View {
+        Button { pick(query) } label: {
+            VStack(alignment: .leading, spacing: 10) {
+                Image(systemName: symbol).font(.title3).foregroundStyle(Theme.accent)
+                Text(title).font(.subheadline).foregroundStyle(.primary).lineLimit(1)
+            }
+            .frame(maxWidth: .infinity, minHeight: 73, alignment: .leading)
+            .padding(12)
+            .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: Theme.cardRadius))
+        }.buttonStyle(.plain)
     }
 }
