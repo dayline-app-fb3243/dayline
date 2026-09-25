@@ -421,6 +421,10 @@ struct DayActivityList: View {
     /// 2 = no time column, the range under the title. 3 = a line with pins at each start and end.
     /// 4 = a line of blocks sized by how long each thing took. 5 = times as small dividers between rows.
     /// 6 = the range in a pill on the right.
+    /// 4a-4f = takes on 4, each shows a time only once (a shared start/end shows as the next start):
+    /// a = 4 with that fix. b = one line runs through all blocks. c = the icon sits inside a wider block.
+    /// d = no time column, the range under the title. e = each stay is a tinted card sized by how long it took.
+    /// f = every row the same height.
     @AppStorage("schedule.layout") var layout = ""
 
     var body: some View {
@@ -647,6 +651,7 @@ extension DayActivityList {
                 switch layout {
                 case "3": pinLayout(all, line: true)
                 case "4": blockLayout(all)
+                case "4a", "4b", "4c", "4d", "4e", "4f": block4(all)
                 case "5": pinLayout(all, line: false)
                 default: plainLayout(all)
                 }
@@ -815,6 +820,114 @@ extension DayActivityList {
                 .contentShape(.rect).onTapGesture { toggle(r) }
                 .accessibilityIdentifier("scheduleRow-\(i)")
                 if open == r.id { detail(r) }
+            }
+        }
+        .padding(.vertical, 10)
+    }
+    /// 4a-4f (see the "schedule.layout" note).
+    fileprivate func block4(_ all: [Row]) -> some View {
+        let v = layout
+        func mins(_ r: Row) -> Double { (r.end ?? r.time).timeIntervalSince(r.time) / 60 }
+        func showStart(_ i: Int) -> Bool {
+            guard i > 0 else { return true }
+            let p = all[i - 1]
+            return !(p.kind == .wake && abs(p.time.timeIntervalSince(all[i].time)) < 90)
+        }
+        func showEnd(_ i: Int) -> Bool {
+            let r = all[i]
+            guard r.kind != .wake, mins(r) >= 1 else { return false }
+            if r.isNow { return true }
+            guard i + 1 < all.count, let e = r.end else { return true }
+            return abs(all[i + 1].time.timeIntervalSince(e)) >= 90
+        }
+        func height(_ r: Row) -> CGFloat {
+            if v == "4f" { return 52 }
+            let m = mins(r)
+            return v == "4e" ? max(52, min(150, 52 + m / 2.5)) : max(44, min(120, 44 + m / 3))
+        }
+        func fill(_ r: Row) -> AnyShapeStyle {
+            r.kind == .gap ? AnyShapeStyle(Color.clear) : AnyShapeStyle(Theme.accent.opacity(r.isNow ? 0.9 : 0.35))
+        }
+        return ZStack(alignment: .topLeading) {
+            if v == "4b" {
+                Rectangle().fill(Theme.accent.opacity(0.2)).frame(width: 2)
+                    .padding(.leading, 14 + 44 + 10 + 9).padding(.vertical, 18)
+            }
+            VStack(alignment: .leading, spacing: v == "4b" || v == "4f" ? 0 : 6) {
+                ForEach(Array(all.enumerated()), id: \.element.id) { i, r in
+                    let h = height(r)
+                    let bar = r.kind == .wake || mins(r) < 1 ? CGFloat(8) : h
+                    HStack(alignment: .top, spacing: 10) {
+                        if v != "4d" {
+                            VStack(alignment: .trailing) {
+                                if showStart(i) { Text(Self.clock.string(from: r.time)).font(.caption.weight(.semibold)).monospacedDigit() }
+                                Spacer(minLength: 0)
+                                if showEnd(i) {
+                                    Text(r.isNow ? "now" : Self.clock.string(from: r.end ?? r.time)).font(.caption).foregroundStyle(.secondary).monospacedDigit()
+                                }
+                            }
+                            .frame(width: 44, height: h, alignment: .trailing)
+                        }
+                        if v == "4e" {
+                            HStack(alignment: .top, spacing: 10) {
+                                icon(r, size: 26)
+                                titles(r)
+                                Spacer()
+                                chevron(r)
+                            }
+                            .padding(10)
+                            .frame(height: h, alignment: .top)
+                            .background(r.kind == .gap ? AnyShapeStyle(Color.clear) : AnyShapeStyle(Theme.accent.opacity(r.isNow ? 0.22 : 0.1)),
+                                        in: .rect(cornerRadius: 12, style: .continuous))
+                            .overlay {
+                                if r.kind == .gap {
+                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                        .stroke(Color.secondary.opacity(0.45), style: StrokeStyle(lineWidth: 1.2, dash: [4, 3]))
+                                }
+                            }
+                            .overlay(alignment: .leading) {
+                                if r.kind != .gap { RoundedRectangle(cornerRadius: 2).fill(Theme.accent.opacity(r.isNow ? 1 : 0.6)).frame(width: 4).padding(.vertical, 8) }
+                            }
+                        } else {
+                            let w: CGFloat = v == "4c" ? 30 : (v == "4a" || v == "4d" ? 8 : 10)
+                            RoundedRectangle(cornerRadius: v == "4c" ? 9 : 5, style: .continuous)
+                                .fill(fill(r))
+                                .overlay {
+                                    if r.kind == .gap {
+                                        RoundedRectangle(cornerRadius: v == "4c" ? 9 : 5, style: .continuous)
+                                            .stroke(Color.secondary.opacity(0.5), style: StrokeStyle(lineWidth: 1.5, dash: [3, 3]))
+                                    }
+                                }
+                                .overlay(alignment: .top) {
+                                    if v == "4c" {
+                                        Image(systemName: r.kind == .wake ? "sun.max.fill" : r.symbol).font(.system(size: 13, weight: .semibold))
+                                            .foregroundStyle(r.kind == .gap ? Color.secondary : (r.isNow ? Color.white : Theme.accent))
+                                            .padding(.top, 8)
+                                    }
+                                }
+                                .frame(width: w, height: v == "4c" ? max(bar, 30) : bar)
+                                .frame(width: v == "4c" ? 30 : 20, height: h, alignment: .top)
+                            HStack(spacing: 10) {
+                                if v != "4c" { icon(r, size: 26) }
+                                if v == "4d" {
+                                    VStack(alignment: .leading, spacing: 1) {
+                                        Text(r.title).font(.body.weight(.semibold)).foregroundStyle(r.kind == .gap ? .secondary : .primary)
+                                        Text(sub(r).isEmpty ? range(r) : "\(range(r)) · \(sub(r))").font(.caption).foregroundStyle(.secondary).monospacedDigit().lineLimit(1)
+                                    }
+                                } else {
+                                    titles(r)
+                                }
+                                Spacer()
+                                chevron(r)
+                            }
+                            .frame(minHeight: 44)
+                        }
+                    }
+                    .padding(.horizontal, 14)
+                    .contentShape(.rect).onTapGesture { toggle(r) }
+                    .accessibilityIdentifier("scheduleRow-\(i)")
+                    if open == r.id { detail(r) }
+                }
             }
         }
         .padding(.vertical, 10)

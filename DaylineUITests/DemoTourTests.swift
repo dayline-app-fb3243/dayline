@@ -1422,6 +1422,20 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Schedule layout 4 and its takes 4a-4f.
+    func testScheduleLayout4() throws {
+        for v in ["4a", "4b", "4c", "4d", "4e", "4f"] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-today.schedule", "C", "-demo.day", "late", "-schedule.layout", v]
+            app.launchEnvironment["TZ"] = Self.zone(localHour: 15)
+            app.launch(); pause(2.5)
+            let list = app.descendants(matching: .any)["scheduleLayout"].firstMatch
+            if list.exists { for _ in 0..<3 where list.frame.minY > 200 { app.swipeUp(velocity: .slow); pause(1) } }
+            shot("l4-\(v)")
+            app.terminate()
+        }
+    }
+
     /// Your Schedule settings redesign samples 1-8 (Places / Times / Habits), top and scrolled.
     func testSettingsSamples() throws {
         for v in ["1", "2", "3", "4", "5", "6", "7", "8"] {
