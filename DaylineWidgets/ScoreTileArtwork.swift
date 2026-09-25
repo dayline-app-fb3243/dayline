@@ -42,20 +42,23 @@ import WidgetKit
             context.setLineCap(.round)
             context.addArc(center: center, radius: radius, startAngle: start, endAngle: end, clockwise: false)
             context.strokePath()
-            // Ice-to-blue overlay is clipped to the arc silhouette, preventing
-            // the pale cap from swelling into an oval over the blue stroke.
+            // Paint a narrow ice highlight at the starting tip, clipped to
+            // the existing blue stroke. Never start another round-capped stroke:
+            // that would form a large oval on top of the approved ring.
             context.saveGState()
+            context.setLineWidth(width)
+            context.setLineCap(.round)
             context.addArc(center: center, radius: radius, startAngle: start, endAngle: end, clockwise: false)
             context.replacePathWithStrokedPath()
             context.clip()
             let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(),
                                       colors: [UIColor(red: 0.61, green: 0.85, blue: 1, alpha: 1).cgColor,
-                                               UIColor(red: 0.0, green: 0.38, blue: 0.9, alpha: 1).cgColor] as CFArray,
+                                               UIColor(red: 0.0, green: 0.38, blue: 0.9, alpha: 0).cgColor] as CFArray,
                                       locations: [0, 1])!
             context.drawLinearGradient(gradient,
                                        start: CGPoint(x: center.x, y: center.y - radius - width / 2),
-                                       end: CGPoint(x: center.x + radius, y: center.y + radius / 2),
-                                       options: [])
+                                       end: CGPoint(x: center.x, y: center.y - radius + 14),
+                                       options: [.drawsAfterEndLocation])
             context.restoreGState()
             if score > 0 {
                 let point = CGPoint(x: center.x + radius * cos(end), y: center.y + radius * sin(end))
