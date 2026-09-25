@@ -301,31 +301,37 @@ final class PlaceSearch: NSObject, ObservableObject, MKLocalSearchCompleterDeleg
 @MainActor
 final class PlaceKindSearch: ObservableObject {
     @Published var items: [MKMapItem] = []
+    @Published var loading = false
+    @Published var searchFailed = false
     var categories: [MKPointOfInterestCategory]
     private var task: Task<Void, Never>?
     init(categories: [MKPointOfInterestCategory]) { self.categories = categories }
-    /// Near the user: current location, else saved home, else (demo) midtown Manhattan.
+    /// Search the person's live location when available. Never imply a saved or demo city is nearby.
     static var nearCenter: CLLocationCoordinate2D? {
-        if let c = CLLocationManager().location?.coordinate { return c }
-        if let h = UserSchedule.current.places.first(where: { $0.kind == "home" }) {
-            return CLLocationCoordinate2D(latitude: h.latitude, longitude: h.longitude)
-        }
-        return DemoData.isDemo ? CLLocationCoordinate2D(latitude: 40.7536, longitude: -73.9838) : nil
+        guard let fix = LocationService.shared.lastLocation, fix.horizontalAccuracy >= 0,
+              abs(fix.timestamp.timeIntervalSinceNow) < 15 * 60 else { return nil }
+        return fix.coordinate
     }
     func search(_ q: String, categories: [MKPointOfInterestCategory]) { self.categories = categories; update(q) }
     func update(_ q: String) {
         task?.cancel()
-        guard !q.trimmingCharacters(in: .whitespaces).isEmpty else { items = []; return }
+        let term = q.trimmingCharacters(in: .whitespacesAndNewlines)
+        // An empty query means "gyms nearby" when location is known.
+        guard !term.isEmpty || Self.nearCenter != nil else { items = []; loading = false; return }
+        loading = true; searchFailed = false
         task = Task {
             try? await Task.sleep(for: .milliseconds(250))
             if Task.isCancelled { return }
             let r = MKLocalSearch.Request()
-            r.naturalLanguageQuery = q
+            r.naturalLanguageQuery = term.isEmpty ? "gym" : term
             r.resultTypes = .pointOfInterest
             r.pointOfInterestFilter = MKPointOfInterestFilter(including: categories)
-            if let c = Self.nearCenter { r.region = MKCoordinateRegion(center: c, latitudinalMeters: 20_000, longitudinalMeters: 20_000) }
-            let found = (try? await MKLocalSearch(request: r).start().mapItems) ?? []
+            if let c = Self.nearCenter { r.region = MKCoordinateRegion(center: c, latitudinalMeters: 12_000, longitudinalMeters: 12_000) }
+            let response = try? await MKLocalSearch(request: r).start()
             if Task.isCancelled { return }
+            let found = response?.mapItems ?? []
+            searchFailed = response == nil
+            loading = false
             if let c = Self.nearCenter {
                 let here = CLLocation(latitude: c.latitude, longitude: c.longitude)
                 items = found.sorted { $0.location.distance(from: here) < $1.location.distance(from: here) }
@@ -350,11 +356,23 @@ struct AddPlaceView: View {
     @StateObject private var search = PlaceSearch()
     @StateObject private var kindSearch = PlaceKindSearch(categories: [])
     @State private var query = ""
+    @State private var searchAllPlaces = false
+    @ObservedObject private var location = LocationService.shared
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         List {
-            if let cats = categories {
+            if let cats = categories, !searchAllPlaces {
+                if query.isEmpty && PlaceKindSearch.nearCenter == nil {
+                    Text("Allow location in Settings to see nearby gyms. You can still search by name.")
+                        .font(.subheadline).foregroundStyle(.secondary)
+                }
+                Section(query.isEmpty ? "Gyms nearby" : "Gym results") {
+                if kindSearch.loading { ProgressView("Searching Apple Maps…") }
+                if !kindSearch.loading && kindSearch.items.isEmpty && PlaceKindSearch.nearCenter != nil {
+                    Text(kindSearch.searchFailed ? "Apple Maps could not load gyms. Search by name or try again." : "No gyms found nearby. Search by name or address.")
+                        .font(.subheadline).foregroundStyle(.secondary)
+                }
                 ForEach(kindSearch.items, id: \.self) { item in
                     Button { onPick(item); if dismissOnPick { dismiss() } } label: {
                         HStack(spacing: 12) {
@@ -373,6 +391,12 @@ struct AddPlaceView: View {
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("placeResult")
                 }
+                }
+                Button("Search all places or enter an address") {
+                    searchAllPlaces = true
+                    if !query.isEmpty { search.update(query) }
+                }
+                .accessibilityIdentifier("searchAllPlaces")
             } else {
             ForEach(search.results, id: \.self) { r in
                 Button { pick(r) } label: {
@@ -391,12 +415,19 @@ struct AddPlaceView: View {
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("placeResult")
             }
+                if categories != nil && searchAllPlaces {
+                    Button("Search gyms nearby") { searchAllPlaces = false; kindSearch.update(query) }
+                }
             }
         }
         .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: prompt)
         .onChange(of: query) { _, q in
-            if let cats = categories { kindSearch.search(q, categories: cats) } else { search.update(q) }
+            if let cats = categories, !searchAllPlaces { kindSearch.search(q, categories: cats) } else { search.update(q) }
         }
+        .onChange(of: location.lastSample) {
+            if let cats = categories, query.isEmpty && !searchAllPlaces { kindSearch.search("", categories: cats) }
+        }
+        .task { if let cats = categories { kindSearch.search("", categories: cats) } }
         .navigationTitle(title)
         .backgroundNavBar()
         .navigationBarTitleDisplayMode(.inline)

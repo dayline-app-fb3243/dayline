@@ -180,6 +180,28 @@ final class DemoTourTests: XCTestCase {
         shot("journal-media-dialog-dark")
     }
 
+    func testNearbyGymAndNameSearch() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo"]
+        app.launch(); pause(1)
+        let locationPrompt = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        let allowLocation = locationPrompt.buttons["Allow While Using App"]
+        if allowLocation.waitForExistence(timeout: 3) { allowLocation.tap() }
+        app.tabBars.buttons["Profile"].tap(); pause(1)
+        tapID(app, "Your Schedule"); pause(1)
+        let gym = app.descendants(matching: .any)["gymLocation"].firstMatch
+        if !gym.exists { app.swipeUp() }
+        XCTAssertTrue(gym.waitForExistence(timeout: 5))
+        gym.tap(); pause(7)
+        XCTAssertTrue(app.staticTexts["Gyms nearby"].exists)
+        XCTAssertTrue(app.buttons["placeResult"].firstMatch.exists, "Apple Maps returned no nearby gym")
+        shot("gym-nearby")
+        let search = app.searchFields.firstMatch
+        search.tap(); search.typeText("Planet Fitness"); pause(7)
+        XCTAssertTrue(app.buttons["placeResult"].firstMatch.exists, "Apple Maps returned no named gym")
+        shot("gym-name-search")
+    }
+
     func testDefaultWorkHoursWeekdays() {
         let app = XCUIApplication()
         app.launchArguments = ["-onboarding.done", "YES"]
