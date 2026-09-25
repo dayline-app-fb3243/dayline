@@ -576,6 +576,20 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// The real Today Schedule > Gym row opens the selected default Gym page.
+    func testTodayGymNavigation() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo"]
+        app.launchEnvironment["TZ"] = Self.morningZone
+        app.launch(); pause(1.5)
+        let gym = app.staticTexts["Gym"].firstMatch
+        XCTAssertTrue(gym.waitForExistence(timeout: 5), "Gym schedule row missing")
+        shot("today-gym-row-wired")
+        gym.tap(); pause(3)
+        XCTAssertTrue(app.descendants(matching: .any)["gymDetail"].firstMatch.waitForExistence(timeout: 4), "Gym page did not open")
+        shot("today-gym-page-opened")
+    }
+
     /// Real Today Gym row and current default Gym page for an annotated entry-point proposal.
     /// No new navigation is added by this preview.
     func testGymEntryProposal() throws {

@@ -7,6 +7,7 @@ struct TodayView: View {
     @Query(sort: \JournalEntry.date, order: .reverse) private var journal: [JournalEntry]
     @Query private var visits: [Visit]
     @State private var capture: CaptureMode?
+    @State private var showGym = false
 
     private var result: ScoreEngine.Result {
         // Recomputed whenever the queried data changes.
@@ -34,6 +35,7 @@ struct TodayView: View {
             .background(AppBackgroundView())
             .tabRoot()
             .sheet(item: $capture) { mode in CaptureSheet(mode: mode) }
+            .navigationDestination(isPresented: $showGym) { GymDetailView() }
         }
     }
 
@@ -91,7 +93,7 @@ struct TodayView: View {
             Text("Schedule").font(.subheadline.weight(.semibold))
             .foregroundStyle(.secondary)
                 .padding(.leading, 4).padding(.top, 6)
-            DayActivityList(day: .now)
+            DayActivityList(day: .now, onGymTap: { showGym = true })
         }
         .accessibilityIdentifier("todaySchedule")
     }

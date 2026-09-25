@@ -251,6 +251,7 @@ struct DayActivityList: View {
     @Environment(\.colorScheme) private var mapScheme
     @AppStorage("symbols.show") private var showSymbols = true
     var day: Date
+    var onGymTap: (() -> Void)? = nil
     @Environment(\.modelContext) private var context
     @Query(sort: \Visit.arrival) private var visits: [Visit]
     @Query(sort: \JournalEntry.date) private var journal: [JournalEntry]
@@ -572,8 +573,10 @@ extension DayActivityList {
             .background(r.kind == .gap ? AnyShapeStyle(Color(.secondarySystemFill)) : (r.isNow ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(Theme.accent.opacity(0.14))), in: .circle)
     }
     fileprivate func chevron(_ r: Row) -> some View {
-        Image(systemName: "chevron.down").font(.footnote.weight(.semibold)).foregroundStyle(.tertiary)
-            .rotationEffect(.degrees(open == r.id ? 180 : 0))
+        let opensGym = onGymTap != nil && r.kind == .visit && r.title.localizedCaseInsensitiveContains("gym")
+        return Image(systemName: opensGym ? "chevron.right" : "chevron.down")
+            .font(.footnote.weight(.semibold)).foregroundStyle(.tertiary)
+            .rotationEffect(.degrees(opensGym ? 0 : (open == r.id ? 180 : 0)))
     }
 
     /// Each row: a blue bar sized by how long it took, the symbol, the title, and from-till under it.
@@ -606,7 +609,11 @@ extension DayActivityList {
                     .frame(minHeight: 44)
                 }
                 .padding(.horizontal, 14)
-                .contentShape(.rect).onTapGesture { toggle(r) }
+                .contentShape(.rect).onTapGesture {
+                    if r.kind == .visit && r.title.localizedCaseInsensitiveContains("gym"), let onGymTap {
+                        onGymTap()
+                    } else { toggle(r) }
+                }
                 .accessibilityIdentifier("scheduleRow-\(i)")
                 if open == r.id { detail(r) }
             }
