@@ -421,45 +421,29 @@ struct DayActivityList: View {
     }
 }
 
-/// Reference from Find My: a translucent sheet around rows with circular symbol icons.
-/// Variations only affect this list, not the score or the rest of the page.
-enum FactorGlassStyle {
+/// Polished variations of Dayline's existing white-card factor list.
+/// The icon stays a soft colored circle and the page keeps its own surface language.
+enum FactorListStyle {
     static var chosen: Int {
         let a = ProcessInfo.processInfo.arguments
-        guard let i = a.firstIndex(of: "-factorGlass"), i + 1 < a.count else { return 0 }
+        guard let i = a.firstIndex(of: "-factorList"), i + 1 < a.count else { return 0 }
         return Int(a[i + 1]) ?? 0
     }
 }
 
 struct FactorGlassList: View {
     let factors: [ScoreFactor]
-    private var style: Int { FactorGlassStyle.chosen }
+    private var style: Int { FactorListStyle.chosen }
     var body: some View {
-        Group {
-            if style == 0 {
-                Card(padding: 0) { rows }
-            } else if style == 1 {
-                rows.padding(.vertical, 3)
-                    .glassEffect(.regular, in: .rect(cornerRadius: 28))
-            } else if style == 2 {
-                rows.padding(.vertical, 6)
-                    .background(.thinMaterial, in: .rect(cornerRadius: 28))
-                    .overlay(RoundedRectangle(cornerRadius: 28).stroke(.white.opacity(0.35), lineWidth: 0.5))
-            } else {
-                VStack(spacing: 8) {
-                    ForEach(factors) { f in
-                        FactorRow(factor: f)
-                            .background(.regularMaterial, in: .rect(cornerRadius: 22))
+        Card(padding: 0) {
+            VStack(spacing: 0) {
+                ForEach(Array(factors.enumerated()), id: \.element.id) { i, f in
+                    FactorRow(factor: f)
+                    if i < factors.count - 1 {
+                        Divider().padding(.leading, style == 2 ? 70 : 62)
+                            .padding(.trailing, style == 3 ? 0 : 16)
                     }
                 }
-            }
-        }
-    }
-    private var rows: some View {
-        VStack(spacing: 0) {
-            ForEach(Array(factors.enumerated()), id: \.element.id) { i, f in
-                FactorRow(factor: f)
-                if i < factors.count - 1 { Divider().padding(.leading, 62).padding(.trailing, 16) }
             }
         }
     }
@@ -477,19 +461,12 @@ struct FactorRow: View {
             // orange when it took points away. factorIcons = "bare" (preview): the symbol alone, no circle.
             if showSymbols {
                 let tint = factor.points < 0 ? Theme.bad : Theme.accent
-                Group {
-                    if FactorGlassStyle.chosen > 0 {
-                        Image(systemName: symbol).font(.subheadline.weight(.semibold)).foregroundStyle(tint)
-                            .frame(width: FactorGlassStyle.chosen == 3 ? 42 : 38,
-                                   height: FactorGlassStyle.chosen == 3 ? 42 : 38)
-                            .background(tint.opacity(0.13), in: .circle)
-                            .glassEffect(FactorGlassStyle.chosen == 2 ? .clear : .regular, in: .circle)
-                    } else {
-                        Image(systemName: symbol).font(.subheadline.weight(.semibold)).foregroundStyle(tint)
-                            .frame(width: 34, height: 34)
-                            .background(iconStyle == "bare" ? Color.clear : tint.opacity(0.14), in: .circle)
-                    }
-                }
+                Image(systemName: symbol)
+                    .font(FactorListStyle.chosen == 2 ? .body.weight(.medium) : .subheadline.weight(.semibold))
+                    .foregroundStyle(tint)
+                    .frame(width: FactorListStyle.chosen == 2 ? 38 : 34,
+                           height: FactorListStyle.chosen == 2 ? 38 : 34)
+                    .background(iconStyle == "bare" ? Color.clear : tint.opacity(FactorListStyle.chosen == 1 ? 0.10 : 0.14), in: .circle)
             }
             VStack(alignment: .leading, spacing: 1) {
                 Text(factor.title).font(.body)
@@ -501,7 +478,8 @@ struct FactorRow: View {
                 .font(.body).monospacedDigit()
                 .foregroundStyle(factor.points > 0 ? Color.primary : Color.secondary)
         }
-        .padding(.horizontal, 16).padding(.vertical, 11)
+        .padding(.horizontal, 16)
+        .padding(.vertical, FactorListStyle.chosen == 1 ? 14 : FactorListStyle.chosen == 2 ? 12 : 11)
     }
 
     static func style(_ title: String) -> (String, Color) {
