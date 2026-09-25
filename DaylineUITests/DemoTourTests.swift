@@ -359,22 +359,12 @@ final class DemoTourTests: XCTestCase {
             let bodyField = app.descendants(matching: .any).matching(identifier: "entryBody").firstMatch
             if bodyField.waitForExistence(timeout: 1.5) { bodyField.tap(); bodyField.typeText("Finally tried the cacio e pepe everyone talks about. Worth it.") }
             pause(1); shot("51-new-entry-typed")
-            // Voice note: touch and hold the mic, slide up to lock, then stop and add it.
+            // Voice note: hold the microphone and release to attach.
             let mic = app.descendants(matching: .any).matching(identifier: "voiceMic").firstMatch
             if mic.waitForExistence(timeout: 2) {
-                let start = mic.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
-                start.press(forDuration: 0.6, thenDragTo: start.withOffset(CGVector(dx: 0, dy: -120)))
+                mic.press(forDuration: 1.3)
                 let allow = XCUIApplication(bundleIdentifier: "com.apple.springboard").buttons["Allow"]
-                if allow.waitForExistence(timeout: 1.5) {
-                    allow.tap(); pause(0.5)
-                    start.press(forDuration: 0.6, thenDragTo: start.withOffset(CGVector(dx: 0, dy: -120)))
-                }
-                pause(2.5); shot("51b-voice-recording-locked")
-                let stop = app.buttons["Stop recording"].firstMatch
-                if stop.waitForExistence(timeout: 2) { stop.tap() }
-                pause(1); shot("51c-voice-review")
-                let send = app.descendants(matching: .any).matching(identifier: "voiceSend").firstMatch
-                if send.waitForExistence(timeout: 2) { send.tap() }
+                if allow.waitForExistence(timeout: 1.5) { allow.tap(); pause(0.5); mic.press(forDuration: 1.3) }
                 pause(1.5); shot("51d-voice-added")
             }
             tapID(app, "saveEntry"); pause(2); shot("52-journal-after-save")
