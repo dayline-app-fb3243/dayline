@@ -94,6 +94,7 @@ struct DaylineApp: App {
                     await Notifications.followRequest(from: "Maya")
                     await Notifications.previewScoreReached()
                     await Notifications.previewJournalReminder()
+                    UserDefaults.standard.set(true, forKey: "demo.notifications.sent")
                 }
             }
             // Screenshot runs: show real check-in notifications (Apple's Yes / No actions).
