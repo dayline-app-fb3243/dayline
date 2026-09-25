@@ -355,6 +355,18 @@ final class DemoTourTests: XCTestCase {
             sb.swipeLeft(); pause(1.2); _ = i
         }
         pause(1.5); shot("h2-home-icon-dark")
+        // Home Screen icon style: long-press, Edit > Customize > Dark (like David's Simulator), then shoot again.
+        sb.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.62)).press(forDuration: 1.6); pause(1.2)
+        let edit = sb.buttons["Edit"].firstMatch
+        if edit.waitForExistence(timeout: 3) { edit.tap(); pause(1) }
+        let customize = sb.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'Customize'")).firstMatch
+        if customize.waitForExistence(timeout: 3) { customize.tap(); pause(1.5) }
+        shot("h3-customize")
+        let dark = sb.buttons.matching(NSPredicate(format: "label ==[c] 'Dark'")).firstMatch
+        if dark.waitForExistence(timeout: 3) { dark.tap(); pause(2) }
+        shot("h4-customize-dark")
+        XCUIDevice.shared.press(.home); pause(1); XCUIDevice.shared.press(.home); pause(2)
+        shot("h5-home-icon-dark-style")
     }
 
     /// Splash options only (map-based D/E/F/G).
