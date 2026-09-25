@@ -63,11 +63,16 @@ struct TodayWidgetView: View {
                 }
             }
         case .systemSmall:
-            Image(uiImage: ScoreTileArtwork.image(score: s.score, label: s.label))
-                .resizable()
-                .renderingMode(.original)
-                .widgetAccentedRenderingMode(.fullColor)
-                .accessibilityLabel("Day score \(s.score) out of 100. \(s.label)")
+            VStack(spacing: 0) {
+                Text("Day score").font(.system(size: 12, weight: .semibold))
+                    .frame(height: 28, alignment: .bottom)
+                SeamlessWidgetScoreRing(score: s.score, size: 112, width: 34)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                Text(s.label).font(.system(size: 10)).foregroundStyle(.secondary)
+                    .frame(height: 25, alignment: .top)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .accessibilityLabel("Day score \(s.score) out of 100. \(s.label)")
         default:
             HStack(spacing: 16) {
                 SeamlessWidgetScoreRing(score: s.score, size: 122, width: 34)
@@ -90,7 +95,7 @@ struct TodayWidget: Widget {
                 .containerBackground(for: .widget) {
                     if SharedBackgroundStore.syncEnabled {
                         SharedBackgroundCanvas(preset: SharedBackgroundStore.preset(), style: SharedBackgroundStore.style(), photo: SharedBackgroundStore.photo())
-                    } else { Color.white }
+                    } else { Color(.secondarySystemGroupedBackground) }
                 }
                 .widgetURL(URL(string: "dayline://today"))
         }
