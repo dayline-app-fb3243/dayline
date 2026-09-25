@@ -612,6 +612,18 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Full map: panel 8pt from the screen edges, Maps logo just above it.
+    func testFullMapEdges() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo"]
+        app.launch(); pause(1.5)
+        tab(app, "Timeline"); pause(3)
+        let card = app.descendants(matching: .any)["mapCard"].firstMatch
+        if card.waitForExistence(timeout: 3) { card.coordinate(withNormalizedOffset: CGVector(dx: 0.4, dy: 0.5)).tap() }
+        pause(2.5); shot("fm1-day")
+        tapSegment(app, "Week"); pause(2.5); shot("fm2-week")
+    }
+
     /// White background: should look like Settings (light gray page, white cards).
     func testWhiteBackground() throws {
         let app = XCUIApplication()

@@ -351,6 +351,9 @@ struct TimelineScreen: View {
     /// Full-screen map: back + title on top, glass toggles and locate at the bottom right, range picker at the bottom.
     private var fullMap: some View {
         mapView(interactive: true, showsControls: false)
+            // Like Apple Maps: the Maps logo and Legal sit just above the bottom panel (not under it), and the map
+            // frames your places in the space above the panel.
+            .safeAreaPadding(.bottom, Self.panelTop + 8)
             .ignoresSafeArea()
             .overlay(alignment: .top) {
                 HStack {
@@ -399,19 +402,27 @@ struct TimelineScreen: View {
                             .glassEffect(.regular, in: .capsule)
                     }
                 }
-                // Clear space above the range bar / the taller Find My style panel.
-                .padding(.trailing, 16).padding(.bottom, 112)
+                // Same 16pt gap above the panel as from the right edge.
+                .padding(.trailing, 16).padding(.bottom, 16 + Self.panelTop - Self.homeInset)
             }
             .overlay(alignment: .bottom) {
-                backSheet
+                backSheet.ignoresSafeArea(.container, edges: .bottom)
             }
     }
 
     /// Find My style panel: one bigger glass panel sits behind the range bar. Closed, only its thin
     /// outline and grabber show around the bar; pulled up, the same panel grows and the switches come out
     /// from behind the bar. The bar itself never moves.
+    /// iPhone screen corner radius (iPhone 16/17 Pro class), the panel's inset from the edges, and the closed
+    /// panel's top measured from the bottom of the screen (bar 48 + 14 above and below + inset).
+    private static let screenCorner: CGFloat = 55
+    private static let panelInset: CGFloat = 8
+    private static let panelTop: CGFloat = 48 + 28 + panelInset
+    private static let homeInset: CGFloat = 34
+
     private var backSheet: some View {
-        let shape = RoundedRectangle(cornerRadius: sheetOpen ? 38 : 44, style: .continuous)
+        // Concentric with the screen corners, 8pt in from the edges like Apple Maps' panel.
+        let shape = RoundedRectangle(cornerRadius: Self.screenCorner - Self.panelInset, style: .continuous)
         return VStack(spacing: 0) {
             if sheetOpen {
                 Color.clear.frame(height: 24)
@@ -455,7 +466,7 @@ struct TimelineScreen: View {
         .glassEffect(.regular, in: shape)
         .overlay(shape.strokeBorder(Color.white.opacity(0.45), lineWidth: 0.8))
         .overlay(shape.strokeBorder(Color.black.opacity(0.08), lineWidth: 0.5).padding(-0.5))
-        .padding(.horizontal, 8).padding(.bottom, 2)
+        .padding(.horizontal, Self.panelInset).padding(.bottom, Self.panelInset)
         .gesture(DragGesture(minimumDistance: 12).onEnded { g in
             withAnimation(.spring(response: 0.5, dampingFraction: 0.86)) {
                 if g.translation.height < -30 { sheetOpen = true } else if g.translation.height > 30 { sheetOpen = false }
