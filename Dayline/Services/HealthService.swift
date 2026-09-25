@@ -12,6 +12,7 @@ final class HealthService {
     private var readTypes: Set<HKObjectType> {
         var s: Set<HKObjectType> = [HKObjectType.workoutType()]
         if let d = HKObjectType.quantityType(forIdentifier: .distanceWalkingRunning) { s.insert(d) }
+        if let steps = HKObjectType.quantityType(forIdentifier: .stepCount) { s.insert(steps) }
         return s
     }
 

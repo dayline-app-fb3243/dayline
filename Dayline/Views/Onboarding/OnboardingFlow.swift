@@ -571,7 +571,7 @@ struct PermissionsView: View {
              note: "Your photos stay on your iPhone. You can change this later in Settings."),
         Page(kind: "contacts", title: "Choose Contacts for Dayline",
              rows: [("person.2", "Choose people to connect with"), ("person.crop.circle.badge.plus", "Manage who can share streaks with you")],
-             note: "Your iPhone lets you choose all contacts or only a few. Dayline doesn't upload your contacts."),
+             note: "Choose all contacts or only a few. Dayline uses the contacts you choose for invitations on this iPhone."),
         Page(kind: "mic", title: "Turning on the Microphone lets Dayline:",
              rows: [("mic", "Record voice memos for your journal"), ("text.bubble", "Turn them into text on your iPhone")],
              note: "Dayline only listens while you record. You can change this later in Settings."),

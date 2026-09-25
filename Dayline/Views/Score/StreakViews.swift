@@ -1,6 +1,7 @@
 import SwiftUI
 import MessageUI
 import SwiftData
+import Contacts
 
 // MARK: - Friends (local for now; sharing needs the sync backend)
 
@@ -581,14 +582,58 @@ private struct ActivitySheet: UIViewControllerRepresentable {
 enum PeopleStore {
     /// People who can see your streak.
     static var sharingWith: [StreakFriend] { FriendStore.friends.filter { $0.name != "Priya" } }
-    static let contacts: [(String, String)] = [("Alex Kim", "alex@icloud.com"), ("Nina Patel", "(416) 555-0142")]
-    static let notOnDayline: [(String, String)] = [("Maya Cohen", "(647) 555-0199"), ("Ben Levi", "ben.levi@gmail.com")]
+    // No app membership lookup exists yet. A phone contact alone must never be called "on Dayline".
+    static var contacts: [(String, String)] { [] }
+    static var notOnDayline: [(String, String)] { DeviceContacts.shared.people }
     static let inviteText = "Join me on Dayline. It builds your day for you and we can keep streaks together. https://dayline.app/invite"
+}
+
+/// Reads only names and one reachable handle from Contacts the person has granted to this app.
+/// The fetch is on-device; no upload, server membership claim, or request to another person occurs.
+@MainActor
+final class DeviceContacts: ObservableObject {
+    static let shared = DeviceContacts()
+    @Published private(set) var people: [(String, String)] = []
+    @Published private(set) var permissionNeeded = false
+    private let store = CNContactStore()
+
+    func refresh() {
+        let status = CNContactStore.authorizationStatus(for: .contacts)
+        guard status == .authorized || status == .limited else {
+            people = []; permissionNeeded = status == .notDetermined
+            return
+        }
+        permissionNeeded = false
+        let keys = [CNContactGivenNameKey, CNContactFamilyNameKey,
+                    CNContactPhoneNumbersKey, CNContactEmailAddressesKey] as [CNKeyDescriptor]
+        let request = CNContactFetchRequest(keysToFetch: keys)
+        request.sortOrder = .userDefault
+        var seen = Set<String>(), rows: [(String, String)] = []
+        do {
+            try store.enumerateContacts(with: request) { contact, _ in
+                let name = [contact.givenName, contact.familyName].filter { !$0.isEmpty }.joined(separator: " ")
+                guard !name.isEmpty else { return }
+                let handle = contact.phoneNumbers.first?.value.stringValue ??
+                    contact.emailAddresses.first.map { String($0.value) } ?? ""
+                guard !handle.isEmpty, seen.insert(contact.identifier).inserted else { return }
+                rows.append((name, handle))
+            }
+            people = rows.sorted { $0.0.localizedStandardCompare($1.0) == .orderedAscending }
+        } catch {
+            people = []
+        }
+    }
+
+    func requestAndRefresh() async {
+        _ = try? await store.requestAccess(for: .contacts)
+        refresh()
+    }
 }
 
 struct PeopleView: View {
     @AppStorage("hiddenFriends") private var hiddenRaw = ""
     @State private var search = ""
+    @ObservedObject private var deviceContacts = DeviceContacts.shared
 
     private var hidden: Set<String> { Set(hiddenRaw.split(separator: ",").map(String.init)) }
 
@@ -628,24 +673,23 @@ struct PeopleView: View {
                         .accessibilityIdentifier("addPerson")
                 }
 
-                if DemoData.isDemo {
-                    SettingsHeader("People to Follow")
-                    SettingsGroup {
-                        ForEach(PeopleStore.contacts, id: \.0) { c in
-                            PersonRow(compact: true, name: c.0, subtitle: "On Dayline") {
-                                PillButton(title: "Follow", done: "Requested")
-                            }
-                            .accessibilityIdentifier("follow-\(c.0)")
-                        }
-                        ForEach(Array(PeopleStore.notOnDayline.enumerated()), id: \.offset) { i, c in
-                            PersonRow(compact: true, name: c.0, subtitle: "Not on Dayline yet", last: i == PeopleStore.notOnDayline.count - 1) {
-                                InviteButton(recipient: c.1).accessibilityIdentifier("invite-\(c.0)")
-                            }
+                SettingsHeader("Your Contacts")
+                SettingsGroup {
+                    if deviceContacts.permissionNeeded {
+                        Button("Choose Contacts") { Task { await deviceContacts.requestAndRefresh() } }
+                            .padding(16)
+                    } else if deviceContacts.people.isEmpty {
+                        Text("No contacts with a phone number or email are available.")
+                            .font(.subheadline).foregroundStyle(.secondary).padding(16)
+                    }
+                    ForEach(Array(deviceContacts.people.enumerated()), id: \.offset) { i, c in
+                        PersonRow(compact: true, name: c.0, subtitle: c.1, last: i == deviceContacts.people.count - 1) {
+                            InviteButton(recipient: c.1).accessibilityIdentifier("invite-\(c.0)")
                         }
                     }
-                    Text("From your contacts. Follow sends a request. Invite sends a link in Messages.")
-                        .font(.footnote).helperText().padding(.horizontal, 16).padding(.top, 7)
                 }
+                Text("Choose someone to invite through Messages. Your contacts stay on this iPhone.")
+                    .font(.footnote).helperText().padding(.horizontal, 16).padding(.top, 7)
             }
             .padding(.horizontal, 18).padding(.bottom, 30)
         }
@@ -657,6 +701,7 @@ struct PeopleView: View {
         .searchable(text: $search, placement: .navigationBarDrawer(displayMode: .always), prompt: "Phone, Email or Contact")
         .toolbarVisibility(.hidden, for: .tabBar)
         .accessibilityIdentifier("peopleScreen")
+        .task { deviceContacts.refresh() }
     }
 }
 
@@ -758,19 +803,14 @@ private struct FlatSearchField: View {
 /// Ask someone to share their streak with you.
 struct AskToShareView: View {
     @State private var search = ""
+    @ObservedObject private var deviceContacts = DeviceContacts.shared
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 FlatSearchField(text: $search, id: "askSearch")
-                Text("They\u{2019}ll get a request to share their streak with you.")
+                Text("Choose a contact to invite. Requests to share streaks need a Dayline account.")
                     .font(.subheadline).foregroundStyle(.secondary).padding(.horizontal, 14).padding(.top, 10)
-                PeopleHeader("Contacts on Dayline")
-                PeopleGroup {
-                    ForEach(Array(PeopleStore.contacts.enumerated()), id: \.offset) { i, c in
-                        PersonRow(name: c.0, subtitle: c.1, last: i == PeopleStore.contacts.count - 1) { PillButton(title: "Ask", done: "Asked") }
-                    }
-                }
-                PeopleHeader("Not on Dayline Yet")
+                PeopleHeader("Your Contacts")
                 PeopleGroup {
                     ForEach(Array(PeopleStore.notOnDayline.enumerated()), id: \.offset) { i, c in
                         PersonRow(name: c.0, subtitle: c.1, last: i == PeopleStore.notOnDayline.count - 1) {
@@ -789,12 +829,14 @@ InviteButton(recipient: c.1)
         .navigationBarTitleDisplayMode(.inline)
         .toolbarVisibility(.hidden, for: .tabBar)
         .accessibilityIdentifier("askScreen")
+        .task { deviceContacts.refresh() }
     }
 }
 
 /// Share your streak: contacts on Dayline get Share, anyone else found by search gets Invite.
 struct ShareWithView: View {
     @State private var search = ""
+    @ObservedObject private var deviceContacts = DeviceContacts.shared
     private var q: String { search.trimmingCharacters(in: .whitespaces).lowercased() }
     private func match(_ c: (String, String)) -> Bool { q.isEmpty || c.0.lowercased().contains(q) || c.1.lowercased().contains(q) }
     private var onDayline: [(String, String)] { PeopleStore.contacts.filter(match) }
@@ -826,7 +868,7 @@ struct ShareWithView: View {
                     }
                 }
                 if !notOn.isEmpty {
-                    PeopleHeader("Not on Dayline Yet")
+                    PeopleHeader("Your Contacts")
                     PeopleGroup {
                         ForEach(Array(notOn.enumerated()), id: \.offset) { i, c in
                             PersonRow(name: c.0, subtitle: c.1, last: i == notOn.count - 1) {
@@ -836,7 +878,7 @@ struct ShareWithView: View {
                         }
                     }
                 }
-                Text(q.isEmpty ? "Share lets them see your streak only. Search to invite someone who isn\u{2019}t on Dayline." : "Share lets them see your streak only. Invite sends a link in Messages.")
+                Text("Choose someone to invite through Messages. Sharing a streak needs a Dayline account.")
                     .font(.footnote).helperText().padding(.horizontal, 16).padding(.top, 7)
             }
             .padding(.horizontal, 18).padding(.bottom, 30)
@@ -849,5 +891,6 @@ struct ShareWithView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbarVisibility(.hidden, for: .tabBar)
         .accessibilityIdentifier("shareWithScreen")
+        .task { deviceContacts.refresh() }
     }
 }

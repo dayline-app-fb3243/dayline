@@ -1,6 +1,7 @@
 import Foundation
 import CoreLocation
 import CoreMotion
+import HealthKit
 
 /// One set of work hours, e.g. Mon-Thu 9-5 or Friday 9-3. Minutes after midnight.
 struct WorkBlock: Codable, Hashable, Identifiable, Sendable {
@@ -119,6 +120,23 @@ enum StepGoal {
     }
 
     static func steps(from start: Date, to end: Date) async -> Int {
+        // HealthKit includes the paired Watch as well as the phone; the cumulative query avoids
+        // counting duplicate records from several sources. Use phone Motion only if Health is unavailable.
+        if HKHealthStore.isHealthDataAvailable(),
+           let type = HKObjectType.quantityType(forIdentifier: .stepCount) {
+            let store = HKHealthStore()
+            let health: Int? = await withCheckedContinuation { cont in
+                let predicate = HKQuery.predicateForSamples(withStart: start, end: end, options: .strictStartDate)
+                let q = HKStatisticsQuery(quantityType: type, quantitySamplePredicate: predicate, options: .cumulativeSum) { _, result, error in
+                    guard error == nil, let n = result?.sumQuantity()?.doubleValue(for: .count()) else {
+                        cont.resume(returning: nil); return
+                    }
+                    cont.resume(returning: Int(n))
+                }
+                store.execute(q)
+            }
+            if let health { return health }
+        }
         guard CMPedometer.isStepCountingAvailable(), CMPedometer.authorizationStatus() == .authorized else { return 0 }
         return await withCheckedContinuation { cont in
             CMPedometer().queryPedometerData(from: start, to: end) { data, _ in cont.resume(returning: data?.numberOfSteps.intValue ?? 0) }

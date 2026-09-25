@@ -41,3 +41,9 @@ CI simulator builds and unsigned Xcode project zips do not prove iCloud sync.
 - Publish a production privacy policy that accurately describes the actual account, location, health, photo, voice/Speech, Contacts, social sharing, analytics, retention, deletion and cloud storage behavior after services are implemented. Replace prototype-only statements and verify App Store privacy disclosures against the shipped build.
 - Add an in-app link to that privacy policy and test it on a device.
 - Add in-app support actions to contact David/the Dayline team and report a problem. Decide and verify the support address or destination before wiring or publishing the links; no address is assumed here.
+
+## Native phone integrations
+
+- Contacts permission and on-device contact selection/invitation are wired. Validate limited/full access and updates on real iPhones; implement authenticated server-side membership matching before labeling any contact as already on Dayline or enabling actual follow/share requests. Never infer membership from the phone's Contacts app.
+- HealthKit reads step count and workouts with read-only authorization; when HealthKit is unavailable, Motion pedometer can provide phone steps. Test Health permissions, Watch/phone source overlap, empty/denied access, and live updates on real devices. The seeded Demo shows sample history because a fresh simulator has no steps.
+- Messages composer uses `MFMessageComposeViewController` where the device can send SMS; otherwise it falls back to the system share sheet. Test the real composer, recipient and live invite destination on a physical iPhone; the simulator did not render a usable Messages composer.
