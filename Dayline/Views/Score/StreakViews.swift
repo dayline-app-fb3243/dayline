@@ -170,7 +170,7 @@ struct StreakView: View {
                 // A round glass button the same size as the back button (the default toolbar glass turns this
                 // wide symbol into an oval).
                 NavigationLink { PeopleView() } label: {
-                    Image(systemName: "person.2").font(.body).foregroundStyle(.primary)
+                    Image(systemName: "person.2.fill").symbolVariant(.fill).font(.body).foregroundStyle(.primary)
                         .frame(width: 44, height: 44).contentShape(.circle)
                         .glassEffect(.regular.interactive(), in: .circle)
                 }
