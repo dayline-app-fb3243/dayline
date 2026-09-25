@@ -625,7 +625,9 @@ final class DemoTourTests: XCTestCase {
     }
 
     /// Three Week-at-a-glance designs, each with an orange low day in light and dark.
-    func testWeekWidgetVariations() throws {
+    func testWeekWidgetVariations() throws { try captureWeekWidgets() }
+    func testWeekWidgetVariationsDark() throws { try captureWeekWidgets() }
+    private func captureWeekWidgets() throws {
         for n in 21...23 {
             let app = XCUIApplication()
             app.launchArguments = ["-demo", "-widgetConcept", "\(n)"]
