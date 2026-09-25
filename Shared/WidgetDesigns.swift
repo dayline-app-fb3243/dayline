@@ -99,6 +99,15 @@ struct SeamlessWidgetScoreRing: View {
                 .rotationEffect(.degrees(-90))
                 .frame(width: diameter, height: diameter)
                 .widgetAccentable()
+            // An angular gradient can wrap at the trimmed end and paint the round cap
+            // in its pale starting color. Pin that cap to the filled arc's dark-blue end.
+            if score > 0 {
+                Circle()
+                    .fill(Color(red: 0.0, green: 0.38, blue: 0.9))
+                    .frame(width: width, height: width)
+                    .offset(x: radius * cos(angle), y: radius * sin(angle))
+                    .widgetAccentable()
+            }
             if score > 0 && renderingMode == .accented {
                 Image(uiImage: endpointNumber(score, width: width))
                     .resizable().interpolation(.high)
