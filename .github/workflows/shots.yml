@@ -83,6 +83,17 @@ jobs:
         timeout-minutes: 22
         run: |
           mkdir -p shots /tmp/dayline-shots
+          if [ "${{ inputs.tests }}" = 'predicateDiagnostics' ]; then
+            (xcrun simctl spawn "${{ steps.sim.outputs.udid }}" log stream --style compact --level debug --predicate 'process == "Dayline" OR process == "photolibraryd"' > shots/predicate-live-log.txt 2>&1) & LOGGER=$!
+            xcrun simctl terminate "${{ steps.sim.outputs.udid }}" app.dayline 2>/dev/null || true
+            xcrun simctl launch --console "${{ steps.sim.outputs.udid }}" app.dayline > shots/predicate-launch-console.txt 2>&1 & LAUNCHER=$!
+            sleep 20
+            xcrun simctl io "${{ steps.sim.outputs.udid }}" screenshot shots/predicate-first-launch.png
+            kill "$LAUNCHER" "$LOGGER" 2>/dev/null || true
+            wait "$LAUNCHER" "$LOGGER" 2>/dev/null || true
+            grep -i -n -C 2 'evaluationBlocked\|NSPredicate.*copy' shots/*.txt || true
+            exit 0
+          fi
           xcrun simctl ui "${{ steps.sim.outputs.udid }}" appearance light
           for TEST in ${{ inputs.tests || 'testChangedScreens' }}; do
             REC=""
