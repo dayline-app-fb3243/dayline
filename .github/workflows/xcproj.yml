@@ -17,9 +17,10 @@ jobs:
           UDID=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin)["devices"]; print(next(x["udid"] for k in sorted(d,reverse=True) if "iOS" in k for x in d[k] if "iPhone" in x["name"] and "Pro" in x["name"] and "Max" not in x["name"]))')
           xcrun simctl boot "$UDID" || true
           xcrun simctl bootstatus "$UDID" -b
+          SOURCE="$PWD"
           for MODE in Empty Demo; do
             mkdir -p "/tmp/out/Dayline-${MODE}"
-            rsync -a --exclude .git --exclude .github ./ "/tmp/out/Dayline-${MODE}/"
+            rsync -a --exclude .git --exclude .github "$SOURCE/" "/tmp/out/Dayline-${MODE}/"
             cd "/tmp/out/Dayline-${MODE}"
             if [ "$MODE" = Demo ]; then
               python3 -c 'from pathlib import Path; p=Path("project.yml"); s=p.read_text(); needle="        PRODUCT_BUNDLE_IDENTIFIER: app.dayline\n"; assert s.count(needle)==1; p.write_text(s.replace(needle, needle+"        SWIFT_ACTIVE_COMPILATION_CONDITIONS: \"$(inherited) DAYLINE_DEMO_BUILD\"\n"))'
