@@ -167,11 +167,18 @@ struct StreakView: View {
         }
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                NavigationLink { PeopleView() } label: { Image(systemName: "person.2").foregroundStyle(.primary) }
-                    .tint(.primary)
+                // A round glass button the same size as the back button (the default toolbar glass turns this
+                // wide symbol into an oval).
+                NavigationLink { PeopleView() } label: {
+                    Image(systemName: "person.2").font(.body).foregroundStyle(.primary)
+                        .frame(width: 44, height: 44).contentShape(.circle)
+                        .glassEffect(.regular.interactive(), in: .circle)
+                }
+                    .buttonStyle(.plain)
                     .accessibilityLabel("People")
                     .accessibilityIdentifier("peopleButton")
             }
+            .sharedBackgroundVisibility(.hidden)
         }
         .accessibilityIdentifier("streakScreen")
     }

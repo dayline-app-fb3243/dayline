@@ -553,6 +553,7 @@ final class DemoTourTests: XCTestCase {
         tab(app, "Insights"); pause(1.5)
         app.buttons["Month"].firstMatch.tap(); pause(1.2)
         tapID(app, "streakCard"); pause(2); shot("pc1-streak")
+        app.swipeDown(); pause(1); shot("pc0-streak-top")
         app.swipeUp(); pause(1.2); shot("pc1b-streak-friends"); app.swipeDown(); pause(1)
         tapID(app, "peopleButton"); pause(2); shot("pc2-people")
         app.swipeUp(); pause(1.2); shot("pc2b-people-scrolled"); app.swipeDown(); pause(1)
