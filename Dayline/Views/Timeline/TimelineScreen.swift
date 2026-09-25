@@ -964,10 +964,23 @@ struct TimelineScreen: View {
 
     struct Cluster { var key: String; var name: String; var coordinate: CLLocationCoordinate2D; var hours: Double; var visits: Int; var category: PlaceCategory }
     private var placeClusters: [Cluster] {
-        // Grouped by name, so one place saved as two nearby spots (same name) shows once.
-        Dictionary(grouping: rangeVisits.filter { $0.category != .home }, by: { $0.placeName.lowercased() }).compactMap { key, stays in
-            guard let first = stays.first else { return nil }
-            return Cluster(key: key, name: first.placeName, coordinate: first.coordinate, hours: stays.reduce(0) { $0 + $1.duration } / 3600,
+        // One place saved as two nearby spots shows once: same name AND within about 150 m.
+        // Two different places with the same name (two Starbucks) stay separate.
+        var groups: [[Visit]] = []
+        for v in rangeVisits.filter({ $0.category != .home }) {
+            let here = CLLocation(latitude: v.coordinate.latitude, longitude: v.coordinate.longitude)
+            if let g = groups.firstIndex(where: { g in
+                g[0].placeName.caseInsensitiveCompare(v.placeName) == .orderedSame &&
+                CLLocation(latitude: g[0].coordinate.latitude, longitude: g[0].coordinate.longitude).distance(from: here) <= 150
+            }) {
+                groups[g].append(v)
+            } else {
+                groups.append([v])
+            }
+        }
+        return groups.map { stays in
+            let first = stays[0]
+            return Cluster(key: first.placeKey, name: first.placeName, coordinate: first.coordinate, hours: stays.reduce(0) { $0 + $1.duration } / 3600,
                            visits: stays.count, category: first.category)
         }
     }
