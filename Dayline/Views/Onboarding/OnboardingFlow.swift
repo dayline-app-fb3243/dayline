@@ -238,18 +238,21 @@ struct SplashView: View {
     @Environment(\.colorScheme) private var mapScheme
     private var splashMap: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Color.clear.frame(maxWidth: .infinity).frame(height: 560)
+            Color.clear.frame(maxWidth: .infinity).frame(height: 610)
                 .overlay(alignment: .top) {
-                    if liveMap.isEmpty { SplashLoop().frame(height: 560).allowsHitTesting(false) }
-                    else if liveMap == "loop" { SplashLoop().frame(height: 560).allowsHitTesting(false) }
-                    else { SplashLiveMap(style: liveMap).frame(height: 560).allowsHitTesting(false) }
+                    if liveMap.isEmpty { SplashLoop().frame(height: 610).allowsHitTesting(false) }
+                    else if liveMap == "loop" { SplashLoop().frame(height: 610).allowsHitTesting(false) }
+                    else { SplashLiveMap(style: liveMap).frame(height: 610).allowsHitTesting(false) }
                 }
                 .clipped()
                 .overlay(alignment: .bottom) {
-                    LinearGradient(stops: [.init(color: Color(.systemBackground).opacity(0), location: 0), .init(color: Color(.systemBackground), location: 0.8)],
-                                   startPoint: .top, endPoint: .bottom).frame(height: 220)
+                    LinearGradient(stops: [.init(color: Color(.systemBackground).opacity(0), location: 0),
+                                           .init(color: Color(.systemBackground).opacity(0.15), location: 0.38),
+                                           .init(color: Color(.systemBackground), location: 1)],
+                                   startPoint: .top, endPoint: .bottom).frame(height: 215)
                 }
                 .ignoresSafeArea(edges: .top)
+            Spacer(minLength: 0)
             VStack(alignment: .leading, spacing: 10) {
                 Text("Your day,\nremembered.").font(.largeTitle.bold())
                 Text("Journaling, day tracking, and health - all in one place.")
@@ -257,8 +260,7 @@ struct SplashView: View {
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(.horizontal, 28).padding(.top, -40)
-            Spacer()
+            .padding(.horizontal, 28).padding(.bottom, 64)
             Button { showSignIn = true } label: { Text("Continue").font(.headline).frame(maxWidth: .infinity) }
                 .buttonStyle(.glassProminent).tint(Theme.accent).controlSize(.extraLarge)
                 .padding(.horizontal, 24).padding(.bottom, 16)
