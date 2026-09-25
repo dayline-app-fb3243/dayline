@@ -170,10 +170,10 @@ struct JournalCard: View {
     let group: JournalGroup
     /// Photos inside the card with a white border, a big photo and a narrow one side by side.
     @AppStorage("journal.cardStyle") private var style = "inset"
-    /// Preview "journal.near" A/B/C: small takes on the current card ("" = now). Sample-only until David picks.
+    /// "journal.near": A (default) = time top right of each card. "" = the card before that; B/C = other takes.
     /// A = time top-right next to the heading, place under it, taller photos. B = photos run edge to edge at the top.
     /// C = place with a pin and time on one line under the heading, slightly smaller photos.
-    @AppStorage("journal.near") private var near = ""
+    @AppStorage("journal.near") private var near = "A"
     private var heading: String { group.title ?? group.place ?? (group.kind == .voice ? "Voice memo" : group.kind == .photo ? "Photo" : "Journal") }
     private var meta: String { [group.title != nil ? group.place : nil, group.date.shortTime].compactMap { $0 }.joined(separator: " · ") }
 
