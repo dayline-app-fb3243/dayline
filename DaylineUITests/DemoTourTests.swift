@@ -121,6 +121,19 @@ final class DemoTourTests: XCTestCase {
     }
 
     /// Inspect the actual first launch of whichever Xcode variant was built, with no launch arguments.
+    /// Clean Empty build only: capture the real onboarding sequence without demo seeding.
+    func testEmptyOnboardingTour() throws {
+        let app = XCUIApplication()
+        app.launch()
+        pause(4); shot("empty-01-welcome")
+        tapID(app, "splashContinue"); pause(1); shot("empty-02-sign-in")
+        tapID(app, "signInOption-Email"); pause(1); shot("empty-03-email-choice")
+        tapID(app, "signInContinue"); pause(1); shot("empty-04-email")
+        let field = app.textFields["emailField"]
+        if field.waitForExistence(timeout: 4) { field.tap(); field.typeText("new.user@example.com") }
+        shot("empty-05-email-entry")
+    }
+
     func testVariantFirstLaunch() throws {
         let app = XCUIApplication()
         app.launch(); pause(3)
