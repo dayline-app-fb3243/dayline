@@ -27,6 +27,15 @@ struct WidgetSnapshot: Codable, Equatable, Sendable {
         nextTitle: nil, nextStart: nil,
         streakDays: 0, recentScores: [], friendTags: []
     )
+
+    /// Gallery-only sample. Never used as a new user's actual widget state.
+    static let gallerySample = WidgetSnapshot(
+        date: .now, score: 74, label: "On track",
+        summary: "Up early and gym done. Keep it going.",
+        nextTitle: "Lunch out", nextStart: Calendar.current.date(bySettingHour: 12, minute: 30, second: 0, of: .now),
+        streakDays: 6, recentScores: [82, 64, 90, 71, 88, 93, 74],
+        friendTags: [.init(initial: "S", red: 1, green: 0.23, blue: 0.19), .init(initial: "J", red: 0.2, green: 0.78, blue: 0.35)]
+    )
 }
 
 enum SharedStore {

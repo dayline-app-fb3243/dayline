@@ -3,7 +3,7 @@ import SwiftUI
 /// New widget ideas for David to consider. They are previews, not installed widgets.
 struct WidgetConceptsGallery: View {
     let concept: Int
-    private let snap = WidgetSnapshot.placeholder
+    private let snap = WidgetSnapshot.gallerySample
     private let weekScores = [82, 64, 90, 31, 88, 93, 74]
     private let weekdays = ["S", "M", "T", "W", "T", "F", "S"]
     private var weekVariant: Int { max(1, concept - 20) }
