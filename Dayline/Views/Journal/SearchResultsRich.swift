@@ -321,7 +321,7 @@ struct GuidePlaceCard: View {
             VStack(alignment: .leading, spacing: 3) {
                 Label(visit.category.rawValue.capitalized, systemImage: visit.category.symbol)
                     .font(.caption.weight(.semibold)).foregroundStyle(.white.opacity(0.85))
-                Text(visit.placeName).font(.system(size: 20, weight: .heavy)).foregroundStyle(.white)
+                Text(visit.placeName).font(.system(size: 20, weight: .bold)).foregroundStyle(.white)
                     .lineLimit(2).multilineTextAlignment(.leading)
                 Text(visit.arrival.formatted(.relative(presentation: .named)).capitalizedFirst).font(.footnote.weight(.medium)).foregroundStyle(.white.opacity(0.85))
             }

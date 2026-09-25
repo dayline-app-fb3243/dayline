@@ -247,7 +247,7 @@ struct SinglePlaceResult: View {
                 .frame(height: 220).frame(maxWidth: .infinity).clipped()
                 LinearGradient(stops: [.init(color: .black.opacity(0), location: 0.4), .init(color: .black.opacity(0.7), location: 1)], startPoint: .top, endPoint: .bottom)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(data.hit.place).font(.system(size: 28, weight: .heavy)).foregroundStyle(.white)
+                    Text(data.hit.place).font(.system(size: 28, weight: .bold)).foregroundStyle(.white)
                     Text(data.visitText).font(.subheadline.weight(.medium)).foregroundStyle(.white.opacity(0.85))
                 }
                 .padding(16)

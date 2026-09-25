@@ -16,7 +16,7 @@ struct WidgetRing: View {
             Circle().trim(from: 0, to: CGFloat(min(max(score, 0), 100)) / 100)
                 .stroke(color, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
                 .rotationEffect(.degrees(-90))
-            if showsNumber { Text("\(score)").font(.system(size: 34, weight: .heavy)).foregroundStyle(color) }
+            if showsNumber { Text("\(score)").font(.system(size: 34, weight: .bold)).foregroundStyle(color) }
         }
         .padding(lineWidth / 2)
     }
@@ -48,7 +48,7 @@ struct TodaySmallWidgetContent: View {
             WidgetRing(score: s.score, lineWidth: 11).frame(width: 76, height: 76)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
             VStack(alignment: .leading, spacing: 0) {
-                Text("\(s.score)").font(.system(size: 36, weight: .heavy))
+                Text("\(s.score)").font(.system(size: 36, weight: .bold))
                 Text(s.label).font(.caption.weight(.bold)).lineLimit(1)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
@@ -67,7 +67,7 @@ struct TodayWideWidgetContent: View {
                 Text("UP NEXT").font(.footnote.weight(.bold)).opacity(0.9)
                 Spacer(minLength: 0)
                 if let next = s.nextTitle {
-                    Text(next).font(.title3.weight(.heavy)).lineLimit(1)
+                    Text(next).font(.title3.weight(.bold)).lineLimit(1)
                     if let start = s.nextStart {
                         Text(start, style: .time).font(.footnote.weight(.semibold)).opacity(0.85)
                     }
@@ -98,7 +98,7 @@ struct StreakWidgetContent: View {
                 HStack(spacing: -6) { ForEach(Array((s.friendTags ?? []).enumerated()), id: \.offset) { WidgetFriendFace(tag: $0.element) } }
             }
             HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text("\(s.streakDays)").font(.system(size: 40, weight: .heavy))
+                Text("\(s.streakDays)").font(.system(size: 40, weight: .bold))
                 Text("days").font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
             }
             .padding(.top, 4)
