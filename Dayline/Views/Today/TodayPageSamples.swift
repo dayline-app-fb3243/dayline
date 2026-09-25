@@ -4,7 +4,7 @@ import SwiftUI
 /// 1 = big ring on top, centered. 2 = small ring in the header next to the greeting, schedule right away.
 /// 3 = ring card plus small tiles (steps, next up). 4 = an "Up next" card between the ring and the schedule.
 /// 5 = quick-add buttons (photo, voice memo, write) under the ring.
-/// 3a-3d: sample 3's content (steps, next up) in sample 5's Liquid Glass tile style. Sample-only.
+/// 3a-3d: sample 3's content (steps, next up) in sample 5's Liquid Glass tile style. 3a is the Today page (David, 8:17: "3a").
 struct TodayPageSample: View {
     var page: String
     var result: ScoreEngine.Result
@@ -168,12 +168,7 @@ struct TodayPageSample: View {
     @ViewBuilder private var glassRow: some View {
         switch page {
         case "3a":
-            GlassEffectContainer(spacing: 12) {
-                HStack(spacing: 12) {
-                    glassTile("Steps", "5,840", "figure.walk", "of 8,200 on a usual day")
-                    glassTile("Next", "Gym", "dumbbell.fill", "Around 6:00 PM")
-                }
-            }
+            TodayStepsNextTiles(result: result)
         case "3b":
             GlassEffectContainer(spacing: 10) {
                 HStack(spacing: 10) {
@@ -208,6 +203,52 @@ struct TodayPageSample: View {
             score
             glassRow
             schedule
+        }
+    }
+}
+
+/// Today (3a): Steps and what's next, as two Liquid Glass tiles under the day score card. Real numbers, demo numbers in demo mode.
+struct TodayStepsNextTiles: View {
+    var result: ScoreEngine.Result
+    @State private var steps: Int? = nil
+    private var s: UserSchedule { UserSchedule.current }
+    private var goal: Int { DemoData.isDemo ? 8200 : s.stepGoal }
+
+    private func clock(_ minutes: Int) -> String {
+        UserSchedule.date(minutes, on: .now).formatted(date: .omitted, time: .shortened)
+    }
+    private func done(_ title: String) -> Bool {
+        result.factors.contains { $0.title.hasPrefix(title) && $0.effect == .up }
+    }
+    /// The next thing on the day: gym (if on and not done yet), then the walk, then the journal, then bedtime.
+    private var next: (title: String, symbol: String, when: String) {
+        let now = Calendar.current.component(.hour, from: .now) * 60 + Calendar.current.component(.minute, from: .now)
+        if DemoData.isDemo { return ("Gym", "dumbbell.fill", "Around 6:00 PM") }
+        if s.gym && !done("Gym") && now < s.gymDeadline { return ("Gym", "dumbbell.fill", "Before \(clock(s.gymDeadline))") }
+        if s.walk, let st = steps, st < goal { return ("Walk", "figure.walk", "\((goal - st).formatted()) steps to go") }
+        if s.journal && !done("Journal") { return ("Journal", "book.closed.fill", "Before bed") }
+        return ("Bedtime", "moon.fill", clock(s.bed))
+    }
+    private func tile(_ title: String, _ value: String, _ symbol: String, _ sub: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Label(title, systemImage: symbol).font(.caption.weight(.semibold)).foregroundStyle(Theme.accent)
+            Text(value).font(.title3.bold()).monospacedDigit()
+            Text(sub).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+        }
+        .padding(14).frame(maxWidth: .infinity, alignment: .leading)
+        .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 22, style: .continuous))
+    }
+    var body: some View {
+        let n = next
+        GlassEffectContainer(spacing: 12) {
+            HStack(spacing: 12) {
+                tile("Steps", steps.map { $0.formatted() } ?? "–", "figure.walk", "of \(goal.formatted()) on a usual day")
+                tile("Next", n.title, n.symbol, n.when)
+            }
+        }
+        .task {
+            if DemoData.isDemo { steps = 5840; return }
+            steps = await UserSchedule.steps(from: Calendar.current.startOfDay(for: .now), to: .now)
         }
     }
 }

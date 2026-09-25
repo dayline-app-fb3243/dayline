@@ -38,8 +38,9 @@ struct TodayView: View {
         }
     }
 
-    /// Preview "today.page" 1-5: whole-page layouts for Today ("" = the current page). Sample-only until one is picked.
-    @AppStorage("today.page") private var page = ""
+    /// "today.page": 3a (default) = the day score card with Steps + Next glass tiles under it (David, 8:17: "3a").
+    /// "" = the page before that; 1-5 and 3b-3d are the other samples.
+    @AppStorage("today.page") private var page = "3a"
     private var scoreLink: some View {
         NavigationLink { ScoreDetailView(result: result) } label: { ScoreCard(result: result, showsChevron: true) }
             .buttonStyle(.plain)
