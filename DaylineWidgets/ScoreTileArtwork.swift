@@ -42,24 +42,29 @@ import WidgetKit
             context.setLineCap(.round)
             context.addArc(center: center, radius: radius, startAngle: start, endAngle: end, clockwise: false)
             context.strokePath()
-            // Paint a narrow ice highlight at the starting tip, clipped to
-            // the existing blue stroke. Never start another round-capped stroke:
-            // that would form a large oval on top of the approved ring.
-            context.saveGState()
-            context.setLineWidth(width)
-            context.setLineCap(.round)
-            context.addArc(center: center, radius: radius, startAngle: start, endAngle: end, clockwise: false)
-            context.replacePathWithStrokedPath()
-            context.clip()
-            let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(),
-                                      colors: [UIColor(red: 0.61, green: 0.85, blue: 1, alpha: 1).cgColor,
-                                               UIColor(red: 0.0, green: 0.38, blue: 0.9, alpha: 0).cgColor] as CFArray,
-                                      locations: [0, 1])!
-            context.drawLinearGradient(gradient,
-                                       start: CGPoint(x: center.x, y: center.y - radius - width / 2),
-                                       end: CGPoint(x: center.x, y: center.y - radius + 14),
-                                       options: [.drawsAfterEndLocation])
-            context.restoreGState()
+            // Tint just the first 22 degrees of the already-drawn blue stroke.
+            // Each narrow slice stays on the same centerline and has butt caps,
+            // so the ice fades into blue without a second rounded oval.
+            let tipSpan = min(end - start, 0.38)
+            let slices = 48
+            context.setLineCap(.butt)
+            for index in 0..<slices {
+                let t = CGFloat(index) / CGFloat(slices)
+                let ice = 1 - t
+                context.setStrokeColor(UIColor(red: 0.0 + 0.61 * ice,
+                                                green: 0.38 + 0.47 * ice,
+                                                blue: 0.90 + 0.10 * ice,
+                                                alpha: 1).cgColor)
+                context.addArc(center: center, radius: radius,
+                               startAngle: start + tipSpan * t,
+                               endAngle: start + tipSpan * CGFloat(index + 1) / CGFloat(slices),
+                               clockwise: false)
+                context.strokePath()
+            }
+            UIColor(red: 0.61, green: 0.85, blue: 1, alpha: 1).setFill()
+            let tip = CGPoint(x: center.x + radius * cos(start), y: center.y + radius * sin(start))
+            UIBezierPath(ovalIn: CGRect(x: tip.x - width / 2, y: tip.y - width / 2,
+                                        width: width, height: width)).fill()
             if score > 0 {
                 let point = CGPoint(x: center.x + radius * cos(end), y: center.y + radius * sin(end))
                 let number = NSAttributedString(string: "\(score)", attributes: [
