@@ -1404,6 +1404,21 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Dismiss iOS's one-time swipe-keyboard lesson before judging the app's audio controls.
+    /// Depending on simulator version, the tutorial belongs to the app or SpringBoard.
+    private func clearKeyboardLesson(_ app: XCUIApplication) {
+        let spring = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        for _ in 0..<10 {
+            let candidates = [spring.buttons["Continue"].firstMatch, app.buttons["Continue"].firstMatch]
+            if let button = candidates.first(where: { $0.exists && $0.isHittable }) {
+                button.tap(); pause(0.5)
+            }
+            pause(0.25)
+        }
+        XCTAssertFalse(spring.buttons["Continue"].firstMatch.exists, "Keyboard lesson still covers the editor")
+        XCTAssertFalse(app.buttons["Continue"].firstMatch.exists, "Keyboard lesson still covers the editor")
+    }
+
     /// New Entry's clean microphone composer, with the keyboard visible.
     func testJournalAudioBar() throws {
         let app = XCUIApplication()
@@ -1411,6 +1426,7 @@ final class DemoTourTests: XCTestCase {
         app.launch(); pause(1)
         tab(app, "Journal"); pause(1)
         tapID(app, "newEntry"); pause(1.3)
+        clearKeyboardLesson(app)
         XCTAssertTrue(app.descendants(matching: .any)["voiceMic"].firstMatch.exists)
         shot("journal-mic-composer")
     }
@@ -1422,6 +1438,7 @@ final class DemoTourTests: XCTestCase {
         app.launch(); pause(1)
         tab(app, "Journal"); pause(1)
         tapID(app, "newEntry"); pause(1)
+        clearKeyboardLesson(app)
         let mic = app.descendants(matching: .any)["voiceMic"].firstMatch
         XCTAssertTrue(mic.waitForExistence(timeout: 4))
         shot("journal-mic-circles-before")
@@ -1447,6 +1464,7 @@ final class DemoTourTests: XCTestCase {
         app.launch(); pause(1)
         tab(app, "Journal"); pause(1)
         tapID(app, "newEntry"); pause(1)
+        clearKeyboardLesson(app)
         let mic = app.descendants(matching: .any)["voiceMic"].firstMatch
         XCTAssertTrue(mic.waitForExistence(timeout: 4))
         mic.press(forDuration: 1.2)
