@@ -142,10 +142,10 @@ enum JournalSearch {
             let hit = hits[i]
             let matching = entries.filter { entry in
                 guard entry.kind == .photo, entry.thumbnail != nil else { return false }
-                if let named = entry.placeName { return named == hit.place }
-                guard let coordinate = hit.coordinate, let photoCoordinate = entry.coordinate else { return false }
                 guard cal.isDate(entry.date, inSameDayAs: hit.date),
                       abs(entry.date.timeIntervalSince(hit.date)) < 3 * 3600 else { return false }
+                if let named = entry.placeName { return named == hit.place }
+                guard let coordinate = hit.coordinate, let photoCoordinate = entry.coordinate else { return false }
                 return CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
                     .distance(from: CLLocation(latitude: photoCoordinate.latitude, longitude: photoCoordinate.longitude)) < 120
             }.min { abs($0.date.timeIntervalSince(hit.date)) < abs($1.date.timeIntervalSince(hit.date)) }

@@ -215,8 +215,10 @@ enum DemoData {
         add(context, "Office", .work, work, at(today, 9, 0), at(today, 12, 25))
         add(context, "Lucia Trattoria", .food, lunch, at(today, 12, 35), nil)
 
-        context.insert(JournalEntry(date: at(today, 8, 12), kind: .photo, text: "Coffee before work. Feeling focused today.",
-                                    thumbnail: photo("demo-coffee") ?? swatch(.brown), latitude: cafe.0, longitude: cafe.1, isTranscribed: true))
+        let cafePhoto = JournalEntry(date: at(today, 8, 12), kind: .photo, text: "Coffee before work. Feeling focused today.",
+                                    thumbnail: photo("demo-coffee") ?? swatch(.brown), latitude: cafe.0, longitude: cafe.1, isTranscribed: true)
+        cafePhoto.placeName = "Blue Door Coffee"
+        context.insert(cafePhoto)
         }
         // Photos from earlier this month, placed where they were taken.
         for (i, name) in ["demo-park", "demo-sunset", "demo-coffee"].enumerated() {
