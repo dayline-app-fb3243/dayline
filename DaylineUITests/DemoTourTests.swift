@@ -1526,7 +1526,7 @@ final class DemoTourTests: XCTestCase {
     func testTimeline4() throws {
         for v in ["4", "4a", "4b", "4c"] {
             let app = XCUIApplication()
-            app.launchArguments = ["-demo", "-timeline.page", v, "-no.lookaround"]
+            app.launchArguments = ["-demo", "-timeline.page", v, "-timeline.range4", "YES", "-no.lookaround"]
             app.launchEnvironment["TZ"] = Self.zone(localHour: 18)
             app.launch(); pause(1.5)
             tab(app, "Timeline"); pause(4)

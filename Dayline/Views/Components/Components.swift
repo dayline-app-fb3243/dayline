@@ -58,7 +58,7 @@ enum Theme {
 /// (every 4 hours) so it doesn't feel canned, but never flickers while you look. "status.phrase" N (screenshots) forces one.
 enum StatusPhrase {
     static let onTrack = ["On track", "Good work", "Keep it up", "Nice pace", "Looking good"]
-    /// "Pick it up" removed. The three new phrases rotate with the others (David, 8:15: "All of them are good.").
+    /// "Pick it up" removed. The three new phrases rotate with the others.
     static let behind = ["Falling behind", "Catch up", "Behind pace", "Still time", "Let's go", "You've got this"]
     static let altOptions = ["Still time", "Let's go", "You've got this"]
     static func text(behind isBehind: Bool, score: Int, now: Date = .now) -> String {

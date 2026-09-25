@@ -4,7 +4,7 @@ import SwiftUI
 /// 1 = big ring on top, centered. 2 = small ring in the header next to the greeting, schedule right away.
 /// 3 = ring card plus small tiles (steps, next up). 4 = an "Up next" card between the ring and the schedule.
 /// 5 = quick-add buttons (photo, voice memo, write) under the ring.
-/// 3a-3d: sample 3's content (steps, next up) in sample 5's Liquid Glass tile style. 3a is the Today page (David, 8:17: "3a").
+/// 3a-3d: sample 3's content (steps, next up) in sample 5's Liquid Glass tile style. 3a is the Today page.
 struct TodayPageSample: View {
     var page: String
     var result: ScoreEngine.Result

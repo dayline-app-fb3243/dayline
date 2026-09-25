@@ -71,7 +71,7 @@ struct TimelineScreen: View {
                             infoChip("\(rangePhotos.count)", "photos")
                         }
                         DayPhotoCards(visits: rangeVisits, journal: journal.filter { interval.contains($0.date) })
-                    } else if tlPage.hasPrefix("4") {
+                    } else if range4 {
                         rangePage4
                     } else {
                         // Week / month / year: every place and route in the range, stats on the map, then a plain list.
@@ -110,8 +110,11 @@ struct TimelineScreen: View {
     /// 3 = numbers first as big tiles, then map and cards. 4 = photos in a side-scrolling row, stops listed below.
     /// 5 = map, then stops grouped into Morning / Afternoon / Evening.
     /// 4a-4c = more takes on 4: a = place and time on each photo, b = numbers row and square photos,
-    /// c = captioned photos with stops grouped by part of day. With any 4 sample, Week / Month / Year use the same style.
-    @AppStorage("timeline.page") private var tlPage = ""
+    /// c = captioned photos with stops grouped by part of day. "timeline.range4" shows Week / Month / Year in the same style.
+    /// Day view: 4c is the default. "" = the page before that.
+    @AppStorage("timeline.page") private var tlPage = "4c"
+    /// Preview "timeline.range4": Week / Month / Year in the sample-4 style. Off until David picks it.
+    @AppStorage("timeline.range4") private var range4 = false
     private var dayVisits: [Visit] { rangeVisits.sorted { $0.arrival < $1.arrival } }
     private func photos(for v: Visit) -> [UIImage] {
         let end = v.departure ?? .now

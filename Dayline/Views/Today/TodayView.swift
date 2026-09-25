@@ -38,7 +38,7 @@ struct TodayView: View {
         }
     }
 
-    /// "today.page": 3a (default) = the day score card with Steps + Next glass tiles under it (David, 8:17: "3a").
+    /// "today.page": 3a (default) = the day score card with Steps + Next glass tiles under it.
     /// "" = the page before that; 1-5 and 3b-3d are the other samples.
     @AppStorage("today.page") private var page = "3a"
     private var scoreLink: some View {
