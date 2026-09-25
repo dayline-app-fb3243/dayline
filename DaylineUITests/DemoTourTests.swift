@@ -135,6 +135,21 @@ final class DemoTourTests: XCTestCase {
         if thumb.waitForExistence(timeout: 3) { thumb.tap(); pause(1); shot("sweep-location-expanded") }
     }
 
+    func testDemoProviderPages() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo", "-onboarding"]
+        app.launch(); pause(1)
+        tapID(app, "splashContinue"); pause(0.8)
+        tapID(app, "signInContinue"); pause(0.9)
+        XCTAssertTrue(app.buttons["appleDemoContinue"].waitForExistence(timeout: 4))
+        shot("provider-apple-demo")
+        app.buttons["Close"].firstMatch.tap(); pause(0.8)
+        tapID(app, "signInOption-Google"); tapID(app, "signInContinue"); pause(0.9)
+        XCTAssertTrue(app.buttons["googleDemoAccount"].waitForExistence(timeout: 4))
+        XCTAssertTrue(app.buttons["Close"].firstMatch.exists)
+        shot("provider-google-demo")
+    }
+
     func testAuthLabelOptions() {
         for variant in ["A", "B", "C"] {
             let app = XCUIApplication()
