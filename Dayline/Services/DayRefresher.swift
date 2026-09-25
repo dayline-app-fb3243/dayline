@@ -39,10 +39,11 @@ enum DayRefresher {
         SharedStore.save(WidgetSnapshot(date: .now, score: result.score, label: result.label,
                                         summary: result.tip ?? result.summary, nextTitle: next?.title,
                                         nextStart: next?.start, streakDays: streak, recentScores: Array(recent),
-                                        friendTags: FriendStore.friends.prefix(2).map { f in
+                                        friendTags: FriendStore.friends.prefix(3).map { f in
                                             var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
                                             UIColor(f.color).getRed(&r, green: &g, blue: &b, alpha: &a)
-                                            return .init(initial: String(f.name.prefix(1)), red: r, green: g, blue: b)
+                                            return .init(initial: String(f.name.prefix(1)), red: r, green: g, blue: b,
+                                                         name: f.name, streak: f.current)
                                         }))
         WidgetCenter.shared.reloadAllTimelines()
         await Notifications.scoreReached(result.score, day: today)

@@ -601,6 +601,17 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Optional new widget concepts, separate from the locked score/friends widgets.
+    func testWidgetConcepts() throws {
+        for n in 1...3 {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-widgetConcept", "\(n)"]
+            app.launch(); pause(1)
+            shot("wc\(n)")
+            app.terminate()
+        }
+    }
+
     /// Five landing options on an actual phone keyboard; live autocomplete and typo recovery.
     func testSearchDesigns() throws {
         for n in 1...5 {

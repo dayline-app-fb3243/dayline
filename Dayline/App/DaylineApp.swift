@@ -41,7 +41,11 @@ struct DaylineApp: App {
     var body: some Scene {
         WindowGroup {
             Group {
-                if let d = Self.galleryDesign {
+                if let i = ProcessInfo.processInfo.arguments.firstIndex(of: "-widgetConcept"),
+                   ProcessInfo.processInfo.arguments.count > i + 1,
+                   let n = Int(ProcessInfo.processInfo.arguments[i + 1]) {
+                    WidgetConceptsGallery(concept: n)
+                } else if let d = Self.galleryDesign {
                     WidgetDesignGalleryView(design: d, page: Self.galleryPage)
                 } else if onboardingDone {
                     RootView().task { await startUp() }

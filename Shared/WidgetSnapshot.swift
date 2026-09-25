@@ -17,6 +17,8 @@ struct WidgetSnapshot: Codable, Equatable, Sendable {
     struct FriendTag: Codable, Equatable, Sendable {
         var initial: String
         var red: Double, green: Double, blue: Double
+        var name: String? = nil
+        var streak: Int? = nil
     }
 
     static let placeholder = WidgetSnapshot(

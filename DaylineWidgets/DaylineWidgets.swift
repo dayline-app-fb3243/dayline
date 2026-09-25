@@ -39,9 +39,9 @@ struct TodayWidgetView: View {
                 }
             }
         case .systemSmall:
-            TodaySmallWidgetContent(s: s)
+            WidgetScoreOption(d: WidgetDesign.all.first { $0.id == 14 }!, score: s.score, wide: false)
         default:
-            TodayWideWidgetContent(s: s)
+            WidgetScoreOption(d: WidgetDesign.all.first { $0.id == 14 }!, score: s.score, wide: true)
         }
     }
 }
@@ -51,7 +51,7 @@ struct TodayWidget: Widget {
         StaticConfiguration(kind: "TodayWidget", provider: DayProvider()) { entry in
             TodayWidgetView(entry: entry)
                 .containerBackground(for: .widget) {
-                    ZStack(alignment: .topTrailing) { widgetBlueCard; WidgetBubble(size: 130).offset(x: 40, y: -40) }
+                    Color(.secondarySystemGroupedBackground)
                 }
                 .widgetURL(URL(string: "dayline://today"))
         }
@@ -63,13 +63,21 @@ struct TodayWidget: Widget {
 
 struct StreakWidgetView: View {
     let entry: DayEntry
-    var body: some View { StreakWidgetContent(s: entry.snapshot) }
+    var body: some View {
+        let tags = entry.snapshot.friendTags ?? []
+        let people = tags.map { t in
+            DaylineWidgetFriend(name: t.name ?? t.initial, days: t.streak ?? 0,
+                                color: Color(red: t.red, green: t.green, blue: t.blue))
+        }
+        WidgetFriendsOption(d: WidgetDesign.all.first { $0.id == 14 }!, days: entry.snapshot.streakDays,
+                            friends: people, wide: false)
+    }
 }
 
 struct StreakWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: "StreakWidget", provider: DayProvider()) { entry in
-            StreakWidgetView(entry: entry).containerBackground(.background, for: .widget)
+            StreakWidgetView(entry: entry).containerBackground(Color(.secondarySystemGroupedBackground), for: .widget)
                 .widgetURL(URL(string: "dayline://streak"))
         }
         .configurationDisplayName("Streak")

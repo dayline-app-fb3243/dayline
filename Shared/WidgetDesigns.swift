@@ -37,18 +37,17 @@ struct DaylineWidgetScoreRing: View {
     var width: CGFloat = 17
     var body: some View {
         let progress = CGFloat(min(max(score, 0), 100)) / 100
+        // Stroke the same inset diameter for track and progress: no cap spills out of the widget.
+        let diameter = size - width
         ZStack {
-            Circle().stroke(.quaternary, lineWidth: width)
+            Circle().stroke(.quaternary, lineWidth: width).frame(width: diameter, height: diameter)
             Circle().trim(from: 0, to: progress)
                 .stroke(AngularGradient(colors: [Color(red: 0.55, green: 0.76, blue: 1), .blue, .orange],
                                         center: .center, startAngle: .zero,
                                         endAngle: .degrees(360 * max(progress, 0.01))),
                         style: StrokeStyle(lineWidth: width, lineCap: .round))
                 .rotationEffect(.degrees(-90))
-            if score > 0 {
-                Circle().fill(Color(red: 0.55, green: 0.76, blue: 1))
-                    .frame(width: width, height: width).offset(y: -size / 2)
-            }
+                .frame(width: diameter, height: diameter)
             Text("\(score)").font(.system(size: size * 0.31, weight: .bold))
                 .foregroundStyle(.primary).monospacedDigit()
         }
@@ -82,10 +81,12 @@ struct DaylineWidgetFriendsRing: View {
         let diameter = size - width
         ZStack {
             Circle().stroke(Color.primary.opacity(0.08), lineWidth: width)
+                .frame(width: diameter, height: diameter)
             ForEach(all.sorted { $0.days > $1.days }) { friend in
                 Circle().trim(from: 0, to: min(0.999, Double(friend.days) / full))
                     .stroke(friend.color, style: StrokeStyle(lineWidth: width, lineCap: .round))
                     .rotationEffect(.degrees(-90))
+                    .frame(width: diameter, height: diameter)
             }
             VStack(spacing: 0) {
                 Text("\(days)").font(.system(size: size * 0.3, weight: .bold)).monospacedDigit()
@@ -95,11 +96,10 @@ struct DaylineWidgetFriendsRing: View {
                         ForEach(friends.prefix(3)) { f in
                             Text(f.name.prefix(1)).foregroundStyle(f.color)
                         }
-                    }.font(.system(size: 10, weight: .semibold))
+                    }.font(.system(size: width >= 27 ? 9 : 10, weight: .semibold))
                 }
             }
         }
-        .frame(width: diameter, height: diameter)
         .frame(width: size, height: size)
         .accessibilityLabel("Your streak is \(days) days. " + friends.map { "\($0.name) \($0.days) days" }.joined(separator: ", "))
     }
