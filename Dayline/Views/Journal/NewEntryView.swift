@@ -107,6 +107,7 @@ struct NewEntryView: View {
     }
 
     var body: some View {
+        GeometryReader { editor in
         ScrollView {
             VStack(alignment: .leading, spacing: 10) {
                 Text("\(startedAt.formatted(.dateTime.weekday(.wide).month(.abbreviated).day())) · \(startedAt.shortTime) · \(placeName)")
@@ -120,6 +121,7 @@ struct NewEntryView: View {
                     case .text:
                         TextField(block.id == blocks.first?.id ? "Write anything…" : "", text: $block.text, axis: .vertical)
                             .font(.body).focused($focus, equals: block.id)
+                            .frame(minHeight: blocks.count == 1 ? max(44, editor.size.height - 110) : 44, alignment: .topLeading)
                             .accessibilityIdentifier("entryBody")
                     case .media:
                         mediaGrid(block)
@@ -136,6 +138,7 @@ struct NewEntryView: View {
             }
             .padding(.horizontal, 20).padding(.top, 4).padding(.bottom, 30)
             .frame(maxWidth: .infinity, alignment: .leading)
+        }
         }
         .scrollDismissesKeyboard(.interactively)
         .background(AppBackgroundView())
@@ -170,7 +173,7 @@ struct NewEntryView: View {
             }
         }
         .safeAreaInset(edge: .bottom) {
-            VoiceRecorderBar(voice: voice, onSend: { await stopVoice() }, leading: { addMediaButton }) { addBar }
+            VoiceRecorderBar(voice: voice, onSend: { await stopVoice() }, leading: { addMediaButton }) { Color.clear }
         }
         .confirmationDialog("Add photo or video", isPresented: $showMediaChoices, titleVisibility: .visible) {
             Button("Photo and Video Library", systemImage: "photo.fill") { showLibrary = true }
@@ -224,19 +227,6 @@ struct NewEntryView: View {
         }
         .accessibilityLabel("Add photo or video")
         .accessibilityIdentifier("entryAddMedia")
-    }
-
-    private var addBar: some View {
-        HStack(spacing: 10) {
-            Text("Tap and hold to record audio")
-                .font(.subheadline).foregroundStyle(.secondary).lineLimit(1).minimumScaleFactor(0.78)
-            Spacer(minLength: 0)
-            Image(systemName: "waveform")
-                .font(.body.weight(.medium)).foregroundStyle(.secondary)
-                .frame(width: 42, height: 48)
-        }
-        .padding(.leading, 16).padding(.trailing, 6)
-        .frame(height: 48)
     }
 
     @ViewBuilder private var cameraMenu: some View {

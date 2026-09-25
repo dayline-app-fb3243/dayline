@@ -1098,15 +1098,15 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
-    /// New Entry's persistent Messages-inspired audio bar, with the keyboard visible.
+    /// New Entry's clean microphone composer, with the keyboard visible.
     func testJournalAudioBar() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-demo"]
         app.launch(); pause(1)
         tab(app, "Journal"); pause(1)
         tapID(app, "newEntry"); pause(1.3)
-        XCTAssertTrue(app.descendants(matching: .any)["audioHoldBar"].firstMatch.exists)
-        shot("journal-audio-bar")
+        XCTAssertTrue(app.descendants(matching: .any)["voiceMic"].firstMatch.exists)
+        shot("journal-mic-composer")
     }
 
     /// Hold, slide up to lock, and capture the same bar in its live recording state.
@@ -1116,9 +1116,9 @@ final class DemoTourTests: XCTestCase {
         app.launch(); pause(1)
         tab(app, "Journal"); pause(1)
         tapID(app, "newEntry"); pause(1)
-        let bar = app.descendants(matching: .any)["audioHoldBar"].firstMatch
-        let start = bar.coordinate(withNormalizedOffset: CGVector(dx: 0.82, dy: 0.5))
-        let lock = bar.coordinate(withNormalizedOffset: CGVector(dx: 0.82, dy: -1.7))
+        let mic = app.descendants(matching: .any)["voiceMic"].firstMatch
+        let start = mic.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        let lock = mic.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: -1.7))
         start.press(forDuration: 1.2, thenDragTo: lock)
         let allow = XCUIApplication(bundleIdentifier: "com.apple.springboard").buttons["Allow"]
         if allow.waitForExistence(timeout: 3) {

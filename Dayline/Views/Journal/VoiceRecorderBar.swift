@@ -25,9 +25,9 @@ struct VoiceRecorderBar<Tools: View, Leading: View>: View {
 
     var body: some View {
         VStack(spacing: 8) {
-            if voice.isRecording && holding && !locked {
+            if holding && !locked {
                 ZStack(alignment: .trailing) {
-                    Text("Slide up to lock · Slide left to cancel")
+                    Text(voice.isRecording ? "Slide up to lock · Slide left to cancel" : "Hold to record audio")
                         .font(.footnote).foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity)
                     lockHint
@@ -36,7 +36,7 @@ struct VoiceRecorderBar<Tools: View, Leading: View>: View {
             }
             HStack(spacing: 10) {
                 leading()
-                ZStack {
+                ZStack(alignment: .trailing) {
                     Group {
                         if voice.isActive { recorder } else { tools() }
                     }
@@ -48,7 +48,7 @@ struct VoiceRecorderBar<Tools: View, Leading: View>: View {
                 }
             }
         }
-        .padding(.horizontal, 16).padding(.bottom, 6)
+        .padding(.horizontal, 16).padding(.bottom, 0)
         .animation(.snappy(duration: 0.2), value: voice.isActive)
         .animation(.snappy(duration: 0.2), value: voice.isReviewing)
     }
@@ -101,9 +101,10 @@ struct VoiceRecorderBar<Tools: View, Leading: View>: View {
 
     /// The mic stays under the finger for the whole hold, even while the bar changes around it.
     private var micHitArea: some View {
-        Color.clear
-            .frame(maxWidth: .infinity)
-            .frame(height: 52)
+        Image(systemName: "mic.fill")
+            .font(.body.weight(.medium))
+            .foregroundStyle(Theme.accent)
+            .frame(width: 44, height: 48)
             .contentShape(.rect)
             .allowsHitTesting(!voice.isActive || holding)
             .gesture(
