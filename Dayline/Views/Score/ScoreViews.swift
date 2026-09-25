@@ -422,7 +422,7 @@ struct DayActivityList: View {
     }
 }
 
-/// The chosen grouped-card factor list, with the app's circular blue/orange symbols.
+/// Dayline's grouped-card factor list. Preview variants change only icon treatment.
 struct FactorGlassList: View {
     @AppStorage("symbols.show") private var showSymbols = true
     let factors: [ScoreFactor]
@@ -445,19 +445,40 @@ struct FactorRow: View {
     var factor: ScoreFactor
     @AppStorage("symbols.show") private var showSymbols = true
     @AppStorage("factorIcons") private var iconStyle = "circle"
+    private var styleVariant: Int {
+        let a = ProcessInfo.processInfo.arguments
+        guard let i = a.firstIndex(of: "-factorIconStyle"), i + 1 < a.count else { return 0 }
+        return Int(a[i + 1]) ?? 0
+    }
     var body: some View {
         let symbol = Self.style(factor.title).0
         let bad = factor.effect == .pending || factor.points <= 0
         HStack(spacing: 12) {
-            // Symbol in a light round circle when Show Symbols is on, nothing when off. Blue when it added points,
-            // orange when it took points away. factorIcons = "bare" (preview): the symbol alone, no circle.
             if showSymbols {
                 let tint = factor.points < 0 ? Theme.bad : Theme.accent
-                Image(systemName: symbol)
-                    .font(.body.weight(.medium))
-                    .foregroundStyle(tint)
-                    .frame(width: 38, height: 38)
-                    .background(iconStyle == "bare" ? Color.clear : tint.opacity(0.14), in: .circle)
+                let glyph = Image(systemName: symbol).font(.body.weight(.medium))
+                switch styleVariant {
+                case 1: // Square, Apple's Settings-like rounded square.
+                    glyph.foregroundStyle(tint)
+                        .frame(width: 38, height: 38)
+                        .background(tint.opacity(0.13), in: .rect(cornerRadius: 9))
+                case 2: // Neutral gray circle; only the glyph carries the meaning color.
+                    glyph.foregroundStyle(tint)
+                        .frame(width: 38, height: 38)
+                        .background(Color(.tertiarySystemFill), in: .circle)
+                case 3: // Subtle native glass icon, lighter than the card's surface.
+                    glyph.foregroundStyle(tint)
+                        .frame(width: 38, height: 38)
+                        .glassEffect(.regular, in: .circle)
+                case 4: // Darker solid fill and white glyph.
+                    glyph.foregroundStyle(.white)
+                        .frame(width: 38, height: 38)
+                        .background(factor.points < 0 ? Color(red: 0.72, green: 0.34, blue: 0.03) : Color(red: 0.06, green: 0.31, blue: 0.68), in: .circle)
+                default:
+                    glyph.foregroundStyle(tint)
+                        .frame(width: 38, height: 38)
+                        .background(iconStyle == "bare" ? Color.clear : tint.opacity(0.14), in: .circle)
+                }
             }
             VStack(alignment: .leading, spacing: 1) {
                 Text(factor.title).font(.body)

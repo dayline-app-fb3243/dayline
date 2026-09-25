@@ -922,7 +922,19 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
-    /// Three refinements that retain the existing Dayline card and circular icons.
+    /// Four genuinely different icon treatments on the same Day score factor rows.
+    func testFactorIconStyles() throws {
+        for n in 1...4 {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-factorIconStyle", "\(n)"]
+            app.launch(); pause(1.2)
+            tapID(app, "scoreCard"); pause(1.5)
+            app.swipeUp(); pause(0.8)
+            shot("factor-icon-style-\(n)")
+            app.terminate()
+        }
+    }
+
     /// Full map: panel 8pt from the screen edges, Maps logo just above it.
     func testFullMapEdges() throws {
         let app = XCUIApplication()
