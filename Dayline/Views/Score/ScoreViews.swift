@@ -57,7 +57,7 @@ struct ScoreDetailView: View {
             }
             .presentationDetents([.medium])
             .presentationDragIndicator(.visible)
-            .presentationBackground(Color(.systemBackground))
+            .presentationBackground(.regularMaterial)
             .presentationCornerRadius(34)
         }
     }
