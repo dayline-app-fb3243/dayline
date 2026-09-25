@@ -84,7 +84,9 @@ struct SeamlessWidgetScoreRing: View {
                 Text("\(score)")
                     .font(.system(size: width * 0.47, weight: .bold, design: .rounded))
                     .minimumScaleFactor(0.7).lineLimit(1).monospacedDigit()
+                    // Widget Accent/Tinted mode can flatten non-accent white text into the ring.
                     .foregroundStyle(.white)
+                    .widgetAccentable()
                     .frame(width: width * 0.9)
                     .offset(x: radius * cos(angle), y: radius * sin(angle))
             }

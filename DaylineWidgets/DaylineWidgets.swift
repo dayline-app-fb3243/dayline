@@ -63,13 +63,13 @@ struct TodayWidgetView: View {
                 }
             }
         case .systemSmall:
-            VStack(spacing: 4) {
-                Text("Day score").font(.footnote.weight(.medium))
-                Spacer(minLength: 0)
-                SeamlessWidgetScoreRing(score: s.score, size: 122, width: 34)
-                Spacer(minLength: 0)
-                Text(s.label).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
-            }.frame(maxWidth: .infinity, maxHeight: .infinity)
+            VStack(spacing: 1) {
+                Text("Day score").font(.system(size: 12, weight: .medium)).lineLimit(1)
+                SeamlessWidgetScoreRing(score: s.score, size: 104, width: 31)
+                Text(s.label).font(.system(size: 10)).foregroundStyle(.secondary).lineLimit(1)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .padding(.vertical, 6)
         default:
             HStack(spacing: 16) {
                 SeamlessWidgetScoreRing(score: s.score, size: 122, width: 34)
