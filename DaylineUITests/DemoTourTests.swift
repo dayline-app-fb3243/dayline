@@ -1047,6 +1047,19 @@ final class DemoTourTests: XCTestCase {
     }
 
     /// Steps in the Day score ring's style: five layouts, and the ring opens the Steps page.
+    func testDayPickerGlassDark() { pickerGlass("Dark") }
+    func testDayPickerGlassLight() { pickerGlass("Light") }
+
+    private func pickerGlass(_ scheme: String) {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo", "-appearance", scheme.lowercased()]
+        app.launch(); pause(1)
+        tapID(app, "scoreCard"); pause(1)
+        tapID(app, "dayTitle"); pause(1)
+        XCTAssertTrue(app.descendants(matching: .any)["dayPicker"].firstMatch.exists)
+        shot("day-picker-glass-\(scheme.lowercased())")
+    }
+
     func testStepsRing() throws {
         for n in 1...5 {
             let app = XCUIApplication()
