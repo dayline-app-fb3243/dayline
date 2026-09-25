@@ -238,11 +238,31 @@ struct SplashView: View {
     @Environment(\.colorScheme) private var mapScheme
     private var splashMap: some View {
         VStack(alignment: .leading, spacing: 0) {
+            Spacer(minLength: 0)
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Your day,\nremembered.").font(.largeTitle.bold()).fixedSize(horizontal: false, vertical: true)
+                Text("Journaling, day tracking, and health - all in one place.")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.horizontal, 28)
+            .padding(.bottom, 62)
+            Button { showSignIn = true } label: { Text("Continue").font(.headline).frame(maxWidth: .infinity) }
+                .buttonStyle(.glassProminent).tint(Theme.accent).controlSize(.extraLarge)
+                .padding(.horizontal, 24).padding(.bottom, 16)
+                .accessibilityIdentifier("splashContinue")
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(alignment: .top) {
+            Color(.systemBackground).ignoresSafeArea()
             Color.clear.frame(maxWidth: .infinity).frame(height: 610)
                 .overlay(alignment: .top) {
-                    if liveMap.isEmpty { SplashLoop().frame(height: 610).allowsHitTesting(false) }
-                    else if liveMap == "loop" { SplashLoop().frame(height: 610).allowsHitTesting(false) }
-                    else { SplashLiveMap(style: liveMap).frame(height: 610).allowsHitTesting(false) }
+                    if liveMap.isEmpty || liveMap == "loop" {
+                        SplashLoop().frame(height: 610).allowsHitTesting(false)
+                    } else {
+                        SplashLiveMap(style: liveMap).frame(height: 610).allowsHitTesting(false)
+                    }
                 }
                 .clipped()
                 .overlay(alignment: .bottom) {
@@ -252,22 +272,9 @@ struct SplashView: View {
                                    startPoint: .top, endPoint: .bottom).frame(height: 215)
                 }
                 .ignoresSafeArea(edges: .top)
-            Spacer(minLength: 0)
-            VStack(alignment: .leading, spacing: 10) {
-                Text("Your day,\nremembered.").font(.largeTitle.bold())
-                Text("Journaling, day tracking, and health - all in one place.")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .padding(.horizontal, 28).padding(.bottom, 64)
-            Button { showSignIn = true } label: { Text("Continue").font(.headline).frame(maxWidth: .infinity) }
-                .buttonStyle(.glassProminent).tint(Theme.accent).controlSize(.extraLarge)
-                .padding(.horizontal, 24).padding(.bottom, 16)
-                .accessibilityIdentifier("splashContinue")
         }
-        .background(Color(.systemBackground))
     }
+
 }
 
 /// Sign-in sheet in the style of Apple's own "Sign in with Apple" sheet: pick one, then the blue button.
