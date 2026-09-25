@@ -79,9 +79,15 @@ struct AppBackgroundView: View {
             Color(.systemGroupedBackground)
             switch preset {
             case .system:
-                // Apple's grouped background on every page; solid grouped cards use the
-                // same surface as Today, in both light and dark mode.
-                EmptyView()
+                // Dayline's default soft blue light behind solid cards.
+                GeometryReader { geo in
+                    ZStack {
+                        blob(Color(red: 0.61, green: 0.76, blue: 1.0), 320).position(x: -80 + 160, y: -60 + 160)
+                        blob(Color(red: 0.81, green: 0.88, blue: 1.0), 300).position(x: geo.size.width + 120 - 150, y: 180 + 150)
+                        blob(Color(red: 0.73, green: 0.83, blue: 1.0), 320).position(x: -60 + 160, y: geo.size.height + 40 - 160)
+                    }
+                    .opacity(scheme == .dark ? 0.35 * 0.55 : 0.75)
+                }
             case .photo:
                 if let image = BackgroundStore.load() {
                     let style = PhotoStyle(rawValue: styleRaw) ?? .blur

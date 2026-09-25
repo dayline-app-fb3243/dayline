@@ -43,14 +43,13 @@ struct InsightsView: View {
         let r = ScoreEngine.score(DayData.input(for: .now, context: context))
         return VStack(spacing: 12) {
             ScoreCard(result: r)
-            Card {
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("What's driving today").font(.headline)
-                    ForEach(r.factors) { f in
-                        HStack {
-                            FactorChip(factor: f)
-                            Spacer()
-                            Text(f.points > 0 ? "+\(f.points)" : "–").font(.subheadline.weight(.bold)).foregroundStyle(.secondary)
+            if !r.factors.isEmpty {
+                SectionHeader("What shaped today")
+                Card(padding: 0) {
+                    VStack(spacing: 0) {
+                        ForEach(Array(r.factors.enumerated()), id: \.element.id) { i, f in
+                            FactorRow(factor: f)
+                            if i < r.factors.count - 1 { Divider().padding(.leading, 62) }
                         }
                     }
                 }
