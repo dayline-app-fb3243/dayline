@@ -194,7 +194,7 @@ enum ScoreEngine {
         if total == 0 {
             factors.append(.init(part: .plans, title: "Plans & reminders", effect: .up, points: pts(.plans, 1)))
         } else {
-            factors.append(.init(part: .plans, title: "\(done)/\(total) done", effect: done > 0 ? .up : .pending, points: pts(.plans, Double(done) / Double(total))))
+            factors.append(.init(part: .plans, title: "Plans: \(done) of \(total) done", effect: done > 0 ? .up : .pending, points: pts(.plans, Double(done) / Double(total))))
         }
 
         // 5. Moving: any one of gym, the personal step goal, or time outside. Half-way counts half.

@@ -78,7 +78,7 @@ struct StepsDetailView: View {
 
     var body: some View {
         Page(title: "Steps") {
-            Picker("Range", selection: $range) { ForEach(["D", "W"], id: \.self) { Text($0) } }.pickerStyle(.segmented)
+            CapsuleSegmented(selection: $range, options: [("D", "D"), ("W", "W")])
             Card {
                 VStack(alignment: .leading, spacing: 12) {
                     bigNumber

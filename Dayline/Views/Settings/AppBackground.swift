@@ -93,10 +93,7 @@ struct BackgroundPickerView: View {
                 if presetRaw == BackgroundPreset.photo.rawValue {
                     Text("Photo style").font(.subheadline.weight(.semibold)).helperText()
                        .padding(.leading, 16).padding(.top, 14)
-                    Picker("Photo style", selection: $styleRaw) {
-                        ForEach(PhotoStyle.allCases) { Text($0.title).tag($0.rawValue) }
-                    }
-                    .pickerStyle(.segmented)
+                    CapsuleSegmented(selection: $styleRaw, options: PhotoStyle.allCases.map { ($0.rawValue, $0.title) })
                 }
                 Toggle("Sync widget", isOn: $syncWidget)
                     .font(.body)
@@ -196,20 +193,35 @@ struct SectionHeader: View {
     }
 }
 
-/// Fully rounded (pill) segmented control, to match the rest of the app's shapes.
-/// Day / Week / Month / Year switcher: Apple's own segmented control, so pressing and sliding the
-/// selection gets the same Liquid Glass lens (lift, stretch, squish, bounce) as the tab bar.
-/// Selected word in theme blue, like the selected tab.
+/// Glass capsule switcher, visually paired with the system tab bar.
 struct CapsuleSegmented<Value: Hashable>: View {
     @Binding var selection: Value
     var options: [(Value, String)]
     var body: some View {
-        let _ = segmentedSelectedTint
-        Picker("", selection: $selection) {
-            ForEach(options, id: \.0) { value, title in Text(title).tag(value) }
+        HStack(spacing: 3) {
+            ForEach(options, id: \.0) { value, title in
+                Button {
+                    withAnimation(.snappy(duration: 0.24)) { selection = value }
+                } label: {
+                    Text(title)
+                        .font(.subheadline.weight(selection == value ? .semibold : .regular))
+                        .foregroundStyle(selection == value ? Theme.accent : Color.primary)
+                        .frame(maxWidth: .infinity)
+                        .frame(minHeight: 42)
+                        .background {
+                            if selection == value {
+                                Capsule().fill(Color.primary.opacity(0.12))
+                            }
+                        }
+                        .contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(selection == value ? .isSelected : [])
+            }
         }
-        .pickerStyle(.segmented)
-        .controlSize(.large)
+        .padding(4)
+        .glassEffect(.regular, in: .capsule)
+        .accessibilityElement(children: .contain)
     }
 }
 
@@ -791,12 +803,6 @@ struct NotificationsView: View {
         .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: Theme.cardRadius, style: .continuous))
     }
 }
-
-/// Selected word of the system segmented control in theme blue, like the selected tab. Set once.
-private let segmentedSelectedTint: Void = {
-    UISegmentedControl.appearance().setTitleTextAttributes([.foregroundColor: UIColor(Theme.accent)], for: .selected)
-}()
-
 
 /// Sign in again from Profile (after signing out): the setup sign-in sheet; Email goes on to the code step.
 struct ProfileSignInFlow: View {

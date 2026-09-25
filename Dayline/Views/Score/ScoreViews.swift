@@ -454,7 +454,7 @@ struct FactorRow: View {
         return Int(a[i + 1]) ?? 2
     }
     var body: some View {
-        let symbol = Self.style(factor.title).0
+        let symbol = Self.style(factor).0
         let bad = factor.effect == .pending || factor.points <= 0
         HStack(spacing: 12) {
             if showSymbols {
@@ -484,32 +484,53 @@ struct FactorRow: View {
                 }
             }
             VStack(alignment: .leading, spacing: 1) {
-                Text(factor.title).font(.body)
-                Text(factor.detail ?? (bad ? "No points yet" : factor.effect == .up ? "Counted" : "Small boost"))
+                Text(displayTitle).font(.body)
+                Text(factor.detail ?? (bad ? "No points yet" : "Adds to your score"))
                     .font(.subheadline).foregroundStyle(.secondary)
             }
             Spacer()
-            Text(factor.points > 0 ? "+\(factor.points)" : factor.points == 0 ? "0" : "\(factor.points)")
-                .font(.body).monospacedDigit()
+            Text("\(factor.points > 0 ? "+" : "")\(factor.points) pts")
+                .font(.subheadline).monospacedDigit()
                 .foregroundStyle(factor.points > 0 ? Color.primary : Color.secondary)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
     }
 
-    static func style(_ title: String) -> (String, Color) {
-        let t = title.lowercased()
-        if t.hasPrefix("up at") || t.contains("start") || t.contains("woke") { return ("sun.max.fill", .orange) }
-        if t.contains("late night") { return ("moon.fill", Theme.bad) }
-        if t == "plans" { return ("checkmark", Theme.accent) }
-        if t.contains("moving") { return ("figure.walk", Theme.accent) }
-        if t.contains("gym") { return ("dumbbell.fill", Theme.good) }
-        if t.contains("planned") { return ("checkmark", Theme.accent) }
+    private var displayTitle: String {
+        let title = factor.title
+        if title.range(of: #"^\d+/\d+ done$"#, options: .regularExpression) != nil {
+            let count = title.replacingOccurrences(of: " done", with: "").split(separator: "/")
+            if count.count == 2 { return "Plans: \(count[0]) of \(count[1]) done" }
+        }
+        return title
+    }
+
+    static func style(_ factor: ScoreFactor) -> (String, Color) {
+        switch factor.part {
+        case "wake": return ("sun.max.fill", .orange)
+        case "bed": return ("moon.fill", Theme.accent)
+        case "work": return ("briefcase.fill", Theme.accent)
+        case "plans": return ("checklist", Theme.accent)
+        case "moving": return ("figure.walk", .teal)
+        case "gotOut": return ("sun.horizon.fill", .orange)
+        case "journal": return ("pencil", Theme.journal)
+        default: break
+        }
+        let t = factor.title.lowercased()
+        if t.hasPrefix("up at") || t.contains("start") || t.contains("woke") || t == "wake-up" { return ("sun.max.fill", .orange) }
+        if t.contains("bed") || t.contains("late night") { return ("moon.fill", Theme.bad) }
+        if t.contains("work") && !t.contains("workout") { return ("briefcase.fill", Theme.accent) }
+        if t.contains("plan") || t.contains("reminder") || t.contains("done") { return ("checklist", Theme.accent) }
+        if t.contains("gym") || t.contains("strength") { return ("dumbbell.fill", Theme.good) }
+        if t.contains("run") || t.contains("step") || t.contains("walk") || t.contains("move") { return ("figure.walk", .teal) }
+        if t.contains("ride") || t.contains("cycling") { return ("bicycle", .teal) }
+        if t.contains("swim") { return ("figure.pool.swim", .teal) }
+        if t.contains("yoga") { return ("figure.yoga", .teal) }
         if t.contains("place") { return ("mappin", .teal) }
-        if t.contains("outside") || t.contains("move") { return ("figure.walk", .teal) }
+        if t.contains("outside") || t.contains("went out") { return ("sun.horizon.fill", .orange) }
         if t.contains("journal") { return ("pencil", Theme.journal) }
-        if t.contains("went out") { return ("fork.knife", .orange) }
-        return ("star.fill", Theme.accent)
+        return ("circle.grid.2x2.fill", Theme.accent)
     }
 }
 
