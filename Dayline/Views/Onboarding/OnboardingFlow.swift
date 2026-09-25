@@ -370,14 +370,14 @@ struct SignInSheet: View {
             if appleDone { next() }
         }) {
             AppleSignInDemoSheet {
-                Task { await auth.signInDemo(provider: .apple); appleDone = true; showAppleDemo = false }
+                Task { await auth.signInDemo(provider: .apple); appleDone = auth.isSignedIn; showAppleDemo = false }
             }
         }
         .sheet(isPresented: $showGoogleDemo, onDismiss: {
             if googleDone { next() }
         }) {
             GoogleSignInDemoSheet {
-                Task { await auth.signInDemo(provider: .google); googleDone = true; showGoogleDemo = false }
+                Task { await auth.signInDemo(provider: .google); googleDone = auth.isSignedIn; showGoogleDemo = false }
             }
         }
         .modifier(FitSheet.Detents(content: fitHeight))
