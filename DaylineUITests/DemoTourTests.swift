@@ -98,6 +98,43 @@ final class DemoTourTests: XCTestCase {
     }
 
 
+    /// A continuous interaction pass, recorded as a simulator video by shots.yml.
+    /// Static snapshots alone cannot prove the tabs, back controls or composer respond.
+    func testInteractionSweepVideo() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo", "-appearance", "light"]
+        app.launch(); pause(1)
+        for name in ["Today", "Timeline", "Insights", "Journal", "Profile", "Journal", "Timeline"] {
+            tab(app, name); pause(0.7); app.swipeUp(); pause(0.5); app.swipeDown(); pause(0.5)
+        }
+        tab(app, "Journal")
+        tapID(app, "journalSearch"); pause(0.7)
+        let field = app.textFields["searchField"]
+        XCTAssertTrue(field.waitForExistence(timeout: 4))
+        field.tap(); field.typeText("Blue Door Coffee"); pause(1.5)
+        XCTAssertTrue(app.descendants(matching: .any)["searchHit"].firstMatch.exists)
+        shot("sweep-search-suggestions")
+        let cancel = app.buttons["Cancel"].firstMatch
+        if cancel.exists { cancel.tap() } else { goBack(app) }
+        pause(0.5)
+        tab(app, "Journal"); tapID(app, "newEntry"); pause(0.7)
+        let title = app.descendants(matching: .any)["entryTitle"].firstMatch
+        XCTAssertTrue(title.waitForExistence(timeout: 4))
+        title.tap(); title.typeText("Morning note"); pause(0.4)
+        let mic = app.descendants(matching: .any)["voiceMic"].firstMatch
+        XCTAssertTrue(mic.waitForExistence(timeout: 4))
+        mic.press(forDuration: 1.3)
+        let allow = XCUIApplication(bundleIdentifier: "com.apple.springboard").buttons["Allow"]
+        if allow.waitForExistence(timeout: 2) { allow.tap(); mic.press(forDuration: 1.3) }
+        pause(1.2); shot("sweep-voice-composer")
+        tapID(app, "saveEntry"); pause(1)
+        tab(app, "Profile"); tapID(app, "checkLocationRow"); pause(0.7)
+        tapID(app, "check-1"); pause(0.7)
+        tapID(app, "check-10"); pause(0.7)
+        let thumb = app.descendants(matching: .any)["thumb-10"].firstMatch
+        if thumb.waitForExistence(timeout: 3) { thumb.tap(); pause(1); shot("sweep-location-expanded") }
+    }
+
     func testAuthLabelOptions() {
         for variant in ["A", "B", "C"] {
             let app = XCUIApplication()
