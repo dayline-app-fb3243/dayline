@@ -3,12 +3,15 @@ import SwiftUI
 /// One shared layout for the real widget and its size-accurate preview.
 struct WeekWidgetContent: View {
     let scores: [Int]
+    @Environment(\.widgetFamily) private var family
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .firstTextBaseline) {
-                Text("This week").font(.system(.headline, design: .default))
-                Spacer(minLength: 8)
-                Text("Day score").font(.system(.caption, design: .default)).foregroundStyle(.secondary)
+                Text("This week").font(.system(.headline, design: .default)).lineLimit(1).minimumScaleFactor(0.85)
+                Spacer(minLength: 4)
+                if family != .systemSmall {
+                    Text("Day score").font(.system(.caption, design: .default)).foregroundStyle(.secondary)
+                }
             }
             HStack(alignment: .bottom, spacing: 6) {
                 ForEach(0..<7, id: \.self) { i in
@@ -43,10 +46,12 @@ struct WeekWidgetSizePreview: View {
                 Text("Week widget").font(.title2)
                 Text("Medium · 360 × 170 pt").font(.caption).foregroundStyle(.secondary)
                 WeekWidgetContent(scores: scores)
+                    .environment(\.widgetFamily, .systemMedium)
                     .frame(width: 360, height: 170)
                     .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 23))
                 Text("Small · 170 × 170 pt").font(.caption).foregroundStyle(.secondary)
                 WeekWidgetContent(scores: scores)
+                    .environment(\.widgetFamily, .systemSmall)
                     .frame(width: 170, height: 170)
                     .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 23))
                 Spacer()

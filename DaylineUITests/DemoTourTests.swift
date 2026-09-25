@@ -702,8 +702,10 @@ final class DemoTourTests: XCTestCase {
         app.launchEnvironment["TZ"] = Self.morningZone
         app.launch(); pause(1)
         tab(app, "Profile"); pause(0.8)
-        let toggle = app.switches["Show Symbols"]
-        if toggle.waitForExistence(timeout: 3) { toggle.tap() }
+        let toggle = app.switches["Show Symbols"].firstMatch
+        XCTAssertTrue(toggle.waitForExistence(timeout: 5), "Show Symbols switch missing")
+        if toggle.value as? String == "1" { toggle.tap() }
+        XCTAssertEqual(toggle.value as? String, "0", "Show Symbols must be off for this shot")
         pause(0.7); shot("symbols-switched-off-profile")
         tab(app, "Timeline"); pause(1.5); shot("symbols-switched-off-timeline")
         tab(app, "Today"); tapID(app, "scoreCard"); pause(1.3)
@@ -993,8 +995,11 @@ final class DemoTourTests: XCTestCase {
         tapID(app, "backgroundRow"); pause(1)
         app.swipeUp(); pause(0.5)
         shot("widget-sync-off")
-        let toggle = app.switches["Sync widget"]
-        if toggle.waitForExistence(timeout: 3) { toggle.tap(); pause(0.6); shot("widget-sync-on") }
+        let toggle = app.switches["Sync widget"].firstMatch
+        XCTAssertTrue(toggle.waitForExistence(timeout: 5), "Sync widget switch missing")
+        if toggle.value as? String == "0" { toggle.tap() }
+        XCTAssertEqual(toggle.value as? String, "1", "Sync widget must be on for this shot")
+        pause(0.6); shot("widget-sync-on")
     }
 
     /// Four genuinely different icon treatments on the same Day score factor rows.
