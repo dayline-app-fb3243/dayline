@@ -31,3 +31,7 @@ CI simulator builds and unsigned Xcode project zips do not prove iCloud sync.
 - Request Contacts permission at the point of use, import only the fields needed with consent, and match friends by verified phone/email through the backend. Current PeopleStore rows are hard-coded sample names and addresses; no real Contacts read or friend matching exists.
 - Implement follow requests, acceptance/rejection, sharing visibility, revocation, and streak updates with an authenticated social graph. Current "Follow" and "Ask" pills only change local button state; demo friends are fixed sample values. The hide-from-my-ring toggle is local UserDefaults state, not a sharing permission.
 - Replace the placeholder invite URL with a tested live destination, and verify the Messages composer on a physical device. An invite UI or local button state does not establish that any person received or accepted a request.
+
+## Final release cleanup
+
+- After the real account, verification, social, sync, invite, and notification services are integrated and tested, remove all seeded/demo/fake code paths from the shipping app: `DAYLINE_DEMO_BUILD`, `-demo` launch switches, sample user/accounts/people, arbitrary verification-code acceptance, simulated Google account choice, simulated in-app notification banners, placeholder URLs and data, and preview-only mocks. Keep test fixtures isolated in test targets, not production code. Audit the built app for these paths before release.
