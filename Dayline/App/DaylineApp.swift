@@ -16,6 +16,7 @@ struct DaylineApp: App {
         if args.contains("-demo") { UserDefaults.standard.set(!args.contains("-onboarding"), forKey: "onboarding.done") }
         // Every demo run starts on the default Dayline background (the tour picks Sunset later on).
         if args.contains("-demo") { UserDefaults.standard.removeObject(forKey: "background.preset") }
+        if let i = args.firstIndex(of: "-background"), i + 1 < args.count { UserDefaults.standard.set(args[i + 1], forKey: "background.preset") }
         // Demo tour runs as a signed-in sample user (so Sign Out shows); onboarding runs start signed out.
         if args.contains("-demo") {
             let d = UserDefaults.standard
@@ -24,10 +25,24 @@ struct DaylineApp: App {
         }
     }
 
+    /// Widget design screenshots: -widgetDesign N -widgetPage P opens that design's page only.
+    private static var galleryDesign: WidgetDesign? {
+        let a = ProcessInfo.processInfo.arguments
+        guard let i = a.firstIndex(of: "-widgetDesign"), i + 1 < a.count, let n = Int(a[i + 1]) else { return nil }
+        return WidgetDesign.all.first { $0.id == n }
+    }
+    private static var galleryPage: Int {
+        let a = ProcessInfo.processInfo.arguments
+        guard let i = a.firstIndex(of: "-widgetPage"), i + 1 < a.count else { return 1 }
+        return Int(a[i + 1]) ?? 1
+    }
+
     var body: some Scene {
         WindowGroup {
             Group {
-                if onboardingDone {
+                if let d = Self.galleryDesign {
+                    WidgetDesignGalleryView(design: d, page: Self.galleryPage)
+                } else if onboardingDone {
                     RootView().task { await startUp() }
                 } else {
                     OnboardingFlow()

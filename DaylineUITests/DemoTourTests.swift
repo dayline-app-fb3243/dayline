@@ -563,6 +563,31 @@ final class DemoTourTests: XCTestCase {
         tapID(app, "addPerson"); pause(2); shot("pc4-add-people")
     }
 
+    /// Widget design choices: each design's Home Screen page and its large + Lock Screen page.
+    func testWidgetDesigns() throws {
+        for n in 1...10 {
+            for p in 1...2 {
+                let app = XCUIApplication()
+                app.launchArguments = ["-demo", "-widgetDesign", "\(n)", "-widgetPage", "\(p)"]
+                app.launch(); pause(1.2)
+                shot(String(format: "wd%02d-%d", n, p))
+                app.terminate()
+            }
+        }
+    }
+
+    /// White background: should look like Settings (light gray page, white cards).
+    func testWhiteBackground() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo", "-background", "white"]
+        app.launch(); pause(1.5)
+        tab(app, "Profile"); pause(1.5); shot("wb1-profile")
+        tab(app, "Today"); pause(1.5); shot("wb2-today")
+        tab(app, "Timeline"); pause(2.5); shot("wb3-timeline")
+        tab(app, "Insights"); pause(1.5); shot("wb4-insights")
+        tab(app, "Journal"); pause(1.5); shot("wb5-journal")
+    }
+
     /// Bottom edge check (dark): each main page scrolled to the end, so the last card should run to the screen edge.
     func testBottomEdgesDark() throws {
         let app = XCUIApplication()

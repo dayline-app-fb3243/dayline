@@ -21,7 +21,8 @@ enum BackgroundPreset: String, CaseIterable, Identifiable {
         let c = Self.c
         switch self {
         case .system, .photo: return []
-        case .white: return [.white, .white]
+        // Settings white: Apple's light gray page, so the white cards and rows stand out on it.
+        case .white: return [Color(.systemGroupedBackground), Color(.systemGroupedBackground)]
         case .black: return [.black, .black]
         case .gray: return [c(0.82, 0.82, 0.84), c(0.90, 0.90, 0.92)]
         case .sky: return [c(0.61, 0.77, 1.0), c(0.91, 0.94, 1.0)]
