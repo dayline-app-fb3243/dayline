@@ -1,5 +1,6 @@
 import XCTest
 import CoreLocation
+import UIKit
 
 /// Walks through every screen with demo data. CI records the simulator screen while these run,
 /// which produces the preview videos, and saves a screenshot of each screen.
@@ -592,6 +593,19 @@ final class DemoTourTests: XCTestCase {
     }
 
     private func pause(_ seconds: TimeInterval) { Thread.sleep(forTimeInterval: seconds) }
+
+    /// Compare UIKit's actual preferred text font on the same simulator with the app screenshot.
+    func testSystemFontName() throws {
+        let regular = UIFont.preferredFont(forTextStyle: .body)
+        let title = UIFont.preferredFont(forTextStyle: .largeTitle)
+        NSLog("DAYLINE_FONT_PROOF body=\(regular.fontName) family=\(regular.familyName) title=\(title.fontName) family=\(title.familyName)")
+        XCTAssertTrue(regular.fontName.contains("SF") || regular.fontName.contains("System"), "Unexpected system font: \(regular.fontName)")
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo"]
+        app.launch(); pause(1)
+        tab(app, "Insights"); tapSegment(app, "Day"); pause(1)
+        shot("sf-proof-insights")
+    }
 
     /// Font check: the real iOS Settings app next to Dayline's People and Day score pages, same simulator, same scale.
     func testFontProof() throws {
