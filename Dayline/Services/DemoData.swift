@@ -207,7 +207,9 @@ enum DemoData {
                                   ("demo-danish", "A pastry and a quiet coffee break."),
                                   ("demo-danish2", "Stopped for something sweet.")]
                 let choices = weekend ? parkPhotos : cafePhotos
-                let selected = choices[(offset / 6) % choices.count]
+                // Cycle across the three-month history while keeping each entry's
+                // place and caption matched to the chosen image.
+                let selected = choices[(offset / 6 + offset / 30) % choices.count]
                 let e = JournalEntry(date: at(day, 12, 20), kind: .photo,
                                      text: selected.1, thumbnail: photo(selected.0), latitude: p.0, longitude: p.1)
                 e.placeName = weekend ? "Riverside Park" : "Blue Door Coffee"
