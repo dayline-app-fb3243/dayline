@@ -1273,14 +1273,44 @@ struct SplashLiveMap: View {
     /// Route mode: the camera centers in the thin safe area at the top (because of the logo inset), which would put
     /// the place right under the status bar. Move the camera once, before the scene shows, so the place sits
     /// about a third of the way down the map, in the clear part above the white fade.
-    /// Route mode: center the camera on the place itself. The tall bottom safe-area inset (for the logo) makes
-    /// MapKit put the center coordinate in the middle of the top part, so the place sits in the clear area above
-    /// the white fade, centered left to right, and the slow turn pivots around it.
+    /// Route mode: put the place centered left to right, with its dot about 300pt down (pin head in the clear top
+    /// part, above the white fade). Center the camera on the place, then slide the camera along its heading and
+    /// measure where the place lands on screen, correcting a few times (MapKit's pitch and insets make the exact
+    /// screen spot hard to predict, so measure it).
     private func frameForRoute() async {
         guard let c0 = position.camera, let hero = stops.first(where: { $0.name == heroName }) else { return }
-        var t = Transaction(); t.disablesAnimations = true
-        withTransaction(t) { cam = .camera(MapCamera(centerCoordinate: hero.c, distance: c0.distance, heading: c0.heading, pitch: c0.pitch)) }
-        try? await Task.sleep(for: .milliseconds(150))
+        func set(_ c: CLLocationCoordinate2D) {
+            var t = Transaction(); t.disablesAnimations = true
+            withTransaction(t) { cam = .camera(MapCamera(centerCoordinate: c, distance: c0.distance, heading: c0.heading, pitch: c0.pitch)) }
+        }
+        func shifted(_ m: Double) -> CLLocationCoordinate2D {
+            let h = c0.heading * .pi / 180
+            let dLat = m * cos(h) / 111_320
+            let dLon = m * sin(h) / (111_320 * cos(hero.c.latitude * .pi / 180))
+            return .init(latitude: hero.c.latitude + dLat, longitude: hero.c.longitude + dLon)
+        }
+        func heroY() async -> CGFloat? {
+            for _ in 0..<10 {
+                try? await Task.sleep(for: .milliseconds(120))
+                if let p = track?.convert?(hero.c) { return p.y }
+            }
+            return nil
+        }
+        let target: CGFloat = 300
+        var m = 0.0
+        set(shifted(m))
+        guard var y0 = await heroY() else { return }
+        var step = c0.distance * 0.1
+        for _ in 0..<5 {
+            if abs(y0 - target) < 6 { break }
+            set(shifted(m + step))
+            guard let y1 = await heroY() else { break }
+            let gain = (y1 - y0) / step
+            m += step; y0 = y1
+            if abs(gain) < 1e-4 { break }
+            step = Double(target - y0) / gain
+        }
+        try? await Task.sleep(for: .milliseconds(100))
     }
 
     /// Walking routes are fetched once per scene and reused every time the loop comes back around.
