@@ -60,42 +60,52 @@ struct DaylineWidgetScoreRing: View {
 /// The score sits inside the stroke's actual endpoint rather than in an overlaid disk.
 struct SeamlessWidgetScoreRing: View {
     @Environment(\.widgetRenderingMode) private var renderingMode
+    @Environment(\.colorScheme) private var colorScheme
     let score: Int
     var size: CGFloat = 118
     var width: CGFloat = 34
+
+    /// Review-only tone variants. Geometry and score placement never vary.
+    private var variant: Int {
+        min(max(SharedBackgroundStore.defaults.integer(forKey: "widget.ringVariant"), 1), 3)
+    }
 
     var body: some View {
         let progress = CGFloat(min(max(score, 0), 100)) / 100
         let diameter = size - width
         let radius = diameter / 2
         let angle = (-90 + 360 * progress) * CGFloat.pi / 180
+        let track: Color = {
+            if renderingMode == .accented {
+                return .white.opacity([0, 0.22, 0.34, 0.48][variant])
+            }
+            if colorScheme == .dark {
+                return Color.white.opacity([0, 0.28, 0.40, 0.52][variant])
+            }
+            return Color(red: 0.89, green: 0.91, blue: 0.94)
+        }()
         ZStack {
-            Circle().stroke(Color(red: 0.89, green: 0.91, blue: 0.94), lineWidth: width)
+            Circle().stroke(track, lineWidth: width)
                 .frame(width: diameter, height: diameter)
+                .widgetAccentable(false)
             Circle().trim(from: 0, to: progress)
                 .stroke(AngularGradient(stops: [
                     .init(color: Color(red: 0.61, green: 0.85, blue: 1), location: 0),
                     .init(color: Color(red: 0.0, green: 0.38, blue: 0.9), location: Double(progress)),
                     .init(color: Color(red: 0.0, green: 0.38, blue: 0.9), location: 1)
                 ], center: .center, startAngle: .degrees(-90), endAngle: .degrees(270)),
-                        style: StrokeStyle(lineWidth: width, lineCap: .round))
+                        style: StrokeStyle(lineWidth: width, lineCap: .butt))
                 .rotationEffect(.degrees(-90))
                 .frame(width: diameter, height: diameter)
-            if renderingMode == .accented {
-                // In tinted/clear widgets iOS flattens colored views to white.
-                // Place the score in the open center rather than on a white stroke.
-                Text("\(score)")
-                    .font(.system(size: size * 0.27, weight: .semibold, design: .default))
-                    .monospacedDigit()
-            } else if score > 0 {
+                .widgetAccentable()
+            if score > 0 {
                 Text("\(score)")
                     .font(.system(size: width * 0.47, weight: .bold, design: .default))
                     .minimumScaleFactor(0.7).lineLimit(1).monospacedDigit()
-                    // iOS renders the tinted/clear ring white. Keep the endpoint
-                    // numeral dark there so it remains distinct from the stroke.
-                    .foregroundStyle(renderingMode == .accented ? .black : .white)
+                    .foregroundStyle(.white)
                     .frame(width: width * 0.9)
                     .offset(x: radius * cos(angle), y: radius * sin(angle))
+                    .widgetAccentable(false)
             }
         }
         .frame(width: size, height: size)

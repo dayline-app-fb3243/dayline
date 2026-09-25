@@ -704,9 +704,9 @@ final class DemoTourTests: XCTestCase {
     func testInstalledHomeWidget() throws { try installHomeWidget(demo: true) }
     func testInstalledEmptyHomeWidget() throws { try installHomeWidget(demo: false) }
 
-    private func installHomeWidget(demo: Bool) throws {
+    private func installHomeWidget(demo: Bool, variant: Int = 1) throws {
         let app = XCUIApplication()
-        app.launchArguments = demo ? ["-demo"] : []
+        app.launchArguments = demo ? ["-demo", "-widgetRingVariant", String(variant)] : []
         app.launch(); pause(5)
         XCUIDevice.shared.press(.home); pause(2)
         let sb = XCUIApplication(bundleIdentifier: "com.apple.springboard")
@@ -737,8 +737,11 @@ final class DemoTourTests: XCTestCase {
     }
 
     /// Installed Today widget on the actual Home Screen in each customization mode.
-    func testHomeWidgetModes() throws {
-        try installHomeWidget(demo: true)
+    func testHomeWidgetModes() throws { try captureHomeWidgetModes(variant: 1) }
+    func testHomeWidgetModesV2() throws { try captureHomeWidgetModes(variant: 2) }
+    func testHomeWidgetModesV3() throws { try captureHomeWidgetModes(variant: 3) }
+    private func captureHomeWidgetModes(variant: Int) throws {
+        try installHomeWidget(demo: true, variant: variant)
         let sb = XCUIApplication(bundleIdentifier: "com.apple.springboard")
         let widget = sb.icons.matching(NSPredicate(format: "label ==[c] 'Dayline' AND value ==[c] 'Widget'")).firstMatch
         XCTAssertTrue(widget.waitForExistence(timeout: 8), "Installed widget missing")
