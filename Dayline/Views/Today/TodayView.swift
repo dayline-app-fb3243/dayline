@@ -113,7 +113,7 @@ struct TodayView: View {
             Text("Schedule").font(.subheadline.weight(.semibold))
             .foregroundStyle(.secondary)
                 .padding(.leading, 4).padding(.top, 6)
-            DayActivityList(day: .now, onGymTap: { showGym = true })
+            DayActivityList(day: .now, onGymTap: { showGym = true }, plainStyle: true)
         }
         .accessibilityIdentifier("todaySchedule")
     }

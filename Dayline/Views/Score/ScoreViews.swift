@@ -251,6 +251,7 @@ struct DayActivityList: View {
     @AppStorage("symbols.show") private var showSymbols = true
     var day: Date
     var onGymTap: (() -> Void)? = nil
+    var plainStyle = false
     @Environment(\.modelContext) private var context
     @Query(sort: \Visit.arrival) private var visits: [Visit]
     @Query(sort: \JournalEntry.date) private var journal: [JournalEntry]
@@ -420,12 +421,12 @@ struct DayActivityList: View {
 
     var body: some View {
         let all = rows
-        Card(padding: 0) {
+        Group {
             if all.isEmpty {
                 Text("Nothing yet. Dayline fills this in from where you go.")
                     .font(.subheadline).foregroundStyle(.secondary).padding(16)
             } else {
-                blocks(all)
+                if plainStyle { blocks(all) } else { Card(padding: 0) { blocks(all) } }
             }
         }
         .accessibilityIdentifier("scheduleLayout")
@@ -437,14 +438,11 @@ struct FactorGlassList: View {
     @AppStorage("symbols.show") private var showSymbols = true
     let factors: [ScoreFactor]
     var body: some View {
-        Card(padding: 0) {
-            VStack(spacing: 0) {
-                ForEach(Array(factors.enumerated()), id: \.element.id) { i, f in
-                    FactorRow(factor: f)
-                    if i < factors.count - 1 {
-                        Divider().padding(.leading, showSymbols ? 70 : 16)
-                            .padding(.trailing, 16)
-                    }
+        VStack(spacing: 0) {
+            ForEach(Array(factors.enumerated()), id: \.element.id) { i, f in
+                FactorRow(factor: f)
+                if i < factors.count - 1 {
+                    Divider().padding(.leading, showSymbols ? 50 : 0)
                 }
             }
         }
@@ -468,14 +466,14 @@ struct FactorRow: View {
                 let tint = factor.points < 0 ? Theme.bad : Theme.accent
                 let glyph = Image(systemName: symbol).font(.body.weight(.medium))
                 switch styleVariant {
+                case 2:
+                    glyph.foregroundStyle(Theme.accent)
+                        .frame(width: 34, height: 34)
+                        .background(Theme.accent.opacity(0.14), in: .circle)
                 case 1: // Square, Apple's Settings-like rounded square.
                     glyph.foregroundStyle(tint)
                         .frame(width: 38, height: 38)
                         .background(tint.opacity(0.13), in: .rect(cornerRadius: 9))
-                case 2: // Neutral gray circle; only the glyph carries the meaning color.
-                    glyph.foregroundStyle(tint)
-                        .frame(width: 38, height: 38)
-                        .background(Color(.tertiarySystemFill), in: .circle)
                 case 3: // Subtle native glass icon, lighter than the card's surface.
                     glyph.foregroundStyle(tint)
                         .frame(width: 38, height: 38)
@@ -500,8 +498,7 @@ struct FactorRow: View {
                 .font(.subheadline).monospacedDigit()
                 .foregroundStyle(factor.points > 0 ? Color.primary : Color.secondary)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+        .padding(.vertical, 10)
     }
 
     private var displayTitle: String {
@@ -607,8 +604,44 @@ extension DayActivityList {
             .rotationEffect(.degrees(opensGym ? 0 : (open == r.id ? 180 : 0)))
     }
 
-    /// Each row: a blue bar sized by how long it took, the symbol, the title, and from-till under it.
+    /// Plain, tappable Office-style rows on the page background, with no enclosing card.
     fileprivate func blocks(_ all: [Row]) -> some View {
+        if !plainStyle { return AnyView(timelineBlocks(all)) }
+        return AnyView(officeBlocks(all))
+    }
+
+    private func officeBlocks(_ all: [Row]) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(Array(all.enumerated()), id: \.element.id) { i, r in
+                HStack(spacing: 12) {
+                    if showSymbols { icon(r, size: 30) }
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(r.title).font(.body).foregroundStyle(r.kind == .gap ? .secondary : .primary)
+                        Text(sub(r).isEmpty ? range(r) : "\(range(r)) · \(sub(r))")
+                            .font(.subheadline).foregroundStyle(.secondary).monospacedDigit().lineLimit(1)
+                    }
+                    Spacer(minLength: 4)
+                    if r.kind != .gap {
+                        Text(r.kind == .wake ? range(r) : Self.duration((r.end ?? r.time).timeIntervalSince(r.time)))
+                            .font(.subheadline).foregroundStyle(.secondary).monospacedDigit()
+                    }
+                }
+                .frame(minHeight: 54)
+                .padding(.vertical, 8)
+                .contentShape(.rect)
+                .onTapGesture {
+                    if r.kind == .visit && r.title.localizedCaseInsensitiveContains("gym"), let onGymTap {
+                        onGymTap()
+                    } else { toggle(r) }
+                }
+                .accessibilityIdentifier("scheduleRow-\(i)")
+                if open == r.id { detail(r) }
+                if i < all.count - 1 { Divider().padding(.leading, showSymbols ? 42 : 0) }
+            }
+        }
+    }
+    /// Each row: a blue bar sized by how long it took, the symbol, the title, and from-till under it.
+    private func timelineBlocks(_ all: [Row]) -> some View {
         func mins(_ r: Row) -> Double { (r.end ?? r.time).timeIntervalSince(r.time) / 60 }
         return VStack(alignment: .leading, spacing: 6) {
             ForEach(Array(all.enumerated()), id: \.element.id) { i, r in

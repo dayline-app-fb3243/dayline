@@ -1015,6 +1015,17 @@ final class DemoTourTests: XCTestCase {
     }
 
     /// The real Today Schedule > Gym row opens the selected default Gym page.
+    /// Native Schedule and icon-list captures, not image composites.
+    func testOfficeStyleLists() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo", "-appearance", "light"]
+        app.launch(); pause(2)
+        XCTAssertTrue(app.descendants(matching: .any)["todaySchedule"].firstMatch.exists)
+        shot("today-office-rows-native")
+        tab(app, "Insights"); pause(1)
+        shot("insights-office-factor-rows-native")
+    }
+
     func testTodayGymNavigation() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-demo"]
