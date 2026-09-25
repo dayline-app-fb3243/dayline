@@ -35,3 +35,9 @@ CI simulator builds and unsigned Xcode project zips do not prove iCloud sync.
 ## Final release cleanup
 
 - After the real account, verification, social, sync, invite, and notification services are integrated and tested, remove all seeded/demo/fake code paths from the shipping app: `DAYLINE_DEMO_BUILD`, `-demo` launch switches, sample user/accounts/people, arbitrary verification-code acceptance, simulated Google account choice, simulated in-app notification banners, placeholder URLs and data, and preview-only mocks. Keep test fixtures isolated in test targets, not production code. Audit the built app for these paths before release.
+
+## Public-facing support and privacy
+
+- Publish a production privacy policy that accurately describes the actual account, location, health, photo, voice/Speech, Contacts, social sharing, analytics, retention, deletion and cloud storage behavior after services are implemented. Replace prototype-only statements and verify App Store privacy disclosures against the shipped build.
+- Add an in-app link to that privacy policy and test it on a device.
+- Add in-app support actions to contact David/the Dayline team and report a problem. Decide and verify the support address or destination before wiring or publishing the links; no address is assumed here.
