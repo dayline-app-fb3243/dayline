@@ -63,13 +63,13 @@ struct TodayWidgetView: View {
                 }
             }
         case .systemSmall:
-            VStack(spacing: 1) {
-                Text("Day score").font(.system(size: 12, weight: .medium)).lineLimit(1)
-                SeamlessWidgetScoreRing(score: s.score, size: 82, width: 24)
+            VStack(spacing: 2) {
+                Text("Day score").font(.system(size: 12, weight: .semibold)).lineLimit(1)
+                SeamlessWidgetScoreRing(score: s.score, size: 104, width: 30)
                 Text(s.label).font(.system(size: 10)).foregroundStyle(.secondary).lineLimit(1)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .padding(.vertical, 4)
+            .padding(.vertical, 7)
         default:
             HStack(spacing: 16) {
                 SeamlessWidgetScoreRing(score: s.score, size: 122, width: 34)
@@ -92,11 +92,12 @@ struct TodayWidget: Widget {
                 .containerBackground(for: .widget) {
                     if SharedBackgroundStore.syncEnabled {
                         SharedBackgroundCanvas(preset: SharedBackgroundStore.preset(), style: SharedBackgroundStore.style(), photo: SharedBackgroundStore.photo())
-                    } else { Color(.secondarySystemGroupedBackground) }
+                    } else { Color.white }
                 }
                 .widgetURL(URL(string: "dayline://today"))
         }
         .configurationDisplayName("Today")
+        .contentMarginsDisabled()
         .description("Your day score and what's next.")
         .supportedFamilies([.systemSmall, .systemMedium, .accessoryCircular, .accessoryRectangular])
     }
