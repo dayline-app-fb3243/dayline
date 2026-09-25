@@ -831,7 +831,7 @@ final class DemoTourTests: XCTestCase {
     /// Splash loop M -> P -> Q -> R with slow camera moves and crossfades; keeps going under the sign-in sheet.
     func testSplashLoopVideo() throws {
         let app = XCUIApplication()
-        app.launchArguments = ["-demo", "-onboarding", "-splash.map", "loop", "-splash.pin", "route"]
+        app.launchArguments = ["-demo", "-onboarding"]
         app.launchEnvironment["TZ"] = Self.morningZone
         app.launch()
         pause(4); shot("sl-1-park")
