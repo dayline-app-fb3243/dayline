@@ -5,7 +5,7 @@ import MapKit
 struct SiriAppLine: View {
     var body: some View {
         HStack(spacing: 6) {
-            AppMark(size: 18, shadow: false)
+            AppMark(size: 18)
             Text("DAYLINE").font(.caption.weight(.semibold)).foregroundStyle(.white.opacity(0.6))
         }
     }

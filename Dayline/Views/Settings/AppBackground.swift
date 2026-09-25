@@ -66,9 +66,6 @@ struct AppBackgroundView: View {
     @AppStorage("background.preset") private var presetRaw = BackgroundPreset.system.rawValue
     @AppStorage("background.style") private var styleRaw = PhotoStyle.blur.rawValue
     @AppStorage("background.version") private var version = 0
-    /// Proposed: "White" uses Apple's light gray grouped background so the white cards stand out (like Settings).
-    /// so this stays off. Old preview: -background.whiteGrouped YES.
-    @AppStorage("background.whiteGrouped") private var whiteGrouped = false
     @Environment(\.colorScheme) private var scheme
 
     private func blob(_ color: Color, _ size: CGFloat) -> some View {
@@ -98,8 +95,6 @@ struct AppBackgroundView: View {
                         .overlay(Color.black.opacity(style == .dim ? 0.35 : (scheme == .dark ? 0.25 : 0.05)))
                         .id(version)
                 }
-            case .white where whiteGrouped:
-                Color(.systemGroupedBackground)
             default:
                 LinearGradient(colors: preset.colors, startPoint: .topLeading, endPoint: .bottomTrailing)
                     .opacity(scheme == .dark && preset != .night ? 0.35 : 1)
@@ -583,38 +578,11 @@ struct ProfileIcon: View {
     var symbol: String
     var size: CGFloat = 30
     var color: Color = Theme.accent
-    /// Preview flag "icons.tile" (David picks): A = flat solid tile, white glyph (default, like iOS Settings);
-    /// B = light tint tile, colored glyph; C = colored glyph only, no tile.
-    @AppStorage("icons.tile") private var tile = "A"
-    /// Preview flag "profile.tile" (David picks, Sep 24 demo): A = colored tile (default); "blue" = bold blue symbol, no tile (like Day score).
-    @AppStorage("profile.tile") private var profileTile = "A"
+    /// Flat solid tile with a white glyph, like iOS Settings.
     var body: some View {
-        if profileTile == "blue" {
-            Image(systemName: symbol).font(.title3.weight(.bold)).foregroundStyle(Theme.accent)
-                .frame(width: size, height: size)
-        } else {
-            tiled
-        }
-    }
-    @ViewBuilder private var tiled: some View {
-        switch tile {
-        case "B":
-            Image(systemName: symbol).font(.scaled(size: size * 0.5, weight: .semibold)).minimumScaleFactor(0.5).lineLimit(1).foregroundStyle(color)
-                .frame(width: size, height: size)
-                .background(color.opacity(0.15), in: .rect(cornerRadius: size * 0.24, style: .continuous))
-        case "C", "C2":
-            Image(systemName: symbol).font(.scaled(size: size * 0.62, weight: .medium)).minimumScaleFactor(0.5).lineLimit(1).foregroundStyle(color)
-                .frame(width: size, height: size)
-        case "A3":
-            Image(systemName: symbol).font(.scaled(size: size * 0.6, weight: .medium)).minimumScaleFactor(0.5).lineLimit(1).foregroundStyle(.white)
-                .frame(width: size, height: size)
-                .background(color, in: .rect(cornerRadius: size * 0.24, style: .continuous))
-        default:
-            Image(systemName: symbol).font(.scaled(size: size * 0.5, weight: .semibold)).minimumScaleFactor(0.5).lineLimit(1).foregroundStyle(.white)
-                .frame(width: size, height: size)
-                // Flat solid fill like iOS Settings (David: no 3D gradient look).
-                .background(color, in: .rect(cornerRadius: size * 0.24, style: .continuous))
-        }
+        Image(systemName: symbol).font(.scaled(size: size * 0.5, weight: .semibold, relativeTo: .body)).minimumScaleFactor(0.5).lineLimit(1).foregroundStyle(.white)
+            .frame(width: size, height: size)
+            .background(color, in: .rect(cornerRadius: size * 0.24, style: .continuous))
     }
 }
 
@@ -633,9 +601,9 @@ struct ProfileRow: View {
             } else {
                 ProfileIcon(symbol: symbol)
             }
-            Text(title).font(.body.weight(.medium)).foregroundStyle(.primary)
+            Text(title).foregroundStyle(.primary)
             Spacer()
-            Text(value).font(.subheadline).foregroundStyle(.secondary).lineLimit(1)
+            Text(value).foregroundStyle(.secondary).lineLimit(1)
             Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(.tertiary)
         }
         .padding(.horizontal, 14).padding(.vertical, 11)
@@ -842,20 +810,16 @@ private struct BackgroundText: ViewModifier {
     @AppStorage("background.preset") private var presetRaw = BackgroundPreset.system.rawValue
     @AppStorage("background.style") private var styleRaw = PhotoStyle.blur.rawValue
     @Environment(\.colorScheme) private var scheme
-    /// Preview flag "text.gray" (awaiting David's OK): on dark backgrounds use Apple's dark-mode gray
-    /// (secondaryLabel, 60% light gray) instead of blue.
-    @AppStorage("text.gray") private var grayText = true
-    private var darkHelper: AnyShapeStyle {
-        grayText ? AnyShapeStyle(Color(red: 235/255, green: 235/255, blue: 245/255).opacity(0.6)) : AnyShapeStyle(Theme.accent)
-    }
+    /// On dark backgrounds: Apple's dark-mode gray (secondaryLabel, 60% light gray).
+    private var darkHelper: AnyShapeStyle { AnyShapeStyle(Color(red: 235/255, green: 235/255, blue: 245/255).opacity(0.6)) }
 
     func body(content: Content) -> some View {
         let dark = BackgroundTone.isDark(presetRaw: presetRaw, styleRaw: styleRaw, scheme: scheme)
         switch role {
-        // Small gray helper text (section headers, footers): blue on dark backgrounds, gray otherwise.
+        // Small gray helper text (section headers, footers): light gray on dark backgrounds, gray otherwise.
         case .helper: content.foregroundStyle(dark ? darkHelper : AnyShapeStyle(.secondary))
         // Footer text with a link: helper color, and the link turns white on dark backgrounds.
-        case .link: content.foregroundStyle(dark ? darkHelper : AnyShapeStyle(.secondary)).tint(dark ? (grayText ? Theme.accent : .white) : Theme.accent)
+        case .link: content.foregroundStyle(dark ? darkHelper : AnyShapeStyle(.secondary)).tint(Theme.accent)
         // Big titles on the background: white on dark backgrounds.
         case .title: content.foregroundStyle(dark ? AnyShapeStyle(Color.white) : AnyShapeStyle(.primary))
         }

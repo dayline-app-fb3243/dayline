@@ -31,72 +31,24 @@ struct OnboardingFlow: View {
     }
 }
 
+/// In-app logo: the app's two rings on their own (no icon square), light-to-deep blue like the icon.
 struct AppMark: View {
     var size: CGFloat = 96
-    var shadow = true
-    /// "mark.rings": rings-only logo color light to deep (set "" for the old square icon): just the two rings, no square.
-    /// blue = app blue, ink = black/white, sky = light-to-deep blue, duo = blue + teal.
-    @AppStorage("mark.rings") private var rings = "sky"
-    var body: some View {
-        if rings.isEmpty { iconBody } else { RingMark(size: size, palette: rings) }
-    }
-    private var iconBody: some View {
-        // The exact app icon (#5), so every in-app logo matches the Home Screen icon.
-        Image("AppIconImage").resizable().interpolation(.high)
-            .clipShape(RoundedRectangle(cornerRadius: size * 0.225, style: .continuous))
-            .frame(width: size, height: size)
-        .shadow(color: .blue.opacity(shadow ? 0.3 : 0), radius: size * 0.19, y: size * 0.08)
-    }
-}
-
-/// The app's two rings on their own (no icon square), for in-app logos.
-struct RingMark: View {
-    var size: CGFloat
-    var palette: String
     var body: some View {
         let u = size / 100
-        let (outer, inner): (AnyShapeStyle, AnyShapeStyle) = {
-            switch palette {
-            case "ink": return (AnyShapeStyle(Color.primary), AnyShapeStyle(Color.primary.opacity(0.55)))
-            case "sky": return (AnyShapeStyle(LinearGradient(colors: [Color(red: 0.30, green: 0.65, blue: 1), Color(red: 0.07, green: 0.38, blue: 0.92)], startPoint: .top, endPoint: .bottom)),
-                                AnyShapeStyle(Color(red: 0.45, green: 0.75, blue: 1)))
-            case "duo": return (AnyShapeStyle(Theme.accent), AnyShapeStyle(Color(red: 0.19, green: 0.78, blue: 0.75)))
-            default: return (AnyShapeStyle(Theme.accent), AnyShapeStyle(Theme.accent.opacity(0.6)))
-            }
-        }()
         ZStack {
-            ring(r: 38 * u, w: 14 * u, frac: 0.8, style: outer)
-            ring(r: 21 * u, w: 14 * u, frac: 0.6, style: inner)
+            ring(r: 38 * u, w: 14 * u, frac: 0.8,
+                 style: AnyShapeStyle(LinearGradient(colors: [Color(red: 0.30, green: 0.65, blue: 1), Color(red: 0.07, green: 0.38, blue: 0.92)], startPoint: .top, endPoint: .bottom)))
+            ring(r: 21 * u, w: 14 * u, frac: 0.6, style: AnyShapeStyle(Color(red: 0.45, green: 0.75, blue: 1)))
         }
         .frame(width: size, height: size)
+        .accessibilityHidden(true)
     }
     private func ring(r: CGFloat, w: CGFloat, frac: CGFloat, style: AnyShapeStyle) -> some View {
         ZStack {
             Circle().stroke(Color.primary.opacity(0.08), lineWidth: w)
             Circle().trim(from: 0, to: frac)
                 .stroke(style, style: StrokeStyle(lineWidth: w, lineCap: .round))
-                .rotationEffect(.degrees(-90))
-        }
-        .frame(width: r * 2, height: r * 2)
-    }
-}
-
-/// Icon #5 "Two rings": outer ring 80% full, inner ring 60%, white on blue.
-struct DayRings: View {
-    var size: CGFloat
-    var body: some View {
-        let u = size / 100
-        ZStack {
-            ring(r: 30 * u, w: 11 * u, frac: 0.8, color: .white)
-            ring(r: 17 * u, w: 11 * u, frac: 0.6, color: .white.opacity(0.72))
-        }
-        .frame(width: size, height: size)
-    }
-    private func ring(r: CGFloat, w: CGFloat, frac: CGFloat, color: Color) -> some View {
-        ZStack {
-            Circle().stroke(.white.opacity(0.18), lineWidth: w)
-            Circle().trim(from: 0, to: frac)
-                .stroke(color, style: StrokeStyle(lineWidth: w, lineCap: .round))
                 .rotationEffect(.degrees(-90))
         }
         .frame(width: r * 2, height: r * 2)
@@ -319,8 +271,6 @@ struct SplashView: View {
 
 /// Sign-in sheet in the style of Apple's own "Sign in with Apple" sheet: pick one, then the blue button.
 struct SignInSheet: View {
-    @AppStorage("signin.small") private var smallButton = true
-    @AppStorage("signin.pinned") private var pinned = true
     @State private var fitHeight: CGFloat = 0
     var next: () -> Void
     var email: () -> Void
@@ -342,7 +292,7 @@ struct SignInSheet: View {
                     .buttonStyle(.glass).buttonBorderShape(.circle).accessibilityLabel("Close")
             }
             HStack(spacing: 14) {
-                AppMark(size: 56).shadow(radius: 0)
+                AppMark(size: 56)
                 Text("Choose how you want to sign in. Your timeline stays on your iPhone.").font(.subheadline)
             }
             .padding(.top, 10)
@@ -358,33 +308,18 @@ struct SignInSheet: View {
             if let error = auth.errorMessage {
                 Text(error).font(.footnote).foregroundStyle(.red).frame(maxWidth: .infinity).padding(.top, 8)
             }
-            // Preview flag "signin.pinned" (awaiting David's OK): full-width button pinned to the bottom.
-            if pinned && smallButton {
-                // "signin.small" (on by default, approved in the 9/24 sign-in set): fitted sheet, small centered "Continue" pill.
-                Button(action: go) { Text("Continue").font(.headline).padding(.horizontal, 30) }
-                    .buttonStyle(.glassProminent).tint(Theme.accent).controlSize(.large)
-                    .frame(maxWidth: .infinity).padding(.top, 18)
-                    .accessibilityIdentifier("signInContinue")
-            } else if pinned {
-                Button(action: go) { Text("Continue with \(choice.rawValue)").font(.headline).frame(maxWidth: .infinity) }
-                    .buttonStyle(.glassProminent).tint(Theme.accent).controlSize(.extraLarge)
-                    .accessibilityIdentifier("signInContinue")
-                    .padding(.top, 20)
-            } else {
-                Button(action: go) { Text("Continue with \(choice.rawValue)").font(.headline).padding(.horizontal, 10) }
-                    .buttonStyle(.glassProminent).tint(Theme.accent).controlSize(.large)
-                    .frame(maxWidth: .infinity).padding(.top, 18)
-                    .accessibilityIdentifier("signInContinue")
-                Spacer(minLength: 0)
-            }
+            Button(action: go) { Text("Continue").font(.headline).padding(.horizontal, 30) }
+                .buttonStyle(.glassProminent).tint(Theme.accent).controlSize(.large)
+                .frame(maxWidth: .infinity).padding(.top, 18)
+                .accessibilityIdentifier("signInContinue")
         }
-        .padding(.horizontal, 20).padding(.top, 20).padding(.bottom, pinned ? 8 : 0)
-        .fixedSize(horizontal: false, vertical: pinned)
+        .padding(.horizontal, 20).padding(.top, 20).padding(.bottom, 8)
+        .fixedSize(horizontal: false, vertical: true)
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { fitHeight = $0 }
         .frame(maxHeight: .infinity, alignment: .top)
         .background(Color(.systemGroupedBackground))
-        // Preview "signin.pinned": the sheet is exactly as tall as its content, like Apple's own sheets.
-        .presentationDetents(pinned && fitHeight > 0 ? [.height(fitHeight + 12)] : [.height(500)])
+        // The sheet is exactly as tall as its content, like Apple's own sheets.
+        .presentationDetents(fitHeight > 0 ? [.height(fitHeight + 12)] : [.height(500)])
         .sheet(isPresented: $showAppleDemo, onDismiss: {
             // Only move on once the Apple sheet is fully gone, so the sign-in sheet can close too.
             if appleDone { next() }
@@ -460,8 +395,6 @@ final class AppleSignInRunner: NSObject, ASAuthorizationControllerDelegate, ASAu
 /// Demo stand-in for Apple's own Sign in with Apple sheet (the real one needs a paid developer account).
 /// Laid out like the real iOS 26 sheet.
 struct AppleSignInDemoSheet: View {
-    @AppStorage("signin.small") private var smallButton = true
-    @AppStorage("signin.pinned") private var pinned = true
     @State private var fitHeight: CGFloat = 0
     var onContinue: () -> Void
     @State private var hideEmail = true
@@ -476,7 +409,7 @@ struct AppleSignInDemoSheet: View {
                     .buttonStyle(.glass).buttonBorderShape(.circle)
             }
             HStack(spacing: 14) {
-                AppMark(size: 56).shadow(radius: 0)
+                AppMark(size: 56)
                 Text("Create an account for Dayline using your Apple Account (alex@icloud.com).").font(.subheadline)
             }
             .padding(.top, 10)
@@ -497,21 +430,20 @@ struct AppleSignInDemoSheet: View {
             .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 24, style: .continuous))
             .padding(.top, 10)
             Button(action: onContinue) {
-                if pinned && !smallButton { Text("Continue").font(.headline).frame(maxWidth: .infinity) } else { Text("Continue").font(.headline).padding(.horizontal, 30) }
+                Text("Continue").font(.headline).padding(.horizontal, 30)
             }
-                .buttonStyle(.glassProminent).tint(Theme.accent).controlSize(pinned && !smallButton ? .extraLarge : .large)
-                .frame(maxWidth: .infinity).padding(.top, pinned && !smallButton ? 20 : 18)
+                .buttonStyle(.glassProminent).tint(Theme.accent).controlSize(.large)
+                .frame(maxWidth: .infinity).padding(.top, 18)
                 .accessibilityIdentifier("appleDemoContinue")
             Text("Use a different Apple Account").font(.subheadline).foregroundStyle(Theme.accent)
                 .frame(maxWidth: .infinity).padding(.top, 12)
-            if !pinned { Spacer(minLength: 0) }
         }
-        .padding(.horizontal, 20).padding(.top, 20).padding(.bottom, pinned ? 8 : 0)
-        .fixedSize(horizontal: false, vertical: pinned)
+        .padding(.horizontal, 20).padding(.top, 20).padding(.bottom, 8)
+        .fixedSize(horizontal: false, vertical: true)
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { fitHeight = $0 }
         .frame(maxHeight: .infinity, alignment: .top)
         .background(Color(.systemGroupedBackground))
-        .presentationDetents(pinned && fitHeight > 0 ? [.height(fitHeight + 12)] : [.height(520)])
+        .presentationDetents(fitHeight > 0 ? [.height(fitHeight + 12)] : [.height(520)])
     }
 
     private func choice(_ title: String, _ detail: String, selected: Bool, _ action: @escaping () -> Void) -> some View {

@@ -530,23 +530,15 @@ struct DayActivityList: View {
 
 struct FactorRow: View {
     var factor: ScoreFactor
-    /// no tile. Old previews: icons.tile A/A2/A3/C/C2.
-    @AppStorage("icons.tile") private var tile = "blue"
     @AppStorage("symbols.show") private var showSymbols = true
     var body: some View {
-        let st = Self.style(factor.title)
-        let symbol = st.0
+        let symbol = Self.style(factor.title).0
         let bad = factor.effect == .pending || factor.points <= 0
-        let color = ["A2", "A3", "C2"].contains(tile) ? st.1 : (bad ? Theme.bad : Theme.accent)
         HStack(spacing: 12) {
-            if tile == "blue" {
-                // Sep 24: David wants C (blue symbol in a light round circle) when Show Symbols is on, nothing when off.
-                if showSymbols {
-                    Image(systemName: symbol).font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.accent)
-                        .frame(width: 34, height: 34).background(Theme.accent.opacity(0.14), in: .circle)
-                }
-            } else {
-                ProfileIcon(symbol: symbol, size: 30, color: color)
+            // Blue symbol in a light round circle when Show Symbols is on, nothing when off.
+            if showSymbols {
+                Image(systemName: symbol).font(.subheadline.weight(.semibold)).foregroundStyle(Theme.accent)
+                    .frame(width: 34, height: 34).background(Theme.accent.opacity(0.14), in: .circle)
             }
             VStack(alignment: .leading, spacing: 1) {
                 Text(factor.title).font(.body)
