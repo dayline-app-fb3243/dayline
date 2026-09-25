@@ -47,11 +47,10 @@ private struct Page<C: View>: View {
 }
 
 private struct Row: View {
-    @AppStorage("symbols.show") private var showSymbols = true
     var symbol: String; var title: String; var value: String
     var body: some View {
         HStack(spacing: 13) {
-            if showSymbols { ProfileIcon(symbol: symbol) }
+            ProfileIcon(symbol: symbol)
             Text(title).font(.body)
             Spacer()
             Text(value).font(.body).foregroundStyle(.secondary).monospacedDigit()
