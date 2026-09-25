@@ -624,6 +624,22 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// A place search opens its place page, then Back preserves the search results.
+    func testSearchPlaceNavigation() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo", "-journalSearch", "Blue Door Coffee"]
+        app.launch(); pause(1)
+        tab(app, "Journal"); pause(1)
+        tapID(app, "journalSearch"); pause(1.5)
+        let field = app.textFields["searchField"]
+        if field.waitForExistence(timeout: 4) { field.tap(); field.typeText("Blue Door Coffee") }
+        pause(1); shot("search-results-place")
+        let hit = app.descendants(matching: .any)["searchHit"].firstMatch
+        if hit.waitForExistence(timeout: 4) { hit.tap(); pause(2); shot("search-place-page") }
+        let back = app.navigationBars.buttons.firstMatch
+        if back.exists { back.tap(); pause(1); shot("search-back-results") }
+    }
+
     /// Steps page (picked: Health-style chart), opened from the Steps tile: D and W.
     func testStepsPage() throws {
         let app = XCUIApplication()

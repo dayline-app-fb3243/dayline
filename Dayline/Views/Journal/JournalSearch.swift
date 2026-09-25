@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 import Vision
 import CoreLocation
+import MapKit
 
 /// Tapping a search result: switch to the Timeline tab and open the full map on that day, at that place.
 extension Notification.Name { static let showOnMap = Notification.Name("dayline.showOnMap") }
@@ -289,7 +290,8 @@ struct SearchResultsList: View {
             } else {
                 Text(hits.count == 1 ? "1 place" : "\(hits.count) places").font(.subheadline.weight(.semibold)).foregroundStyle(.secondary).padding(.leading, 4)
                 ForEach(hits) { h in
-                    Button { MapJump.go(h) } label: { SearchHitRow(hit: h) }.buttonStyle(.plain)
+                    NavigationLink { SearchPlaceView(hit: h, visits: visits) } label: { SearchHitRow(hit: h) }
+                        .buttonStyle(.plain)
                 }
             }
         }
@@ -419,5 +421,72 @@ struct SearchLandingOption: View {
             .padding(12)
             .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: Theme.cardRadius))
         }.buttonStyle(.plain)
+    }
+}
+
+/// Search keeps its own navigation stack. Back returns to the exact query and results,
+/// while directions open Apple Maps only when the user taps the explicit Maps link.
+struct SearchPlaceView: View {
+    let hit: SearchHit
+    let visits: [Visit]
+    @Environment(\.modelContext) private var context
+    @State private var recalled: RecalledPlace?
+    private var match: Visit? {
+        let candidates = visits.filter { $0.placeName == hit.place }
+        return candidates.min { abs($0.arrival.timeIntervalSince(hit.date)) < abs($1.arrival.timeIntervalSince(hit.date)) }
+    }
+    private var location: CLLocationCoordinate2D? { hit.coordinate ?? recalled?.coordinate ?? match?.coordinate }
+    private var mapsURL: URL? {
+        if let recalled { return recalled.directionsURL }
+        guard let location else { return nil }
+        var components = URLComponents(string: "https://maps.apple.com/")!
+        components.queryItems = [.init(name: "daddr", value: "\(location.latitude),\(location.longitude)"),
+                                 .init(name: "q", value: hit.place), .init(name: "dirflg", value: "d")]
+        return components.url
+    }
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 14) {
+                if let coordinate = location {
+                    Map(initialPosition: .camera(MapCamera(centerCoordinate: coordinate, distance: 1000))) {
+                        Marker(hit.place, coordinate: coordinate).tint(Theme.accent)
+                    }
+                    .mapStyle(.standard)
+                    .frame(height: 220)
+                    .clipShape(.rect(cornerRadius: Theme.cardRadius))
+                    .allowsHitTesting(false)
+                } else if let data = hit.thumbnail, let image = UIImage(data: data) {
+                    Image(uiImage: image).resizable().scaledToFill().frame(height: 220).clipped()
+                        .clipShape(.rect(cornerRadius: Theme.cardRadius))
+                }
+                Card {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(hit.place).font(.title2.weight(.semibold))
+                        Text(hit.reason).font(.body).foregroundStyle(.secondary)
+                        Text("Visited \(hit.date.formatted(.dateTime.weekday(.wide).month(.abbreviated).day().hour().minute()))")
+                            .font(.subheadline).foregroundStyle(.secondary)
+                        if let recalled { Text("\(recalled.timesVisited) visits").font(.subheadline).foregroundStyle(.secondary) }
+                        if let mapsURL {
+                            Link(destination: mapsURL) { Label("Directions in Apple Maps", systemImage: "arrow.triangle.turn.up.right.diamond.fill") }
+                                .font(.body.weight(.semibold)).padding(.top, 8)
+                        }
+                    }.frame(maxWidth: .infinity, alignment: .leading)
+                }
+                if let recalled, !recalled.photos.isEmpty {
+                    Text("Photos").font(.headline).padding(.leading, 4)
+                    PhotoStrip(photos: recalled.photos, height: 140)
+                } else if let data = hit.thumbnail, let image = UIImage(data: data) {
+                    Text("Photo").font(.headline).padding(.leading, 4)
+                    Image(uiImage: image).resizable().scaledToFit().clipShape(.rect(cornerRadius: 16))
+                }
+            }.padding(.horizontal, 18).padding(.vertical, 12)
+        }
+        .background(AppBackgroundView())
+        .navigationTitle(hit.place).navigationBarTitleDisplayMode(.inline)
+        .toolbarVisibility(.hidden, for: .tabBar)
+        .accessibilityIdentifier("searchPlacePage")
+        .task {
+            if let match { recalled = await PlaceRecall.card(for: match, context: context) }
+        }
     }
 }
