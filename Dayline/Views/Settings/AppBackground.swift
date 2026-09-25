@@ -267,7 +267,7 @@ struct ProfileView: View {
                                     .font(.subheadline).foregroundStyle(.secondary).lineLimit(2)
                             }
                             Spacer(minLength: 8)
-                            Image(systemName: "chevron.right").font(.body.weight(.semibold)).foregroundStyle(.tertiary)
+                            Image(systemName: "chevron.right").font(.scaled(size: 11, weight: .semibold)).foregroundStyle(.tertiary)
                         }
                         .padding(.horizontal, 16).padding(.vertical, 14)
                         .contentShape(.rect)
@@ -433,7 +433,7 @@ struct ProfileRow: View {
             Spacer()
             if !value.isEmpty { Text(value).foregroundStyle(.secondary).lineLimit(1) }
             Image(systemName: "chevron.right")
-                .font(.body.weight(.semibold)).foregroundStyle(.tertiary)
+                .font(.scaled(size: 11, weight: .semibold)).foregroundStyle(.tertiary)
         }
         .padding(.horizontal, 14).padding(.vertical, 11)
         .contentShape(.rect)
