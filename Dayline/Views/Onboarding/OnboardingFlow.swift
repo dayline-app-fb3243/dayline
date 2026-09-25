@@ -1208,8 +1208,10 @@ struct SplashLiveMap: View {
                   .standard(pointsOfInterest: .excludingAll))
         .mapControlVisibility(.hidden)
         .mapCameraKeyframeAnimator(trigger: drift) { cam in
-            KeyframeTrack(\MapCamera.heading) { LinearKeyframe(cam.heading + 18, duration: 12) }
-            KeyframeTrack(\MapCamera.distance) { LinearKeyframe(cam.distance * 0.85, duration: 12) }
+            // Route mode: no turn. The camera center sits a bit past the place (so the pin lands in the clear top
+            // part), and turning around that point would swing the place off to the side.
+            KeyframeTrack(\MapCamera.heading) { LinearKeyframe(cam.heading + (routeMode ? 0 : 18), duration: 12) }
+            KeyframeTrack(\MapCamera.distance) { LinearKeyframe(cam.distance * (routeMode ? 0.94 : 0.85), duration: 12) }
         }
         .safeAreaPadding(.bottom, routeMode ? Self.logoInset : 0)
         .task {
