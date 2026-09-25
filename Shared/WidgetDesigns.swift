@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Twelve close variations of the two widgets David asked for. All use the same Dayline
-/// blue/orange Day score and the multicolour friends-streak ring, not a second visual theme.
+/// blue Day score and the multicolour friends-streak ring, not a second visual theme.
 struct WidgetDesign: Identifiable {
     let id: Int
     let name: String
@@ -42,7 +42,7 @@ struct DaylineWidgetScoreRing: View {
         ZStack {
             Circle().stroke(.quaternary, lineWidth: width).frame(width: diameter, height: diameter)
             Circle().trim(from: 0, to: progress)
-                .stroke(AngularGradient(colors: [Color(red: 0.55, green: 0.76, blue: 1), .blue, .orange],
+                .stroke(AngularGradient(colors: [Color(red: 0.55, green: 0.76, blue: 1), .blue],
                                         center: .center, startAngle: .zero,
                                         endAngle: .degrees(360 * max(progress, 0.01))),
                         style: StrokeStyle(lineWidth: width, lineCap: .round))

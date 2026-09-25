@@ -334,6 +334,15 @@ final class DemoTourTests: XCTestCase {
     func testEmptyTabsLight() { emptyTabs("Light") }
 
     /// The normal test target's -demo flag uses the same seed path as the Demo Xcode target.
+    func testScoreWidgetRingLight() { scoreWidgetRing("light", page: "1") }
+    func testScoreWidgetRingDark() { scoreWidgetRing("dark", page: "2") }
+    private func scoreWidgetRing(_ appearance: String, page: String) {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo", "-appearance", appearance, "-widgetDesign", "14", "-widgetPage", page]
+        app.launch(); pause(2)
+        shot("score-widget-\(appearance)")
+    }
+
     func testFreshDemoHistory() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-demo"]
