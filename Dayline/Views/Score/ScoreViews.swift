@@ -106,6 +106,13 @@ struct ScoreDetailView: View {
         return b == 1 ? date : "\(date) · \(b) days ago"
     }
 
+    /// The same tip the Today card shows, so the two never disagree.
+    private func todayTip(_ r: ScoreEngine.Result) -> String {
+        if DemoData.isDemo, !(UserDefaults.standard.string(forKey: "demo.pace") ?? "").isEmpty { return r.tip ?? r.summary }
+        let card = UserDefaults.standard.string(forKey: "today.card") ?? "A"
+        return card.isEmpty || r.tip == nil ? (r.tip ?? r.summary) : ScoreEngine.dynamicTip(score: r.score, factors: r.factors)
+    }
+
     private func result(_ b: Int) -> ScoreEngine.Result? {
         if b == 0 { return result }
         let d = day(b)
@@ -128,7 +135,7 @@ struct ScoreDetailView: View {
                                 ScoreRing(score: r.score, size: 150, lost: r.pace?.net, good: r.pace?.good)
                                 Text(StatusPhrase.text(behind: behind, score: r.score)).font(.title2.bold())
                                     .foregroundStyle(behind ? Theme.bad : Theme.accent)
-                                Text(r.tip ?? r.summary).font(.subheadline).foregroundStyle(.secondary)
+                                Text(todayTip(r)).font(.subheadline).foregroundStyle(.secondary)
                                     .multilineTextAlignment(.center)
                             } else {
                                 ScoreRing(score: r.score, size: 150)
