@@ -444,6 +444,25 @@ private struct PeopleGroup<C: View>: View {
     }
 }
 
+/// People screen: white inset-grouped cards and small gray headers, like Settings and the rest of the app.
+private struct SettingsGroup<C: View>: View {
+    @ViewBuilder var content: C
+    var body: some View {
+        VStack(spacing: 0) { content }
+            .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: Theme.cardRadius, style: .continuous))
+            .shadow(color: .black.opacity(0.05), radius: 12, y: 4)
+    }
+}
+
+private struct SettingsHeader: View {
+    var title: String
+    init(_ t: String) { title = t }
+    var body: some View {
+        Text(title).font(.subheadline.weight(.semibold)).helperText()
+            .padding(.leading, 16).padding(.top, 22).padding(.bottom, 7)
+    }
+}
+
 private struct PeopleHeader: View {
     var title: String
     init(_ t: String) { title = t }
@@ -453,23 +472,24 @@ private struct PeopleHeader: View {
 }
 
 private struct PersonRow<Trailing: View>: View {
+    var compact = false
     var name: String
     var subtitle: String
     var color: Color? = nil
     var last = false
     @ViewBuilder var trailing: Trailing
     var body: some View {
-        HStack(spacing: 14) {
-            PersonAvatar(name: name, color: color)
+        HStack(spacing: compact ? 12 : 14) {
+            PersonAvatar(name: name, color: color, size: compact ? 34 : 40)
             VStack(alignment: .leading, spacing: 1) {
-                Text(name).font(.body.weight(.semibold)).foregroundStyle(.primary)
-                Text(subtitle).font(.subheadline.weight(.medium)).foregroundStyle(.secondary)
+                Text(name).font(compact ? .body : .body.weight(.semibold)).foregroundStyle(.primary)
+                Text(subtitle).font(compact ? .footnote : .subheadline.weight(.medium)).foregroundStyle(.secondary)
             }
             Spacer()
             trailing
         }
-        .padding(.horizontal, 16).frame(minHeight: 58)
-        .overlay(alignment: .bottom) { if !last { Divider().padding(.leading, 70) } }
+        .padding(.horizontal, 16).frame(minHeight: compact ? 54 : 58)
+        .overlay(alignment: .bottom) { if !last { Divider().padding(.leading, compact ? 62 : 70) } }
         .contentShape(.rect)
     }
 }
@@ -477,10 +497,11 @@ private struct PersonRow<Trailing: View>: View {
 private struct LinkRow: View {
     var title: String
     var top = true
+    var compact = false
     var body: some View {
-        Text(title).font(.body.weight(.semibold)).foregroundStyle(Theme.accent)
-            .frame(maxWidth: .infinity, minHeight: 50, alignment: .leading).padding(.horizontal, 16)
-            .overlay(alignment: .top) { if top { Divider().padding(.leading, 16) } }
+        Text(title).font(compact ? .body : .body.weight(.semibold)).foregroundStyle(Theme.accent)
+            .frame(maxWidth: .infinity, minHeight: compact ? 46 : 50, alignment: .leading).padding(.horizontal, 16)
+            .overlay(alignment: .top) { if top { Divider().padding(.leading, compact ? 62 : 16) } }
             .contentShape(.rect)
     }
 }
@@ -565,14 +586,14 @@ struct PeopleView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                PeopleHeader("Sharing With You")
-                PeopleGroup {
+                SettingsHeader("Sharing With You")
+                SettingsGroup {
                     if FriendStore.friends.isEmpty {
                         Text("Friends who share with you show up here.").font(.subheadline).foregroundStyle(.secondary)
                             .frame(maxWidth: .infinity, alignment: .leading).padding(16)
                     }
                     ForEach(Array(FriendStore.friends.enumerated()), id: \.element.id) { i, f in
-                        PersonRow(name: f.name, subtitle: "Show on my streak", color: f.color, last: i == FriendStore.friends.count - 1) {
+                        PersonRow(compact: true, name: f.name, subtitle: "Show on my streak", color: f.color, last: i == FriendStore.friends.count - 1) {
                             Toggle("", isOn: FriendVisibility.binding(f.name, raw: $hiddenRaw)).labelsHidden()
                         }
                         .accessibilityIdentifier("friendSwitch\(f.name)")
@@ -580,35 +601,35 @@ struct PeopleView: View {
                 }
                 Text("Turn someone off to hide them from your streak ring.")
                     .font(.footnote).helperText().padding(.horizontal, 16).padding(.top, 7)
-                PeopleGroup {
-                    NavigationLink { AskToShareView() } label: { LinkRow(title: "Ask Someone to Share", top: false) }
+                SettingsGroup {
+                    NavigationLink { AskToShareView() } label: { LinkRow(title: "Ask Someone to Share", top: false, compact: true) }
                         .accessibilityIdentifier("askToShare")
                 }
-                .padding(.top, 10)
+                .padding(.top, 14)
 
-                PeopleHeader("You\u{2019}re Sharing With")
-                PeopleGroup {
+                SettingsHeader("You\u{2019}re Sharing With")
+                SettingsGroup {
                     ForEach(PeopleStore.sharingWith) { f in
                         NavigationLink { PersonView(friend: f) } label: {
-                            PersonRow(name: f.name, subtitle: "Sees your streak", color: f.color) { Chevron() }
+                            PersonRow(compact: true, name: f.name, subtitle: "Sees your streak", color: f.color) { Chevron() }
                         }
                         .accessibilityIdentifier("person-\(f.name)")
                     }
-                    NavigationLink { ShareWithView() } label: { LinkRow(title: "Add Another Person", top: false) }
+                    NavigationLink { ShareWithView() } label: { LinkRow(title: "Add Another Person", top: false, compact: true) }
                         .accessibilityIdentifier("addPerson")
                 }
 
                 if DemoData.isDemo {
-                    PeopleHeader("People to Follow")
-                    PeopleGroup {
+                    SettingsHeader("People to Follow")
+                    SettingsGroup {
                         ForEach(PeopleStore.contacts, id: \.0) { c in
-                            PersonRow(name: c.0, subtitle: "On Dayline") {
+                            PersonRow(compact: true, name: c.0, subtitle: "On Dayline") {
                                 PillButton(title: "Follow", done: "Requested")
                             }
                             .accessibilityIdentifier("follow-\(c.0)")
                         }
                         ForEach(Array(PeopleStore.notOnDayline.enumerated()), id: \.offset) { i, c in
-                            PersonRow(name: c.0, subtitle: "Not on Dayline yet", last: i == PeopleStore.notOnDayline.count - 1) {
+                            PersonRow(compact: true, name: c.0, subtitle: "Not on Dayline yet", last: i == PeopleStore.notOnDayline.count - 1) {
                                 InviteButton(recipient: c.1).accessibilityIdentifier("invite-\(c.0)")
                             }
                         }
@@ -623,7 +644,7 @@ struct PeopleView: View {
         .background(AppBackgroundView())
         .navigationTitle("People")
         .backgroundNavBar()
-        .navigationBarTitleDisplayMode(.large)
+        .navigationBarTitleDisplayMode(.inline)
         .searchable(text: $search, placement: .navigationBarDrawer(displayMode: .always), prompt: "Phone, Email or Contact")
         .toolbarVisibility(.hidden, for: .tabBar)
         .accessibilityIdentifier("peopleScreen")
