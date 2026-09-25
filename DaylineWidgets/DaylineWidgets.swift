@@ -65,6 +65,7 @@ struct TodayWidgetView: View {
         case .systemSmall:
             Image(uiImage: ScoreTileArtwork.image(score: s.score, label: s.label))
                 .resizable()
+                .renderingMode(.original)
                 .widgetAccentedRenderingMode(.fullColor)
                 .accessibilityLabel("Day score \(s.score) out of 100. \(s.label)")
         default:
