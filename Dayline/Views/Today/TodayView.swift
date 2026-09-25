@@ -21,7 +21,7 @@ struct TodayView: View {
                 VStack(alignment: .leading, spacing: 14) {
                     header
                     LocationOffCard()
-                    scoreLink
+                    if TodayStepsNextTiles.ringStyle != 5 { scoreLink }
                     TodayStepsNextTiles(result: result)
                     scheduleSection
                 }
@@ -176,19 +176,118 @@ struct TodayStepsNextTiles: View {
         .padding(14).frame(maxWidth: .infinity, alignment: .leading)
         .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 22, style: .continuous))
     }
+    /// Steps ring style preview (-stepsRing N): 0 = plain tile, 1 = orange ring card, 2 = blue ring card,
+    /// 3 = ring tile, 4 = small ring in the tile, 5 = score and steps rings in one card.
+    static var ringStyle: Int {
+        let a = ProcessInfo.processInfo.arguments
+        if let i = a.firstIndex(of: "-stepsRing"), i + 1 < a.count { return Int(a[i + 1]) ?? 0 }
+        return 0
+    }
+    private var stepCount: Int { steps ?? 0 }
+    private var stepsStatus: String { stepCount >= goal ? "Goal Reached" : (stepCount * 2 >= goal ? "Keep Going" : "Get Moving") }
+    /// Full-width card in the Day score card's layout, with the steps ring.
+    private func ringCard(_ tint: String) -> some View {
+        NavigationLink { StepsDetailView() } label: {
+            Card {
+                HStack(alignment: .center, spacing: 16) {
+                    StepsRing(steps: stepCount, goal: goal, size: 84, tint: tint)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("STEPS").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                        Text(stepsStatus).font(.title2.weight(.bold))
+                            .foregroundStyle(tint == "blue" ? Theme.accent : .orange).lineLimit(1).minimumScaleFactor(0.8)
+                    }
+                    Spacer(minLength: 0)
+                    Image(systemName: "chevron.right").font(.subheadline.weight(.semibold)).foregroundStyle(.tertiary)
+                }
+                .padding(.vertical, 4)
+            }
+        }
+        .buttonStyle(.plain).accessibilityIdentifier("stepsTile")
+    }
+    private func nextLink(_ n: (title: String, symbol: String)) -> some View {
+        NavigationLink {
+            if n.title == "Walk" { StepsDetailView() } else { GymDetailView() }
+        } label: { tile("Next", n.title, n.symbol) }
+            .buttonStyle(.plain).accessibilityIdentifier("nextTile")
+            .disabled(n.title != "Gym" && n.title != "Walk")
+    }
     var body: some View {
         let n = next
-        GlassEffectContainer(spacing: 12) {
-            HStack(spacing: 12) {
-                NavigationLink { StepsDetailView() } label: {
-                    tile("Steps", steps.map { $0.formatted() } ?? "–", "figure.walk")
+        let style = Self.ringStyle
+        Group {
+            switch style {
+            case 1, 2:
+                VStack(spacing: 12) {
+                    ringCard(style == 2 ? "blue" : "orange")
+                    GlassEffectContainer { nextLink(n) }
                 }
-                .buttonStyle(.plain).accessibilityIdentifier("stepsTile")
-                NavigationLink {
-                    if n.title == "Walk" { StepsDetailView() } else { GymDetailView() }
-                } label: { tile("Next", n.title, n.symbol) }
-                    .buttonStyle(.plain).accessibilityIdentifier("nextTile")
-                    .disabled(n.title != "Gym" && n.title != "Walk")
+            case 3:
+                GlassEffectContainer(spacing: 12) {
+                    HStack(alignment: .top, spacing: 12) {
+                        NavigationLink { StepsDetailView() } label: {
+                            VStack(alignment: .leading, spacing: 10) {
+                                Label("Steps", systemImage: "figure.walk").font(.caption.weight(.semibold)).foregroundStyle(.orange)
+                                StepsRing(steps: stepCount, goal: goal, size: 96).frame(maxWidth: .infinity)
+                            }
+                            .padding(14).frame(maxWidth: .infinity, alignment: .leading)
+                            .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 22, style: .continuous))
+                        }
+                        .buttonStyle(.plain).accessibilityIdentifier("stepsTile")
+                        nextLink(n)
+                    }
+                }
+            case 4:
+                GlassEffectContainer(spacing: 12) {
+                    HStack(spacing: 12) {
+                        NavigationLink { StepsDetailView() } label: {
+                            HStack(spacing: 10) {
+                                StepsRing(steps: stepCount, goal: goal, size: 56)
+                                Text("Steps").font(.subheadline.weight(.semibold)).foregroundStyle(.orange)
+                                Spacer(minLength: 0)
+                            }
+                            .padding(10).frame(maxWidth: .infinity, alignment: .leading)
+                            .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 22, style: .continuous))
+                        }
+                        .buttonStyle(.plain).accessibilityIdentifier("stepsTile")
+                        nextLink(n).frame(maxHeight: .infinity)
+                    }
+                    .fixedSize(horizontal: false, vertical: true)
+                }
+            case 5:
+                VStack(spacing: 12) {
+                    Card {
+                        HStack(spacing: 0) {
+                            NavigationLink { ScoreDetailView(result: result) } label: {
+                                VStack(spacing: 8) {
+                                    ScoreRing(score: result.score, size: 96, lost: result.pace?.net, good: result.pace?.good)
+                                    Text("Day Score").font(.subheadline).foregroundStyle(.secondary)
+                                }
+                                .frame(maxWidth: .infinity).contentShape(.rect)
+                            }
+                            .buttonStyle(.plain).accessibilityIdentifier("scoreCard")
+                            NavigationLink { StepsDetailView() } label: {
+                                VStack(spacing: 8) {
+                                    StepsRing(steps: stepCount, goal: goal, size: 96)
+                                    Text("Steps").font(.subheadline).foregroundStyle(.secondary)
+                                }
+                                .frame(maxWidth: .infinity).contentShape(.rect)
+                            }
+                            .buttonStyle(.plain).accessibilityIdentifier("stepsTile")
+                        }
+                        .padding(.vertical, 6)
+                    }
+                    GlassEffectContainer { nextLink(n) }
+                }
+            default:
+                GlassEffectContainer(spacing: 12) {
+                    HStack(spacing: 12) {
+                        NavigationLink { StepsDetailView() } label: {
+                            tile("Steps", steps.map { $0.formatted() } ?? "–", "figure.walk")
+                        }
+                        .buttonStyle(.plain).accessibilityIdentifier("stepsTile")
+                        nextLink(n)
+                    }
+                }
             }
         }
         .task {

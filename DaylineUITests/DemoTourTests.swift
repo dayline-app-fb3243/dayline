@@ -600,6 +600,18 @@ final class DemoTourTests: XCTestCase {
         tapID(app, "dayTitle"); pause(2); shot("tc2-calendar")
     }
 
+    /// Steps in the Day score ring's style: five layouts, and the ring opens the Steps page.
+    func testStepsRing() throws {
+        for n in 1...5 {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-stepsRing", "\(n)"]
+            app.launch(); pause(1.5)
+            shot("sr\(n)")
+            if n == 1 { tapID(app, "stepsTile"); pause(2); shot("sr1-open") }
+            app.terminate()
+        }
+    }
+
     /// Day score breakdown: orange symbol on rows that took points away; circles vs bare symbols.
     func testFactorIcons() throws {
         for style in ["circle", "bare"] {

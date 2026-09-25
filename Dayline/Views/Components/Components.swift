@@ -133,6 +133,40 @@ struct ScoreRing: View {
     }
 }
 
+/// Steps in the Day score ring's shape: same track, round caps and start dot, number in the middle.
+struct StepsRing: View {
+    var steps: Int
+    var goal: Int
+    var size: CGFloat = 84
+    /// "orange" or "blue" (the Day score ring's colors).
+    var tint: String = "orange"
+    private var lineWidth: CGFloat { size >= 120 ? 20 : (size < 70 ? 10 : 14) }
+    private var start: Color { tint == "blue" ? Theme.ringStart : Color.orange.mix(with: .white, by: 0.45) }
+    private var end: Color { tint == "blue" ? Theme.accent : Color.orange }
+    var body: some View {
+        ZStack {
+            Circle().stroke(.quaternary, lineWidth: lineWidth)
+            let progress = CGFloat(min(Double(steps) / Double(max(goal, 1)), 1))
+            Circle()
+                .trim(from: 0, to: progress)
+                .stroke(AngularGradient(gradient: Gradient(colors: [start, end]), center: .center,
+                                        startAngle: .zero, endAngle: .degrees(360 * max(progress, 0.01))),
+                        style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+            if steps > 0 {
+                Circle().fill(start).frame(width: lineWidth, height: lineWidth).offset(y: -size / 2)
+            }
+            Text(steps.formatted())
+                .font(.scaled(size: size * 0.22, weight: .bold, relativeTo: .title)).minimumScaleFactor(0.5).lineLimit(1)
+                .monospacedDigit().padding(.horizontal, lineWidth + 2)
+                .contentTransition(.numericText())
+        }
+        .frame(width: size, height: size)
+        .accessibilityElement()
+        .accessibilityLabel("\(steps.formatted()) steps")
+    }
+}
+
 struct FactorChip: View {
     var factor: ScoreFactor
     var body: some View {
