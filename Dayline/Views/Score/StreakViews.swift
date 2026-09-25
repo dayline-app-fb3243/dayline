@@ -55,8 +55,7 @@ struct StreakRing: View {
     var center: Int
     var size: CGFloat = 250
     var lineWidthBase: CGFloat = 34
-    @AppStorage("rings.thick") private var thick = false
-    private var lineWidth: CGFloat { thick ? lineWidthBase * 1.3 : lineWidthBase }
+    private var lineWidth: CGFloat { lineWidthBase }
 
     var body: some View {
         let full = Double(max(14, arcs.map(\.value).max() ?? 0))

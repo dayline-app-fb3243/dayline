@@ -287,7 +287,7 @@ enum ScoreEngine {
         return "The day's still young. One small win gets you moving."
     }
 
-    /// Preview flag "today.card": the tip follows the time of day and what's still open.
+    /// The tip follows the time of day and what's still open.
     /// No walk ideas before the evening; a missing journal is the first suggestion.
     static func dynamicTip(score: Int, factors: [ScoreFactor], at date: Date = .now) -> String {
         let hour = Calendar.current.component(.hour, from: date)

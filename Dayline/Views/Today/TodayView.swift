@@ -19,15 +19,11 @@ struct TodayView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
-                    if page.isEmpty {
-                        header
-                        LocationOffCard()
-                        scoreLink
-                        scheduleSection
-                    } else {
-                        TodayPageSample(page: page, result: result, header: AnyView(header),
-                                        score: AnyView(scoreLink), schedule: AnyView(scheduleSection))
-                    }
+                    header
+                    LocationOffCard()
+                    scoreLink
+                    TodayStepsNextTiles(result: result)
+                    scheduleSection
                 }
                 .padding(.horizontal, 18)
                 .padding(.bottom, 24)
@@ -38,9 +34,6 @@ struct TodayView: View {
         }
     }
 
-    /// "today.page": 3a (default) = the day score card with Steps + Next glass tiles under it.
-    /// "" = the page before that; 1-5 and 3b-3d are the other samples.
-    @AppStorage("today.page") private var page = "3a"
     private var scoreLink: some View {
         NavigationLink { ScoreDetailView(result: result) } label: { ScoreCard(result: result, showsChevron: true) }
             .buttonStyle(.plain)
@@ -99,75 +92,32 @@ struct TodayView: View {
 struct ScoreCard: View {
     var result: ScoreEngine.Result
     var showsChevron = false
-    /// At most three chips, like the design: the factors that name a chip, or the first three.
-    private var chips: [ScoreFactor] {
-        let named = result.factors.filter { $0.chip != nil }
-        return Array((named.isEmpty ? result.factors : named).prefix(3))
-    }
-    /// "today.card": A (default) = ring on the left, status in color, no chips, tip that follows the time of day.
-    /// B = label in black, bigger ring. C = ring on top, text centered below. "" = the old card with chips.
-    @AppStorage("today.card") private var style = "A"
+    /// The tip follows the time of day and what's still open.
     private var tipText: String {
         if DemoData.isDemo, !(UserDefaults.standard.string(forKey: "demo.pace") ?? "").isEmpty { return result.tip ?? result.summary }
-        return style.isEmpty ? (result.tip ?? result.summary) : (result.tip == nil ? result.summary : ScoreEngine.dynamicTip(score: result.score, factors: result.factors))
+        return result.tip == nil ? result.summary : ScoreEngine.dynamicTip(score: result.score, factors: result.factors)
     }
     var body: some View {
         Card {
-            if style == "C" {
-                VStack(spacing: 10) {
-                    ScoreRing(score: result.score, size: 104)
-                    VStack(spacing: 3) {
-                        Text("DAY SCORE").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-                        Text(statusLabel).font(.title2.weight(.bold)).foregroundStyle(labelColor).lineLimit(1).minimumScaleFactor(0.8)
-                        Text(tipText).font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
+            HStack(alignment: .center, spacing: 16) {
+                ScoreRing(score: result.score, size: 84, lost: result.pace?.net, good: result.pace?.good)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("DAY SCORE").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                    Text(statusLabel).font(.title2.weight(.bold))
+                        .foregroundStyle(labelColor).lineLimit(1).minimumScaleFactor(0.8)
+                    Text(tipText).font(.subheadline).foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                .frame(maxWidth: .infinity)
-                .overlay(alignment: .trailing) {
-                    if showsChevron { Image(systemName: "chevron.right").font(.subheadline.weight(.semibold)).foregroundStyle(.tertiary) }
+                Spacer(minLength: 0)
+                if showsChevron {
+                    Image(systemName: "chevron.right").font(.subheadline.weight(.semibold)).foregroundStyle(.tertiary)
                 }
-                .padding(.vertical, 4)
-            } else if !style.isEmpty {
-                HStack(alignment: .center, spacing: 16) {
-                    ScoreRing(score: result.score, size: style == "B" ? 96 : 84, lost: result.pace?.net, good: result.pace?.good)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("DAY SCORE").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-                        Text(statusLabel).font(style == "B" ? .title2.weight(.semibold) : .title2.weight(.bold))
-                            .foregroundStyle(style == "B" ? Color.primary : labelColor).lineLimit(1).minimumScaleFactor(0.8)
-                        Text(tipText).font(.subheadline).foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    Spacer(minLength: 0)
-                    if showsChevron {
-                        Image(systemName: "chevron.right").font(.subheadline.weight(.semibold)).foregroundStyle(.tertiary)
-                    }
-                }
-                .padding(.vertical, 4)
-            } else {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(spacing: 16) {
-                    ScoreRing(score: result.score, size: 84)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("DAY SCORE").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-                        Text(statusLabel).font(.title2.bold()).foregroundStyle(labelColor).lineLimit(1).minimumScaleFactor(0.8)
-                        Text(result.tip ?? result.summary).font(.subheadline).foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    if showsChevron {
-                        Spacer(minLength: 0)
-                        Image(systemName: "chevron.right").font(.subheadline.weight(.semibold)).foregroundStyle(.tertiary)
-                    }
-                }
-                FlowLayout { ForEach(chips) { FactorChip(factor: $0) } }
             }
-            }
+            .padding(.vertical, 4)
         }
     }
-    /// Status color follows the theme: blue while on track, orange when not. With "ring.pace" set, on track means
-    /// keeping pace with your own habits (ScoreEngine.Pace); otherwise below 55 ("Slow day" / "Rest day") is orange.
-    @AppStorage("ring.pace") private var paceStyle = "B"
-    private var behind: Bool { paceStyle.isEmpty ? result.score < 55 : (result.pace?.behind ?? false) }
+    /// Status color follows the theme: blue while keeping pace with your own habits (ScoreEngine.Pace), orange when not.
+    private var behind: Bool { result.pace?.behind ?? false }
     private var labelColor: Color { behind ? .orange : Theme.accent }
     private var statusLabel: String {
         guard !paceStyle.isEmpty else { return result.label }
@@ -198,6 +148,52 @@ struct LocationOffCard: View {
                 }
             }
             .accessibilityIdentifier("locationOffCard")
+        }
+    }
+}
+
+/// Today: Steps and what's next, as two Liquid Glass tiles under the day score card. Real numbers, demo numbers in demo mode.
+struct TodayStepsNextTiles: View {
+    var result: ScoreEngine.Result
+    @State private var steps: Int? = nil
+    private var s: UserSchedule { UserSchedule.current }
+    private var goal: Int { DemoData.isDemo ? 8200 : s.stepGoal }
+
+    private func clock(_ minutes: Int) -> String {
+        UserSchedule.date(minutes, on: .now).formatted(date: .omitted, time: .shortened)
+    }
+    private func done(_ title: String) -> Bool {
+        result.factors.contains { $0.title.hasPrefix(title) && $0.effect == .up }
+    }
+    /// The next thing on the day: gym (if on and not done yet), then the walk, then the journal, then bedtime.
+    private var next: (title: String, symbol: String, when: String) {
+        let now = Calendar.current.component(.hour, from: .now) * 60 + Calendar.current.component(.minute, from: .now)
+        if DemoData.isDemo { return ("Gym", "dumbbell.fill", "Around 6:00 PM") }
+        if s.gym && !done("Gym") && now < s.gymDeadline { return ("Gym", "dumbbell.fill", "Before \(clock(s.gymDeadline))") }
+        if s.walk, let st = steps, st < goal { return ("Walk", "figure.walk", "\((goal - st).formatted()) steps to go") }
+        if s.journal && !done("Journal") { return ("Journal", "book.closed.fill", "Before bed") }
+        return ("Bedtime", "moon.fill", clock(s.bed))
+    }
+    private func tile(_ title: String, _ value: String, _ symbol: String, _ sub: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Label(title, systemImage: symbol).font(.caption.weight(.semibold)).foregroundStyle(Theme.accent)
+            Text(value).font(.title3.bold()).monospacedDigit()
+            Text(sub).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+        }
+        .padding(14).frame(maxWidth: .infinity, alignment: .leading)
+        .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 22, style: .continuous))
+    }
+    var body: some View {
+        let n = next
+        GlassEffectContainer(spacing: 12) {
+            HStack(spacing: 12) {
+                tile("Steps", steps.map { $0.formatted() } ?? "–", "figure.walk", "of \(goal.formatted()) on a usual day")
+                tile("Next", n.title, n.symbol, n.when)
+            }
+        }
+        .task {
+            if DemoData.isDemo { steps = 5840; return }
+            steps = await StepGoal.steps(from: Calendar.current.startOfDay(for: .now), to: .now)
         }
     }
 }

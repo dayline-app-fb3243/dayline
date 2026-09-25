@@ -109,8 +109,7 @@ struct ScoreDetailView: View {
     /// The same tip the Today card shows, so the two never disagree.
     private func todayTip(_ r: ScoreEngine.Result) -> String {
         if DemoData.isDemo, !(UserDefaults.standard.string(forKey: "demo.pace") ?? "").isEmpty { return r.tip ?? r.summary }
-        let card = UserDefaults.standard.string(forKey: "today.card") ?? "A"
-        return card.isEmpty || r.tip == nil ? (r.tip ?? r.summary) : ScoreEngine.dynamicTip(score: r.score, factors: r.factors)
+        return r.tip == nil ? r.summary : ScoreEngine.dynamicTip(score: r.score, factors: r.factors)
     }
 
     private func result(_ b: Int) -> ScoreEngine.Result? {
@@ -260,16 +259,13 @@ struct DayActivityList: View {
     @Query(sort: \JournalEntry.date) private var journal: [JournalEntry]
 
     @Query(sort: \PlanItem.start) private var plans: [PlanItem]
-    /// Preview flag "today.schedule": C (default, with layout 4d) = only what happened. A = plain list, no taps. B = timeline with a line through
-    /// category symbols, plus plans still to come today in gray. C = only what actually happened, built fresh
-    /// each day: places (home stays too), journal entries away from a place, plans you finished, and a "?" row
-    /// for time Dayline knows nothing about, with a guess. Tap any row to open it.
-    @AppStorage("today.schedule") private var style = "C"
+    /// Only what actually happened, built fresh each day: places (home stays too), journal entries away from a place,
+    /// plans you finished, and a "?" row for time Dayline knows nothing about. Tap any row to open it.
     @State private var open: String?
 
     struct Row: Identifiable {
         var id: String; var time: Date; var title: String; var detail: String; var isNow: Bool
-        var symbol = "sun.max.fill"; var upcoming = false
+        var symbol = "sun.max.fill"
         var place: CLLocationCoordinate2D? = nil; var end: Date? = nil
         var kind = Kind.visit; var note: String? = nil
         enum Kind { case wake, visit, journal, plan, gap }
@@ -293,13 +289,6 @@ struct DayActivityList: View {
                                ? "Up at \(Self.clock.string(from: wake)). That\u{2019}s the first time your phone moved or was used after sleep."
                                : "Your first activity today was at \(Self.clock.string(from: wake))."))
         }
-        if style == "B" && isToday {
-            for p in plans where cal.isDate(p.start, inSameDayAs: day) && p.start > now && !p.isDone {
-                out.append(Row(id: "plan-\(p.start.timeIntervalSince1970)-\(p.title)", time: p.start, title: p.title,
-                               detail: "Planned · \(Self.duration(p.end.timeIntervalSince(p.start)))", isNow: false,
-                               symbol: p.category.symbol, upcoming: true))
-            }
-        }
         for v in visits where window.contains(v.arrival) && v.category != .home && v.arrival <= now {
             let here = v.departure.map { $0 > now } ?? true
             let end = here ? now : v.departure!
@@ -309,11 +298,11 @@ struct DayActivityList: View {
             out.append(Row(id: "\(v.arrival.timeIntervalSince1970)-\(v.placeKey)", time: v.arrival, title: v.placeName, detail: detail, isNow: here && isToday,
                            symbol: v.category.symbol, place: CLLocationCoordinate2D(latitude: v.latitude, longitude: v.longitude), end: end))
         }
-        if style == "C" { out = builtFromDay(out, day: day, window: window, wake: wake, now: now, isToday: isToday) }
+        out = builtFromDay(out, day: day, window: window, wake: wake, now: now, isToday: isToday)
         return out.sorted { $0.time < $1.time }
     }
 
-    /// C: adds home stays, journal entries away from any place, finished plans, and "?" rows for unknown time.
+    /// Adds home stays, journal entries away from any place, finished plans, and "?" rows for unknown time.
     private func builtFromDay(_ base: [Row], day: Date, window: DateInterval, wake: Date?, now: Date, isToday: Bool) -> [Row] {
         var out = base
         let start = wake ?? window.start
@@ -423,108 +412,17 @@ struct DayActivityList: View {
         return m >= 60 ? "\(m / 60) h \(m % 60) min" : "\(m) min"
     }
 
-    /// Preview flag "schedule.layout" (only with today.schedule C; "" = the current list). Every row shows from when
-    /// till when, and no time shows twice. 1 = start over end in the time column, wake-up as a header line.
-    /// 2 = no time column, the range under the title. 3 = a line with pins at each start and end.
-    /// 4 = a line of blocks sized by how long each thing took. 5 = times as small dividers between rows.
-    /// 6 = the range in a pill on the right.
-    /// 4a-4f = takes on 4, each shows a time only once (a shared start/end shows as the next start):
-    /// a = 4 with that fix. b = one line runs through all blocks. c = the icon sits inside a wider block.
-    /// d = no time column, the range under the title. e = each stay is a tinted card sized by how long it took.
-    /// f = every row the same height.
-    @AppStorage("schedule.layout") var layout = "4d"
-
     var body: some View {
-        switch style {
-        case "B": timelineBody
-        default:
-            if style == "C" && !layout.isEmpty { layoutBody } else { listBody }
-        }
-    }
-
-    /// B: a line through the day, a symbol per stop, the next plans in gray under a "Later today" dot.
-    private var timelineBody: some View {
-        let rows = rows
-        return Card(padding: 0) {
-            if rows.isEmpty {
+        let all = rows
+        Card(padding: 0) {
+            if all.isEmpty {
                 Text("Nothing yet. Dayline fills this in from where you go.")
                     .font(.subheadline).foregroundStyle(.secondary).padding(16)
             } else {
-                VStack(spacing: 0) {
-                    ForEach(Array(rows.enumerated()), id: \.element.id) { i, r in
-                        HStack(alignment: .center, spacing: 12) {
-                            Text(Self.clock.string(from: r.time))
-                                .font(.subheadline.weight(.semibold)).foregroundStyle(r.upcoming ? .tertiary : .secondary).monospacedDigit()
-                                .frame(width: 46, alignment: .leading)
-                            ZStack {
-                                // The line: solid for what happened, dotted for what is still planned.
-                                VStack(spacing: 0) {
-                                    Rectangle().fill(i == 0 ? .clear : (r.upcoming ? Color.secondary.opacity(0.3) : Theme.accent.opacity(0.35))).frame(width: 2)
-                                    Rectangle().fill(i == rows.count - 1 ? .clear : (rows[i + 1].upcoming ? Color.secondary.opacity(0.3) : Theme.accent.opacity(0.35))).frame(width: 2)
-                                }
-                                Image(systemName: r.symbol).font(.system(size: 13, weight: .semibold))
-                                    .foregroundStyle(r.upcoming ? Color.secondary : (r.isNow ? .white : Theme.accent))
-                                    .frame(width: 30, height: 30)
-                                    .background(r.upcoming ? AnyShapeStyle(Color(.secondarySystemFill)) : (r.isNow ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(Theme.accent.opacity(0.14))), in: .circle)
-                            }
-                            .frame(width: 30)
-                            VStack(alignment: .leading, spacing: 1) {
-                                Text(r.title).font(.body.weight(.semibold)).foregroundStyle(r.upcoming ? .secondary : .primary)
-                                Text(r.detail).font(.caption).foregroundStyle(.secondary)
-                            }
-                            Spacer()
-                            if r.isNow { Text("now").font(.caption.weight(.semibold)).foregroundStyle(Theme.accent) }
-                        }
-                        .padding(.horizontal, 14).frame(minHeight: 58)
-                    }
-                }
-                .padding(.vertical, 4)
+                blocks(all)
             }
         }
-    }
-
-    private var listBody: some View {
-        let rows = rows
-        return Card(padding: 0) {
-            if rows.isEmpty {
-                Text("Nothing yet. Dayline fills this in from where you go.")
-                    .font(.subheadline).foregroundStyle(.secondary).padding(16)
-            } else {
-                VStack(spacing: 0) {
-                    ForEach(Array(rows.enumerated()), id: \.element.id) { i, r in
-                        HStack(spacing: 12) {
-                            Text(Self.clock.string(from: r.time))
-                                .font(.subheadline.weight(.semibold)).foregroundStyle(.secondary).monospacedDigit()
-                                .frame(width: 46, alignment: .leading)
-                            if r.kind == .gap {
-                                Circle().stroke(Color.secondary.opacity(0.6), style: StrokeStyle(lineWidth: 1.5, dash: [2, 2])).frame(width: 8, height: 8)
-                            } else {
-                                Circle().fill(Theme.accent).frame(width: 8, height: 8)
-                            }
-                            VStack(alignment: .leading, spacing: 1) {
-                                Text(r.title).font(.body.weight(.semibold)).foregroundStyle(r.kind == .gap ? .secondary : .primary)
-                                Text(r.detail).font(.caption).foregroundStyle(.secondary)
-                            }
-                            Spacer()
-                            if r.isNow { Text("now").font(.caption.weight(.semibold)).foregroundStyle(Theme.accent) }
-                            if style == "C" {
-                                Image(systemName: "chevron.down").font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
-                                    .rotationEffect(.degrees(open == r.id ? 180 : 0))
-                            }
-                        }
-                        .padding(.horizontal, 14).padding(.vertical, 11)
-                        .contentShape(.rect)
-                        .onTapGesture {
-                            guard style == "C" else { return }
-                            withAnimation(.snappy) { open = open == r.id ? nil : r.id }
-                        }
-                        .accessibilityIdentifier("scheduleRow-\(i)")
-                        if style == "C", open == r.id { detail(r) }
-                        if i < rows.count - 1 { Divider().padding(.leading, 70) }
-                    }
-                }
-            }
-        }
+        .accessibilityIdentifier("scheduleLayout")
     }
 }
 
@@ -597,7 +495,7 @@ struct WeekStrip: View {
     }
 }
 
-// MARK: - Schedule layout previews ("schedule.layout" 1-6)
+// MARK: - Schedule rows
 
 extension DayActivityList {
     /// "9:00", or "12:00 – 12:50", or "3:10 – now".
@@ -623,180 +521,24 @@ extension DayActivityList {
     fileprivate func toggle(_ r: Row) { withAnimation(.snappy) { open = open == r.id ? nil : r.id } }
 
     fileprivate func icon(_ r: Row, size: CGFloat = 28) -> some View {
-        Image(systemName: r.kind == .wake ? "sun.max.fill" : r.symbol).font(.system(size: size * 0.45, weight: .semibold))
+        Image(systemName: r.kind == .wake ? "sun.max.fill" : r.symbol).font(.scaled(size: size * 0.45, weight: .semibold, relativeTo: .body))
             .foregroundStyle(r.kind == .gap ? Color.secondary : (r.isNow ? Color.white : Theme.accent))
             .frame(width: size, height: size)
             .background(r.kind == .gap ? AnyShapeStyle(Color(.secondarySystemFill)) : (r.isNow ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(Theme.accent.opacity(0.14))), in: .circle)
-    }
-    fileprivate func titles(_ r: Row) -> some View {
-        VStack(alignment: .leading, spacing: 1) {
-            Text(r.title).font(.body.weight(.semibold)).foregroundStyle(r.kind == .gap ? .secondary : .primary)
-            let s = sub(r)
-            if !s.isEmpty { Text(s).font(.caption).foregroundStyle(.secondary).lineLimit(1) }
-        }
     }
     fileprivate func chevron(_ r: Row) -> some View {
         Image(systemName: "chevron.down").font(.footnote.weight(.semibold)).foregroundStyle(.tertiary)
             .rotationEffect(.degrees(open == r.id ? 180 : 0))
     }
 
-    @ViewBuilder var layoutBody: some View {
-        let all = rows
-        Card(padding: 0) {
-            if all.isEmpty {
-                Text("Nothing yet. Dayline fills this in from where you go.")
-                    .font(.subheadline).foregroundStyle(.secondary).padding(16)
-            } else {
-                switch layout {
-                case "3": pinLayout(all, line: true)
-                case "4": blockLayout(all)
-                case "4a", "4b", "4c", "4d", "4e", "4f": block4(all)
-                case "5": pinLayout(all, line: false)
-                default: plainLayout(all)
-                }
-            }
-        }
-        .accessibilityIdentifier("scheduleLayout")
-    }
-
-    /// 1, 2 and 6: wake-up becomes a header line; each row carries its own range.
-    fileprivate func plainLayout(_ all: [Row]) -> some View {
-        let wake = all.first { $0.kind == .wake }
-        let list = all.filter { $0.kind != .wake }
-        return VStack(spacing: 0) {
-            if let wake {
-                HStack(spacing: 8) {
-                    Image(systemName: "sun.max.fill").foregroundStyle(Theme.accent)
-                    Text("Woke up at \(Self.clock.string(from: wake.time))").font(.subheadline.weight(.semibold))
-                    Spacer()
-                    chevron(wake)
-                }
-                .padding(.horizontal, 14).padding(.vertical, 10)
-                .contentShape(.rect).onTapGesture { toggle(wake) }
-                if open == wake.id { detail(wake) }
-                Divider()
-            }
-            ForEach(Array(list.enumerated()), id: \.element.id) { i, r in
-                plainRow(r).contentShape(.rect).onTapGesture { toggle(r) }
-                    .accessibilityIdentifier("scheduleRow-\(i)")
-                if open == r.id { detail(r) }
-                if i < list.count - 1 { Divider().padding(.leading, layout == "1" ? 76 : 56) }
-            }
-        }
-    }
-    @ViewBuilder fileprivate func plainRow(_ r: Row) -> some View {
-        HStack(spacing: 12) {
-            switch layout {
-            case "1":
-                VStack(alignment: .leading, spacing: 0) {
-                    Text(Self.clock.string(from: r.time)).font(.subheadline.weight(.semibold)).monospacedDigit()
-                    if let e = r.end, e.timeIntervalSince(r.time) >= 60 {
-                        Text(r.isNow ? "now" : Self.clock.string(from: e)).font(.caption).foregroundStyle(.secondary).monospacedDigit()
-                    }
-                }
-                .frame(width: 50, alignment: .leading)
-                icon(r)
-                titles(r)
-                Spacer()
-            case "6":
-                icon(r)
-                titles(r)
-                Spacer()
-                Text(range(r)).font(.caption.weight(.semibold)).monospacedDigit()
-                    .foregroundStyle(r.isNow ? Color.white : (r.kind == .gap ? Color.secondary : Theme.accent))
-                    .padding(.horizontal, 9).padding(.vertical, 5)
-                    .background(r.isNow ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(Color(.secondarySystemFill)), in: .capsule)
-            default:
-                icon(r)
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(r.title).font(.body.weight(.semibold)).foregroundStyle(r.kind == .gap ? .secondary : .primary)
-                    Text(sub(r).isEmpty ? range(r) : "\(range(r)) · \(sub(r))").font(.caption).foregroundStyle(.secondary).monospacedDigit().lineLimit(1)
-                }
-                Spacer()
-            }
-            chevron(r)
-        }
-        .padding(.horizontal, 14).padding(.vertical, 10)
-    }
-
-    /// 3 and 5: a time at every start and end, shown once. 3 joins them with a line (dashed through unknown time).
-    fileprivate func pinLayout(_ all: [Row], line: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
+    /// Each row: a blue bar sized by how long it took, the symbol, the title, and from-till under it.
+    fileprivate func blocks(_ all: [Row]) -> some View {
+        func mins(_ r: Row) -> Double { (r.end ?? r.time).timeIntervalSince(r.time) / 60 }
+        return VStack(alignment: .leading, spacing: 6) {
             ForEach(Array(all.enumerated()), id: \.element.id) { i, r in
-                let prevEnd: Date? = i > 0 ? (all[i - 1].end ?? all[i - 1].time) : nil
-                let sharesStart = prevEnd.map { abs($0.timeIntervalSince(r.time)) < 90 } ?? false
-                if !sharesStart { pin(Self.clock.string(from: r.time), filled: r.kind != .gap, first: i == 0, line: line, dashedBelow: false) }
-                pinBody(r, line: line)
-                    .contentShape(.rect).onTapGesture { toggle(r) }
-                    .accessibilityIdentifier("scheduleRow-\(i)")
-                if open == r.id { detail(r) }
-                if let e = r.end, e.timeIntervalSince(r.time) >= 60 {
-                    let nextStart = i + 1 < all.count ? all[i + 1].time : nil
-                    let shared = nextStart.map { abs($0.timeIntervalSince(e)) < 90 } ?? false
-                    pin(r.isNow ? "now" : Self.clock.string(from: e), filled: true, first: false, line: line,
-                        dashedBelow: shared && all[i + 1].kind == .gap, last: i == all.count - 1)
-                }
-            }
-        }
-        .padding(.vertical, 6)
-    }
-    fileprivate func pin(_ time: String, filled: Bool, first: Bool, line: Bool, dashedBelow: Bool, last: Bool = false) -> some View {
-        HStack(spacing: 10) {
-            Text(time).font(.caption.weight(.semibold)).foregroundStyle(.secondary).monospacedDigit()
-                .frame(width: 44, alignment: .trailing)
-            if line {
-                Circle().fill(Theme.accent).frame(width: 10, height: 10)
-                    .overlay(Circle().stroke(Color(.systemBackground), lineWidth: 2))
-                    .frame(width: 20)
-            } else {
-                Rectangle().fill(Color.secondary.opacity(0.25)).frame(height: 1)
-            }
-            if line { Spacer() }
-        }
-        .padding(.horizontal, 14).frame(height: 22)
-        .background(alignment: .leading) {
-            if line && !first {
-                Rectangle().fill(Theme.accent.opacity(0.35)).frame(width: 2).frame(maxHeight: last ? 11 : .infinity, alignment: .top)
-                    .padding(.leading, 14 + 44 + 10 + 9).frame(maxHeight: .infinity, alignment: .top)
-            }
-        }
-    }
-    fileprivate func pinBody(_ r: Row, line: Bool) -> some View {
-        HStack(spacing: 10) {
-            Color.clear.frame(width: 44)
-            if line {
-                Group {
-                    if r.kind == .gap {
-                        VLine().stroke(Color.secondary.opacity(0.5), style: StrokeStyle(lineWidth: 2, dash: [3, 3])).frame(width: 2)
-                    } else {
-                        Rectangle().fill(Theme.accent.opacity(0.35)).frame(width: 2)
-                    }
-                }
-                .frame(width: 20).frame(maxHeight: .infinity)
-            }
-            icon(r, size: 26)
-            titles(r)
-            Spacer()
-            chevron(r)
-        }
-        .padding(.horizontal, 14).frame(minHeight: 50)
-    }
-
-    /// 4: blocks on a line, taller the longer it took (capped), start and end beside each block.
-    fileprivate func blockLayout(_ all: [Row]) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            ForEach(Array(all.enumerated()), id: \.element.id) { i, r in
-                let mins = (r.end ?? r.time).timeIntervalSince(r.time) / 60
-                let h = max(44, min(120, 44 + mins / 3))
+                let h = max(44, min(120, 44 + mins(r) / 3))
+                let bar = r.kind == .wake || mins(r) < 1 ? CGFloat(8) : h
                 HStack(alignment: .top, spacing: 10) {
-                    VStack(alignment: .trailing) {
-                        Text(Self.clock.string(from: r.time)).font(.caption.weight(.semibold)).monospacedDigit()
-                        Spacer(minLength: 0)
-                        if r.kind != .wake, mins >= 1 {
-                            Text(r.isNow ? "now" : Self.clock.string(from: r.end ?? r.time)).font(.caption).foregroundStyle(.secondary).monospacedDigit()
-                        }
-                    }
-                    .frame(width: 44, height: h, alignment: .trailing)
                     RoundedRectangle(cornerRadius: 5, style: .continuous)
                         .fill(r.kind == .gap ? AnyShapeStyle(Color.clear) : AnyShapeStyle(Theme.accent.opacity(r.isNow ? 0.9 : 0.35)))
                         .overlay {
@@ -805,11 +547,14 @@ extension DayActivityList {
                                     .stroke(Color.secondary.opacity(0.5), style: StrokeStyle(lineWidth: 1.5, dash: [3, 3]))
                             }
                         }
-                        .frame(width: 8, height: r.kind == .wake || mins < 1 ? 8 : h)
+                        .frame(width: 8, height: bar)
                         .frame(width: 20, height: h, alignment: .top)
                     HStack(spacing: 10) {
                         icon(r, size: 26)
-                        titles(r)
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(r.title).foregroundStyle(r.kind == .gap ? .secondary : .primary)
+                            Text(sub(r).isEmpty ? range(r) : "\(range(r)) · \(sub(r))").font(.subheadline).foregroundStyle(.secondary).monospacedDigit().lineLimit(1)
+                        }
                         Spacer()
                         chevron(r)
                     }
@@ -822,120 +567,5 @@ extension DayActivityList {
             }
         }
         .padding(.vertical, 10)
-    }
-    /// 4a-4f (see the "schedule.layout" note).
-    fileprivate func block4(_ all: [Row]) -> some View {
-        let v = layout
-        func mins(_ r: Row) -> Double { (r.end ?? r.time).timeIntervalSince(r.time) / 60 }
-        func showStart(_ i: Int) -> Bool {
-            guard i > 0 else { return true }
-            let p = all[i - 1]
-            return !(p.kind == .wake && abs(p.time.timeIntervalSince(all[i].time)) < 90)
-        }
-        func showEnd(_ i: Int) -> Bool {
-            let r = all[i]
-            guard r.kind != .wake, mins(r) >= 1 else { return false }
-            if r.isNow { return true }
-            guard i + 1 < all.count, let e = r.end else { return true }
-            return abs(all[i + 1].time.timeIntervalSince(e)) >= 90
-        }
-        func height(_ r: Row) -> CGFloat {
-            if v == "4f" { return 52 }
-            let m = mins(r)
-            return v == "4e" ? max(52, min(150, 52 + m / 2.5)) : max(44, min(120, 44 + m / 3))
-        }
-        func fill(_ r: Row) -> AnyShapeStyle {
-            r.kind == .gap ? AnyShapeStyle(Color.clear) : AnyShapeStyle(Theme.accent.opacity(r.isNow ? 0.9 : 0.35))
-        }
-        return ZStack(alignment: .topLeading) {
-            if v == "4b" {
-                Rectangle().fill(Theme.accent.opacity(0.2)).frame(width: 2)
-                    .padding(.leading, 14 + 44 + 10 + 9).padding(.vertical, 18)
-            }
-            VStack(alignment: .leading, spacing: v == "4b" || v == "4f" ? 0 : 6) {
-                ForEach(Array(all.enumerated()), id: \.element.id) { i, r in
-                    let h = height(r)
-                    let bar = r.kind == .wake || mins(r) < 1 ? CGFloat(8) : h
-                    HStack(alignment: .top, spacing: 10) {
-                        if v != "4d" {
-                            VStack(alignment: .trailing) {
-                                if showStart(i) { Text(Self.clock.string(from: r.time)).font(.caption.weight(.semibold)).monospacedDigit() }
-                                Spacer(minLength: 0)
-                                if showEnd(i) {
-                                    Text(r.isNow ? "now" : Self.clock.string(from: r.end ?? r.time)).font(.caption).foregroundStyle(.secondary).monospacedDigit()
-                                }
-                            }
-                            .frame(width: 44, height: h, alignment: .trailing)
-                        }
-                        if v == "4e" {
-                            HStack(alignment: .top, spacing: 10) {
-                                icon(r, size: 26)
-                                titles(r)
-                                Spacer()
-                                chevron(r)
-                            }
-                            .padding(10)
-                            .frame(height: h, alignment: .top)
-                            .background(r.kind == .gap ? AnyShapeStyle(Color.clear) : AnyShapeStyle(Theme.accent.opacity(r.isNow ? 0.22 : 0.1)),
-                                        in: .rect(cornerRadius: 12, style: .continuous))
-                            .overlay {
-                                if r.kind == .gap {
-                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                        .stroke(Color.secondary.opacity(0.45), style: StrokeStyle(lineWidth: 1.2, dash: [4, 3]))
-                                }
-                            }
-                            .overlay(alignment: .leading) {
-                                if r.kind != .gap { RoundedRectangle(cornerRadius: 2).fill(Theme.accent.opacity(r.isNow ? 1 : 0.6)).frame(width: 4).padding(.vertical, 8) }
-                            }
-                        } else {
-                            let w: CGFloat = v == "4c" ? 30 : (v == "4a" || v == "4d" ? 8 : 10)
-                            RoundedRectangle(cornerRadius: v == "4c" ? 9 : 5, style: .continuous)
-                                .fill(fill(r))
-                                .overlay {
-                                    if r.kind == .gap {
-                                        RoundedRectangle(cornerRadius: v == "4c" ? 9 : 5, style: .continuous)
-                                            .stroke(Color.secondary.opacity(0.5), style: StrokeStyle(lineWidth: 1.5, dash: [3, 3]))
-                                    }
-                                }
-                                .overlay(alignment: .top) {
-                                    if v == "4c" {
-                                        Image(systemName: r.kind == .wake ? "sun.max.fill" : r.symbol).font(.system(size: 13, weight: .semibold))
-                                            .foregroundStyle(r.kind == .gap ? Color.secondary : (r.isNow ? Color.white : Theme.accent))
-                                            .padding(.top, 8)
-                                    }
-                                }
-                                .frame(width: w, height: v == "4c" ? max(bar, 30) : bar)
-                                .frame(width: v == "4c" ? 30 : 20, height: h, alignment: .top)
-                            HStack(spacing: 10) {
-                                if v != "4c" { icon(r, size: 26) }
-                                if v == "4d" {
-                                    VStack(alignment: .leading, spacing: 1) {
-                                        Text(r.title).font(.body.weight(.semibold)).foregroundStyle(r.kind == .gap ? .secondary : .primary)
-                                        Text(sub(r).isEmpty ? range(r) : "\(range(r)) · \(sub(r))").font(.caption).foregroundStyle(.secondary).monospacedDigit().lineLimit(1)
-                                    }
-                                } else {
-                                    titles(r)
-                                }
-                                Spacer()
-                                chevron(r)
-                            }
-                            .frame(minHeight: 44)
-                        }
-                    }
-                    .padding(.horizontal, 14)
-                    .contentShape(.rect).onTapGesture { toggle(r) }
-                    .accessibilityIdentifier("scheduleRow-\(i)")
-                    if open == r.id { detail(r) }
-                }
-            }
-        }
-        .padding(.vertical, 10)
-    }
-}
-
-/// A vertical line down the middle of its frame (dashed "unknown time" segments).
-private struct VLine: Shape {
-    func path(in rect: CGRect) -> Path {
-        var p = Path(); p.move(to: CGPoint(x: rect.midX, y: rect.minY)); p.addLine(to: CGPoint(x: rect.midX, y: rect.maxY)); return p
     }
 }

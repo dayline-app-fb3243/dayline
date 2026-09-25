@@ -446,7 +446,7 @@ struct ProfileView: View {
                 profileHeader("Your Day")
                 Card(padding: 0) {
                     VStack(spacing: 0) {
-                        NavigationLink { YourScheduleEntry() } label: {
+                        NavigationLink { YourScheduleView() } label: {
                             ProfileRow(symbol: "clock.fill", title: "Your Schedule", value: UserSchedule.current.rangeText)
                         }
                         .accessibilityIdentifier("yourScheduleRow")
