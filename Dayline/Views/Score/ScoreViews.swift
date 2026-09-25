@@ -314,9 +314,13 @@ struct DayActivityList: View {
                            symbol: "house.fill", place: CLLocationCoordinate2D(latitude: v.latitude, longitude: v.longitude), end: e))
         }
         func covered(_ t: Date) -> Bool { out.contains { r in r.kind == .visit && r.end.map { t >= r.time && t <= $0 } == true } }
-        // Journal entries that don't belong to a place row.
-        for j in journal where window.contains(j.date) && j.date <= now && !covered(j.date) {
-            if j.placeName == "Apple Health" {
+        // JournalGroup uses the composer groupID, so photos, voice and text saved together
+        // appear as one event rather than separate schedule rows.
+        let eligibleJournal = journal.filter { window.contains($0.date) && $0.date <= now }
+        let visibleJournal = eligibleJournal.filter { entry in
+            entry.placeName == "Apple Health" || !covered(entry.date)
+        }
+        for j in visibleJournal where j.placeName == "Apple Health" {
                 // A workout from Apple Health: "Run · 5.2 km · 31 min".
                 let parts = j.text.components(separatedBy: " · ")
                 let kind = parts.first ?? "Workout"
@@ -327,15 +331,19 @@ struct DayActivityList: View {
                                detail: parts.dropFirst().joined(separator: " · ") + " · Apple Health", isNow: false, symbol: sym,
                                end: j.date.addingTimeInterval(Double(mins) * 60), kind: .plan,
                                note: "From Apple Health. It counts as something good today, so it won back points on your ring."))
-                continue
-            }
-            let (title, sym): (String, String) = switch j.kind {
-            case .photo: ("Photo", "camera.fill"); case .voice: ("Voice memo", "mic.fill"); case .text: ("Journal entry", "pencil")
-            }
-            out.append(Row(id: "j-\(j.date.timeIntervalSince1970)", time: j.date, title: title,
-                           detail: j.text.isEmpty ? "From your journal" : String(j.text.prefix(40)), isNow: false,
-                           symbol: sym, place: j.latitude.flatMap { la in j.longitude.map { CLLocationCoordinate2D(latitude: la, longitude: $0) } },
-                           end: j.date, kind: .journal, note: j.text.isEmpty ? nil : j.text))
+        }
+        let groups = JournalGroup.make(eligibleJournal.filter { $0.placeName != "Apple Health" }
+            .sorted { $0.date > $1.date }, visits: visits)
+        for group in groups where group.entries.contains(where: { !covered($0.date) }) {
+            let first = group.entries.min(by: { $0.date < $1.date })!
+            let text = group.text ?? group.voice?.text ?? ""
+            let title = group.title ?? "Journal entry"
+            let media = group.photos.count
+            let detail = text.isEmpty ? (media > 0 ? "\(media) photo\(media == 1 ? "" : "s")" : "From your journal") : String(text.prefix(60))
+            out.append(Row(id: "j-\(group.id)", time: group.date, title: title,
+                           detail: detail, isNow: false, symbol: "pencil",
+                           place: first.latitude.flatMap { la in first.longitude.map { CLLocationCoordinate2D(latitude: la, longitude: $0) } },
+                           end: group.date, kind: .journal, note: text.isEmpty ? nil : text))
         }
         // Plans you finished that no place row already shows.
         for p in plans where window.contains(p.start) && p.isDone && !covered(p.start) && !covered(p.end) {
