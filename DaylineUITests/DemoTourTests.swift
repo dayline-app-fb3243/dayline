@@ -823,8 +823,8 @@ final class DemoTourTests: XCTestCase {
         if grabber.waitForExistence(timeout: 2) { grabber.tap(); pause(1.5) }
         shot("fm3-layers")
         for name in ["Journal", "Photos", "Route", "Places"] {
-            let row = app.descendants(matching: .any)["layer\(name)"].firstMatch
-            if row.exists { row.switches.firstMatch.tap(); pause(0.4) }
+            let toggle = app.switches[name].firstMatch
+            if toggle.waitForExistence(timeout: 2) { toggle.tap(); pause(0.4) }
         }
         if grabber.exists { grabber.tap(); pause(1.5) }
         shot("fm4-all-off")
