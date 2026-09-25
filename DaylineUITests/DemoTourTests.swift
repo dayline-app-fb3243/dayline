@@ -858,6 +858,9 @@ final class DemoTourTests: XCTestCase {
         shot("search-back-results")
     }
 
+    func testPlaceCombo14() throws { captureFreshPlace([14]) }
+    func testPlaceCombo15() throws { captureFreshPlace([15]) }
+    func testPlaceCombo16() throws { captureFreshPlace([16]) }
     func testPlaceCombo9() throws { captureFreshPlace([9]) }
     func testPlaceCombo10() throws { captureFreshPlace([10]) }
     func testPlaceCombo11() throws { captureFreshPlace([11]) }

@@ -499,26 +499,33 @@ struct SearchPlaceView: View {
     @ViewBuilder private var directions: some View {
         if let mapsURL {
             Link(destination: mapsURL) {
-                Label("GO", systemImage: "arrow.triangle.turn.up.right.diamond.fill")
-                    .font(.headline).frame(maxWidth: .infinity).frame(height: 50)
+                Label("GO", systemImage: "arrow.triangle.turn.up.right.diamond")
+                    .font(actionFont).frame(maxWidth: .infinity).frame(height: actionHeight)
             }
             .buttonStyle(.glassProminent).tint(Theme.accent)
             .accessibilityLabel("GO: directions in Apple Maps")
             .accessibilityIdentifier("placeGoButton")
         }
     }
+    private var actionHeight: CGFloat {
+        switch design { case 14: 44; case 15: 42; case 16: 40; default: 50 }
+    }
+    private var actionFont: Font {
+        switch design { case 14: .subheadline.weight(.medium); case 15: .subheadline.weight(.regular); case 16: .footnote.weight(.medium); default: .headline }
+    }
+    private var actionSpacing: CGFloat { design == 16 ? 8 : 10 }
     private var actionRow: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: actionSpacing) {
             directions
             Button { callPrompt = true } label: {
-                Image(systemName: "phone.fill").frame(width: 50, height: 50)
+                Image(systemName: "phone").font(actionFont).frame(width: actionHeight, height: actionHeight)
             }
             .buttonStyle(.glass)
             .clipShape(Circle())
             .accessibilityLabel("Call place")
             .accessibilityIdentifier("placeCallButton")
             Button { showHours = true } label: {
-                Image(systemName: "clock").frame(width: 50, height: 50)
+                Image(systemName: "clock").font(actionFont).frame(width: actionHeight, height: actionHeight)
             }
             .buttonStyle(.glass)
             .clipShape(Circle())
@@ -553,7 +560,7 @@ struct SearchPlaceView: View {
             actionRow
             Text("Photos").font(.headline)
             combinedPhoto
-        case 10:
+        case 10, 14, 15, 16:
             Text(hit.place).font(.largeTitle.weight(.regular))
             Text(visitLabel).font(.subheadline).foregroundStyle(.secondary)
             placeMap
@@ -705,7 +712,7 @@ struct SearchPlaceView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 switch design {
-                case 9...13: combinedPage
+                case 9...16: combinedPage
                 case 4: photoFirstPage
                 case 5: mapFocusPage
                 case 6: journalPage
