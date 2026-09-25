@@ -550,13 +550,13 @@ struct FactorRow: View {
                 ProfileIcon(symbol: symbol, size: 30, color: color)
             }
             VStack(alignment: .leading, spacing: 1) {
-                Text(factor.title).font(.body.weight(.semibold))
+                Text(factor.title).font(.body)
                 Text(factor.detail ?? (bad ? "No points yet" : factor.effect == .up ? "Counted" : "Small boost"))
-                    .font(.footnote).foregroundStyle(.secondary)
+                    .font(.subheadline).foregroundStyle(.secondary)
             }
             Spacer()
             Text(factor.points > 0 ? "+\(factor.points)" : factor.points == 0 ? "0" : "\(factor.points)")
-                .font(.body.weight(.semibold)).monospacedDigit()
+                .font(.body).monospacedDigit()
                 .foregroundStyle(factor.points > 0 ? Color.primary : Color.secondary)
         }
         .padding(.horizontal, 16).padding(.vertical, 11)

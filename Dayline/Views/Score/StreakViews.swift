@@ -226,11 +226,11 @@ private struct FriendRow: View {
             Text(initials).font(.caption.bold()).foregroundStyle(.white)
                 .markerBackground(color, size: 30)
             VStack(alignment: .leading, spacing: 1) {
-                Text(name).font(.subheadline.weight(.semibold))
-                Text("Best \(best) days").font(.caption).foregroundStyle(.secondary)
+                Text(name).font(.body)
+                Text("Best \(best) days").font(.subheadline).foregroundStyle(.secondary)
             }
             Spacer()
-            Text("\(current)").font(.headline).foregroundStyle(color)
+            Text("\(current)").font(.body).monospacedDigit().foregroundStyle(color)
         }
         .padding(.horizontal, 14).padding(.vertical, 11)
         .contentShape(.rect)
@@ -487,7 +487,6 @@ private struct SettingsGroup<C: View>: View {
     var body: some View {
         VStack(spacing: 0) { content }
             .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: Theme.cardRadius, style: .continuous))
-            .shadow(color: .black.opacity(0.05), radius: 12, y: 4)
     }
 }
 
@@ -520,7 +519,7 @@ private struct PersonRow<Trailing: View>: View {
             PersonAvatar(name: name, color: color, size: compact ? 34 : 40)
             VStack(alignment: .leading, spacing: 1) {
                 Text(name).font(compact ? .body : .body.weight(.semibold)).foregroundStyle(.primary)
-                Text(subtitle).font(compact ? .footnote : .subheadline.weight(.medium)).foregroundStyle(.secondary)
+                Text(subtitle).font(compact ? .subheadline : .subheadline.weight(.medium)).foregroundStyle(.secondary)
             }
             Spacer()
             trailing

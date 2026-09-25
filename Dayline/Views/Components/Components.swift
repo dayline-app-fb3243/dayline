@@ -14,7 +14,6 @@ struct Card<Content: View>: View {
             .padding(padding)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: Theme.cardRadius, style: .continuous))
-            .shadow(color: .black.opacity(0.05), radius: 12, y: 4)
     }
 }
 
