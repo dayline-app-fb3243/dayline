@@ -83,6 +83,20 @@ final class DemoTourTests: XCTestCase {
         shot("invite-prefilled-native-compose")
     }
 
+    func testInviteSMSFallback() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo", "-demoSMSFallback"]
+        app.launch(); pause(1)
+        tab(app, "Insights"); pause(1)
+        tapID(app, "streakCard"); pause(1)
+        tapID(app, "peopleButton"); pause(1)
+        app.swipeUp(); pause(0.5)
+        let invite = app.descendants(matching: .any)["invite-Maya Cohen"].firstMatch
+        if invite.waitForExistence(timeout: 4) { invite.tap(); pause(2) }
+        shot("invite-sms-app-fallback")
+    }
+
+
     func testAllNotificationPreviews() throws {
         let app = XCUIApplication()
         let spring = XCUIApplication(bundleIdentifier: "com.apple.springboard")

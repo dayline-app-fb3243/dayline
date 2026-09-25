@@ -535,9 +535,13 @@ private struct InviteButton: View {
     var recipient: String
     @State private var showMessages = false
     @State private var showShare = false
+    @Environment(\.openURL) private var openURL
     var body: some View {
         Button {
-            if MFMessageComposeViewController.canSendText() { showMessages = true } else { showShare = true }
+            if MFMessageComposeViewController.canSendText() { showMessages = true }
+            else if ProcessInfo.processInfo.arguments.contains("-demoSMSFallback"),
+                    let url = URL(string: "sms:\(recipient.filter { $0.isNumber || $0 == "+" })") { openURL(url) }
+            else { showShare = true }
         } label: {
             Text("Invite").font(.subheadline.weight(.semibold)).foregroundStyle(Theme.accent)
                 .padding(.horizontal, 14).padding(.vertical, 6)
