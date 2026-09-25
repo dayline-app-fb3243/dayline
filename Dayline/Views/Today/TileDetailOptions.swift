@@ -188,7 +188,9 @@ struct GymDetailView: View {
                     case 5: withWeek
                     case 6, 7, 8: combined(variant)
                     case 9, 10, 11: quietNext(variant)
-                    default: DemoData.isDemo ? place : realPlace
+                    default:
+                        if DemoData.isDemo { place }
+                        else { realPlace }
                     }
                 }
             }
