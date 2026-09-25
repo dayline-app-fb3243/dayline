@@ -770,6 +770,18 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    func testSearchSubmitPhotoRows() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo", "-searchKeyboard"]
+        app.launch(); tab(app, "Journal"); tapID(app, "journalSearch"); pause(1)
+        let field = app.textFields["searchField"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5))
+        field.tap(); field.typeText("where was I 4 days ago")
+        app.keyboards.buttons["search"].firstMatch.tap()
+        XCTAssertFalse(app.keyboards.firstMatch.waitForExistence(timeout: 2), "Search must dismiss keyboard")
+        pause(5); shot("search-submit-photo-rows")
+    }
+
     /// A place search opens its place page, then Back preserves the search results.
     func testSearchPlaceNavigation() throws {
         let app = XCUIApplication()
