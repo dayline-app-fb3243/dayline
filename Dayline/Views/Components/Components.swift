@@ -149,7 +149,17 @@ struct ScoreRing: View {
     /// shade-B oranges, so ring and label always match.
     private var lowDay: Bool { lost == nil && score < 45 }
     private var gradient: Gradient {
-        if lowDay { return Gradient(colors: [softStart, softEnd]) }
+        if lowDay {
+            // Same blend as the Today ring when the day slips (shade B, blend 2): light blue into blue, then
+            // into orange at the end, at the darkest orange shade B allows, since the day went badly.
+            let k = Self.maxSlipB
+            let mid = Color.orange.mix(with: .white, by: 0.35 * (1 - k)).mix(with: Self.deepOrange, by: 0.35 * k)
+            let end = Color.orange.mix(with: .white, by: 0.3 * (1 - k)).mix(with: Self.deepOrange, by: 0.15 + 0.85 * k)
+            return Gradient(stops: [.init(color: Theme.ringStart, location: 0),
+                                    .init(color: Theme.accent, location: 0.6 - 0.15 * k),
+                                    .init(color: mid, location: 0.88 - 0.1 * k),
+                                    .init(color: end, location: 1)])
+        }
         if joining {
             let a = splitAt
             switch join {
@@ -222,7 +232,7 @@ struct ScoreRing: View {
                 .rotationEffect(.degrees(-90))
             }
             if score > 0 {
-                Circle().fill(lowDay ? softStart : colors[0]).frame(width: lineWidth, height: lineWidth)
+                Circle().fill(lowDay ? Theme.ringStart : colors[0]).frame(width: lineWidth, height: lineWidth)
                     .offset(y: -size / 2)
             }
             Text("\(score)")
