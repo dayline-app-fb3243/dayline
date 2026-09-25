@@ -86,6 +86,9 @@ jobs:
           if [ "${{ inputs.tests }}" = 'predicateDiagnostics' ]; then
             APP=$(find build/Build/Products -maxdepth 2 -name Dayline.app -path '*iphonesimulator*' | head -1)
             xcrun simctl install "${{ steps.sim.outputs.udid }}" "$APP"
+            # Authorize Photos and seed a simulator image so DayRefresher executes the PHAsset predicate.
+            xcrun simctl privacy "${{ steps.sim.outputs.udid }}" grant photos app.dayline || true
+            xcrun simctl addmedia "${{ steps.sim.outputs.udid }}" Dayline/Resources/Demo/demo-park.jpg 2>/dev/null || true
             (xcrun simctl spawn "${{ steps.sim.outputs.udid }}" log stream --style compact --level debug --predicate 'process == "Dayline" OR process == "photolibraryd"' > shots/predicate-live-log.txt 2>&1) & LOGGER=$!
             xcrun simctl terminate "${{ steps.sim.outputs.udid }}" app.dayline 2>/dev/null || true
             xcrun simctl launch --console "${{ steps.sim.outputs.udid }}" app.dayline > shots/predicate-launch-console.txt 2>&1 & LAUNCHER=$!
