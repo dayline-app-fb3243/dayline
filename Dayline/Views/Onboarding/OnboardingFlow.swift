@@ -887,8 +887,13 @@ struct SplashLoop: View {
     @State private var shown = false
     @State private var ready = false
     /// "splash.pin": "" (default) = each map draws its own pin (can pop during the crossfade); "smooth" = one fixed pin.
+    /// "route" = one pin that rides the blue line: it glides along the walked route to the place, stays on the line
+    /// while the camera turns, and slides over to the next scene's line during the crossfade.
     @AppStorage("splash.pin") private var pinStyle = ""
     private var smoothPin: Bool { pinStyle == "smooth" }
+    private var routePin: Bool { pinStyle == "route" }
+    @State private var tracks = SplashPinTracks()
+    @State private var crossStart: Date? = nil
     static let symbols = ["tree.fill", "dumbbell.fill", "briefcase.fill", "cup.and.saucer.fill"]
     @State private var pinSymbol = "tree.fill"
     @State private var pinPulse = false
@@ -897,16 +902,33 @@ struct SplashLoop: View {
         ZStack {
             // Keyed by scene, so when the next scene takes over it keeps its map (no reload).
             ForEach([current] + (next.map { [$0] } ?? []), id: \.self) { i in
-                SplashLiveMap(style: Self.scenes[i], drifting: true, hidePin: smoothPin,
+                SplashLiveMap(style: Self.scenes[i], drifting: true, hidePin: smoothPin || routePin,
                               onHeroPoint: smoothPin && i == current ? { p in
                                   if abs(p.x - heroPoint.x) > 0.5 || abs(p.y - heroPoint.y) > 0.5 { heroPoint = p }
-                              } : nil)
+                              } : nil,
+                              track: routePin ? tracks.track(i) : nil)
                     .opacity(i == next && !showNext ? 0.001 : 1)
             }
         }
         .overlay(alignment: .top) {
             // Preview "splash.pin" = smooth: one pin that never moves (every scene is centered on its place),
             // and only its symbol changes, with a soft spring, while the maps crossfade underneath.
+            if routePin && shown {
+                TimelineView(.animation) { ctx in
+                    let p = routePoint(at: ctx.date)
+                    ZStack(alignment: .topLeading) {
+                        Color.clear
+                        if let p {
+                            ApplePin(symbol: pinSymbol, color: Theme.accent, hero: 104)
+                                .scaleEffect(pinPulse ? 0.94 : 1, anchor: .bottom)
+                                .alignmentGuide(.top) { d in d[.bottom] }
+                                .alignmentGuide(.leading) { d in d[HorizontalAlignment.center] }
+                                .offset(x: p.x, y: p.y)
+                        }
+                    }
+                }
+                .allowsHitTesting(false)
+            }
             if smoothPin && heroPoint != .zero {
                 ZStack(alignment: .topLeading) {
                     Color.clear
@@ -931,14 +953,16 @@ struct SplashLoop: View {
             var waited = 1.2
             while !ready && waited < 10 { try? await Task.sleep(for: .seconds(0.2)); waited += 0.2 }
             try? await Task.sleep(for: .seconds(0.6))
+            tracks.track(current).start = .now
             withAnimation(.easeIn(duration: 1.0)) { shown = true }
             while !Task.isCancelled {
                 // 4 s on its own, then the next scene starts loading underneath (3 s head start), then a 1.6 s crossfade.
                 try? await Task.sleep(for: .seconds(4))
                 next = (current + 1) % Self.scenes.count
                 try? await Task.sleep(for: .seconds(3))
+                if let n = next { tracks.track(n).start = .now; crossStart = .now }
                 withAnimation(.easeInOut(duration: 1.6)) { showNext = true }
-                if smoothPin, let n = next {
+                if smoothPin || routePin, let n = next {
                     // Halfway through the crossfade: a gentle dip, the symbol swaps, and it springs back.
                     Task { @MainActor in
                         try? await Task.sleep(for: .seconds(0.5))
@@ -950,9 +974,71 @@ struct SplashLoop: View {
                 try? await Task.sleep(for: .seconds(1.7))
                 // Drop the old map right away so only one keeps rendering.
                 var t = Transaction(); t.disablesAnimations = true
-                withTransaction(t) { current = next ?? current; next = nil; showNext = false }
+                withTransaction(t) { current = next ?? current; next = nil; showNext = false; crossStart = nil }
             }
         }
+    }
+
+    /// Where the riding pin is on screen: on the current scene's line, blended toward the next scene's line during the crossfade.
+    private func routePoint(at now: Date) -> CGPoint? {
+        let a = tracks.track(current).point(at: now)
+        guard let n = next, let cs = crossStart, let b = tracks.track(n).point(at: now) else { return a }
+        let raw = min(1, max(0, now.timeIntervalSince(cs) / 1.6))
+        let c = raw * raw * (3 - 2 * raw)  // ease in-out
+        guard let a else { return b }
+        return CGPoint(x: a.x + (b.x - a.x) * c, y: a.y + (b.y - a.y) * c)
+    }
+}
+
+/// One scene's riding pin: its route, where on the route it starts and stops, and a way to turn a spot into a screen point.
+/// A plain class (not observed) so updating it every camera frame doesn't re-render the maps.
+final class SplashPinTrack {
+    var convert: ((CLLocationCoordinate2D) -> CGPoint?)?
+    var route: [CLLocationCoordinate2D] = [] { didSet { measure() } }
+    var hero: CLLocationCoordinate2D?
+    var start = Date()
+    /// Seconds to glide from ~300 m back along the line to the place.
+    let glide: Double = 5
+    private var cum: [Double] = []
+    private var heroIndex = 0
+    private func measure() {
+        cum = [0]
+        for (a, b) in zip(route, route.dropFirst()) {
+            cum.append(cum.last! + CLLocation(latitude: a.latitude, longitude: a.longitude).distance(from: CLLocation(latitude: b.latitude, longitude: b.longitude)))
+        }
+        if let h = hero, !route.isEmpty {
+            let hl = CLLocation(latitude: h.latitude, longitude: h.longitude)
+            heroIndex = route.indices.min { CLLocation(latitude: route[$0].latitude, longitude: route[$0].longitude).distance(from: hl)
+                                           < CLLocation(latitude: route[$1].latitude, longitude: route[$1].longitude).distance(from: hl) } ?? 0
+        }
+    }
+    /// The spot on the line at distance d (meters from the route start).
+    private func coordinate(at d: Double) -> CLLocationCoordinate2D? {
+        guard route.count > 1, let last = cum.last else { return route.first }
+        let d = min(max(0, d), last)
+        var i = 1
+        while i < cum.count - 1 && cum[i] < d { i += 1 }
+        let seg = cum[i] - cum[i - 1]
+        let f = seg > 0 ? (d - cum[i - 1]) / seg : 0
+        let a = route[i - 1], b = route[i]
+        return .init(latitude: a.latitude + (b.latitude - a.latitude) * f, longitude: a.longitude + (b.longitude - a.longitude) * f)
+    }
+    func point(at now: Date) -> CGPoint? {
+        guard let convert, route.count > 1, heroIndex < cum.count else { return nil }
+        let end = cum[heroIndex]
+        let begin = max(0, end - 300)
+        let raw = min(1, max(0, now.timeIntervalSince(start) / glide))
+        let t = 1 - pow(1 - raw, 3)  // ease out: slows as it arrives
+        guard let c = coordinate(at: begin + (end - begin) * t) else { return nil }
+        return convert(c)
+    }
+}
+
+final class SplashPinTracks {
+    private var all: [Int: SplashPinTrack] = [:]
+    func track(_ i: Int) -> SplashPinTrack {
+        if let t = all[i] { return t }
+        let t = SplashPinTrack(); all[i] = t; return t
     }
 }
 
@@ -963,6 +1049,8 @@ struct SplashLiveMap: View {
     /// Splash loop with one fixed pin on top: don't draw the big pin in the map.
     var hidePin = false
     var onHeroPoint: ((CGPoint) -> Void)? = nil
+    /// splash.pin "route": hand the route and a screen converter to the riding pin.
+    var track: SplashPinTrack? = nil
     @State private var drift = false
     @State private var route: [CLLocationCoordinate2D] = []
     private struct Stop: Identifiable { let id = UUID(); let name: String; let time: String; let symbol: String; let c: CLLocationCoordinate2D }
@@ -1058,7 +1146,14 @@ struct SplashLiveMap: View {
             if drifting { try? await Task.sleep(for: .milliseconds(400)); drift = true }
             await loadRoute()
         }
+        .onAppear { track?.convert = { proxy.convert($0, to: .local) } }
+        .onChange(of: route.count) { _, _ in
+            guard let track else { return }
+            track.hero = stops.first(where: { $0.name == heroName })?.c
+            track.route = route
+        }
         .onMapCameraChange(frequency: .continuous) { _ in
+            track?.convert = { proxy.convert($0, to: .local) }
             // Where the big pin's spot is on screen, for the one fixed pin drawn on top (splash.pin smooth).
             guard let onHeroPoint, let hero = stops.first(where: { $0.name == heroName }),
                   let pt = proxy.convert(hero.c, to: .local) else { return }
