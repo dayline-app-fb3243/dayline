@@ -576,6 +576,25 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Real Today Gym row and current default Gym page for an annotated entry-point proposal.
+    /// No new navigation is added by this preview.
+    func testGymEntryProposal() throws {
+        let today = XCUIApplication()
+        today.launchArguments = ["-demo"]
+        today.launchEnvironment["TZ"] = Self.morningZone
+        today.launch(); pause(1.5)
+        shot("gym-proposal-real-today")
+        today.terminate()
+
+        let gym = XCUIApplication()
+        gym.launchArguments = ["-demo", "-detailVariant", "1"]
+        gym.launchEnvironment["TZ"] = Self.morningZone
+        gym.launch(); pause(1.2)
+        tapID(gym, "nextTile"); pause(5)
+        XCTAssertTrue(gym.descendants(matching: .any)["gymDetail"].firstMatch.exists)
+        shot("gym-proposal-current-page")
+    }
+
     /// Steps and Gym tile pages: five options each.
     func testTileDetailOptions() throws {
         for v in 1...5 {
