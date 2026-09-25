@@ -499,7 +499,7 @@ struct SearchPlaceView: View {
         }
     }
     private var placePhoto: UIImage? { hit.thumbnail.flatMap(UIImage.init(data:)) }
-    private var countLabel: String { recalled.map { "\($0.timesVisited) visits" } ?? "Your visit" }
+    private var countLabel: String { recalled.map { "\($0.timesVisited) visit\($0.timesVisited == 1 ? "" : "s")" } ?? "Your visit" }
     @ViewBuilder private var photoPanel: some View {
         if let image = placePhoto {
             Image(uiImage: image).resizable().scaledToFill().frame(maxWidth: .infinity).frame(height: 300)
@@ -594,7 +594,7 @@ struct SearchPlaceView: View {
                     placeMap
                     Card {
                         VStack(alignment: .leading, spacing: 12) {
-                            if let recalled { Text("\(recalled.timesVisited) visits").font(.subheadline).foregroundStyle(.secondary) }
+                            if let recalled { Text("\(recalled.timesVisited) visit\(recalled.timesVisited == 1 ? "" : "s")").font(.subheadline).foregroundStyle(.secondary) }
                             Text(hit.reason).font(.body)
                             directions
                         }.frame(maxWidth: .infinity, alignment: .leading)
@@ -607,7 +607,7 @@ struct SearchPlaceView: View {
                             Text(hit.place).font(.title2)
                             Divider()
                             Label(visitLabel, systemImage: "calendar").font(.subheadline).foregroundStyle(.secondary)
-                            if let recalled { Label("\(recalled.timesVisited) visits", systemImage: "clock.arrow.circlepath").font(.subheadline).foregroundStyle(.secondary) }
+                            if let recalled { Label("\(recalled.timesVisited) visit\(recalled.timesVisited == 1 ? "" : "s")", systemImage: "clock.arrow.circlepath").font(.subheadline).foregroundStyle(.secondary) }
                             Text(hit.reason).font(.body)
                             directions
                         }.frame(maxWidth: .infinity, alignment: .leading)
@@ -620,7 +620,7 @@ struct SearchPlaceView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         Text(hit.place).font(.title2)
                         Text(visitLabel).font(.subheadline).foregroundStyle(.secondary)
-                        if let recalled { Text("\(recalled.timesVisited) visits").font(.subheadline).foregroundStyle(.secondary) }
+                        if let recalled { Text("\(recalled.timesVisited) visit\(recalled.timesVisited == 1 ? "" : "s")").font(.subheadline).foregroundStyle(.secondary) }
                     }.padding(.horizontal, 4)
                     Card {
                         VStack(alignment: .leading, spacing: 12) {
