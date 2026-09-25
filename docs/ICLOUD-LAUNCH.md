@@ -56,6 +56,13 @@ Sources for design/security decisions: Apple's Sign in with Apple HIG (https://d
 - Add an in-app link to that privacy policy and test it on a device.
 - Add in-app support actions to contact David/the Dayline team and report a problem. Decide and verify the support address or destination before wiring or publishing the links; no address is assumed here.
 
+## Siri and App Intents validation gate
+
+- The prototype declares six App Shortcuts backed by App Intents: place recall, journal by voice, friend streak, past location, personal streak and day score. The quoted examples in Profile and the hidden six-card demo are in-app UI, not evidence that Siri discovered or invoked an intent.
+- The simulator build checks Swift compilation and the generated intent metadata. Inspect its extracted App Intents metadata and exercise intent bodies from a test harness where practical; a successful build alone does not prove indexing, phrase recognition or actual dialog/snippet behavior in Siri.
+- On a signed real iPhone, install the app, check the actions appear in Shortcuts and Siri, and speak every displayed phrase plus natural variants. Test prompts for missing time, friend name, photo count and dictated note; first-run Photos permission; empty timeline and no shared friends; map directions confirmation; and whether the snippet cards appear and remain readable. Retest after reinstall and on a device without Apple Intelligence. Do not claim these pass from the hidden demo or simulator.
+- `SiriSupport` currently hides Profile's "Use with Siri" row except in demo or when iOS 27 and the Foundation Models language model is available. App Shortcuts and basic Siri invocation are not intrinsically restricted to Apple Intelligence; revisit this UI gate so supported devices are not wrongly told Siri is unavailable. Friends are demo-only until the social backend exists, so friend-streak intent cannot provide real friend data yet.
+
 ## Native phone integrations
 
 - Contacts permission and on-device contact selection/invitation are wired. Validate limited/full access and updates on real iPhones; implement authenticated server-side membership matching before labeling any contact as already on Dayline or enabling actual follow/share requests. Never infer membership from the phone's Contacts app.
