@@ -222,7 +222,7 @@ struct ScoreRing: View {
                 .rotationEffect(.degrees(-90))
             }
             if score > 0 {
-                Circle().fill(colors[0]).frame(width: lineWidth, height: lineWidth)
+                Circle().fill(lowDay ? softStart : colors[0]).frame(width: lineWidth, height: lineWidth)
                     .offset(y: -size / 2)
             }
             Text("\(score)")
