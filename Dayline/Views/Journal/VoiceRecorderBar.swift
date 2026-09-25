@@ -13,12 +13,8 @@ struct VoiceRecorderBar<Tools: View, Leading: View>: View {
     @State private var hintTask: Task<Void, Never>?
     @State private var readyToSend = false
     @State private var sending = false
-    @State private var cancelled = false
-    @State private var pressStarted: Date?
     @State private var startTask: Task<Void, Never>?
-    @State private var pressGeneration = 0
     @State private var recordingUI = false
-    @State private var gestureActive = false
     @State private var player: AVAudioPlayer?
     private let minimumHold: TimeInterval = 0.45
     private let cancelDistance: CGFloat = 75
@@ -103,53 +99,38 @@ struct VoiceRecorderBar<Tools: View, Leading: View>: View {
                         .transition(.scale(scale: 0.2, anchor: .trailing).combined(with: .opacity))
                 }
                 if !readyToSend && !recordingUI && !hintVisible {
-                    Image(systemName: "mic.fill")
-                        .font(.scaled(size: 19, weight: .medium))
-                        .foregroundStyle(.primary)
-                        .frame(width: 48, height: 48)
-                        .glassEffect(.regular.interactive(), in: .circle)
+                    Circle().fill(Color.clear)
+                        .frame(width: 58, height: 58)
+                        .overlay {
+                            Image(systemName: "mic.fill")
+                                .font(.scaled(size: 19, weight: .medium))
+                                .foregroundStyle(.primary)
+                                .frame(width: 48, height: 48)
+                                .glassEffect(.regular.interactive(), in: .circle)
+                                .allowsHitTesting(false)
+                        }
+                        .contentShape(Circle())
                         .transition(.scale(scale: 0.2, anchor: .trailing).combined(with: .opacity))
-                    .simultaneousGesture(DragGesture(minimumDistance: 0)
-                        .onChanged { value in
-                            guard !readyToSend, !recordingUI else { return }
-                            if !gestureActive {
-                                gestureActive = true
-                                cancelled = false; pressStarted = .now
-                                hintTask?.cancel(); hintVisible = false
-                                pressGeneration += 1
-                                let generation = pressGeneration
-                                startTask?.cancel()
+                        .gesture(LongPressGesture(minimumDuration: minimumHold, maximumDistance: cancelDistance)
+                            .onEnded { _ in
+                                guard !readyToSend, !recordingUI else { return }
+                                hintVisible = false
                                 startTask = Task { @MainActor in
-                                    try? await Task.sleep(for: .seconds(minimumHold))
-                                    guard !Task.isCancelled, gestureActive, !cancelled, pressGeneration == generation else { return }
                                     do { try await voice.start() } catch { return }
                                     guard voice.isRecording else { return }
                                     recordingUI = true
                                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                                    if cancelled { voice.cancel(); recordingUI = false }
                                 }
-                            }
-                            if abs(value.translation.width) > cancelDistance || abs(value.translation.height) > cancelDistance {
-                                cancelled = true
-                                startTask?.cancel()
-                                voice.cancel(); recordingUI = false
+                            })
+                        .onTapGesture {
+                            guard !readyToSend, !recordingUI else { return }
+                            hintVisible = true
+                            hintTask?.cancel()
+                            hintTask = Task { @MainActor in
+                                try? await Task.sleep(for: .seconds(1.5))
+                                if !Task.isCancelled { hintVisible = false }
                             }
                         }
-                        .onEnded { _ in
-                            guard !readyToSend else { return }
-                            if recordingUI { gestureActive = false; return }
-                            gestureActive = false; pressGeneration += 1; startTask?.cancel()
-                            let longEnough = pressStarted.map { Date.now.timeIntervalSince($0) >= minimumHold } ?? false
-                            if !longEnough && !cancelled {
-                                voice.cancel(); hintVisible = true
-                                hintTask?.cancel()
-                                hintTask = Task { @MainActor in
-                                    try? await Task.sleep(for: .seconds(1.5))
-                                    if !Task.isCancelled { hintVisible = false }
-                                }
-                            } else if cancelled { voice.cancel() }
-                            // If microphone permission arrives after release, the start task cancels it.
-                        })
                         .accessibilityLabel("Voice memo")
                         .accessibilityHint("Hold to record, then tap Stop to review and send")
                         .accessibilityIdentifier("voiceMic")
@@ -169,7 +150,6 @@ struct VoiceRecorderBar<Tools: View, Leading: View>: View {
 
     private func finishRecording() {
         voice.finishForReview()
-        gestureActive = false
         recordingUI = false
         readyToSend = true
     }
