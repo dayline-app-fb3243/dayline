@@ -756,7 +756,24 @@ final class DemoTourTests: XCTestCase {
             let option = sb.buttons.matching(NSPredicate(format: "label CONTAINS[c] %@", mode)).firstMatch
             XCTAssertTrue(option.waitForExistence(timeout: 5), "\(mode) option missing")
             option.tap(); pause(2)
+            shot("widget-home-\(mode.lowercased())-customize")
+            // A modal Customize sheet obscures the Home Screen. Dismiss it
+            // before taking the picture David will actually review.
+            sb.coordinate(withNormalizedOffset: CGVector(dx: 0.74, dy: 0.55)).tap()
+            pause(0.6)
+            let finish = sb.buttons["Done"].firstMatch
+            if finish.exists { finish.tap() }
+            pause(1)
             shot("widget-home-\(mode.lowercased())-native")
+            if mode != "Light" {
+                sb.coordinate(withNormalizedOffset: CGVector(dx: 0.76, dy: 0.65)).press(forDuration: 1.5)
+                let editAgain = sb.buttons["Edit"].firstMatch
+                XCTAssertTrue(editAgain.waitForExistence(timeout: 4), "Edit missing after dismissing Customize")
+                editAgain.tap()
+                let customizeAgain = sb.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'Customize'")).firstMatch
+                XCTAssertTrue(customizeAgain.waitForExistence(timeout: 4))
+                customizeAgain.tap(); pause(0.5)
+            }
         }
     }
 

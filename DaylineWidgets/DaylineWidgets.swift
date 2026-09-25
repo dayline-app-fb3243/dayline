@@ -65,11 +65,11 @@ struct TodayWidgetView: View {
         case .systemSmall:
             VStack(spacing: 1) {
                 Text("Day score").font(.system(size: 12, weight: .medium)).lineLimit(1)
-                SeamlessWidgetScoreRing(score: s.score, size: 104, width: 31)
+                SeamlessWidgetScoreRing(score: s.score, size: 82, width: 24)
                 Text(s.label).font(.system(size: 10)).foregroundStyle(.secondary).lineLimit(1)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .padding(.vertical, 6)
+            .padding(.vertical, 4)
         default:
             HStack(spacing: 16) {
                 SeamlessWidgetScoreRing(score: s.score, size: 122, width: 34)

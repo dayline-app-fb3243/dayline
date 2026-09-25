@@ -59,6 +59,7 @@ struct DaylineWidgetScoreRing: View {
 /// Approved small and wide Day-score ring: one constant-width rounded stroke.
 /// The score sits inside the stroke's actual endpoint rather than in an overlaid disk.
 struct SeamlessWidgetScoreRing: View {
+    @Environment(\.widgetRenderingMode) private var renderingMode
     let score: Int
     var size: CGFloat = 118
     var width: CGFloat = 34
@@ -84,9 +85,9 @@ struct SeamlessWidgetScoreRing: View {
                 Text("\(score)")
                     .font(.system(size: width * 0.47, weight: .bold, design: .rounded))
                     .minimumScaleFactor(0.7).lineLimit(1).monospacedDigit()
-                    // Widget Accent/Tinted mode can flatten non-accent white text into the ring.
-                    .foregroundStyle(.white)
-                    .widgetAccentable()
+                    // iOS renders the tinted/clear ring white. Keep the endpoint
+                    // numeral dark there so it remains distinct from the stroke.
+                    .foregroundStyle(renderingMode == .accented ? .black : .white)
                     .frame(width: width * 0.9)
                     .offset(x: radius * cos(angle), y: radius * sin(angle))
             }
