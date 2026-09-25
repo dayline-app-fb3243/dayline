@@ -321,16 +321,16 @@ struct DayActivityList: View {
             entry.placeName == "Apple Health" || !covered(entry.date)
         }
         for j in visibleJournal where j.placeName == "Apple Health" {
-                // A workout from Apple Health: "Run · 5.2 km · 31 min".
-                let parts = j.text.components(separatedBy: " · ")
-                let kind = parts.first ?? "Workout"
-                let sym = ["Run": "figure.run", "Walk": "figure.walk", "Ride": "figure.outdoor.cycle", "Swim": "figure.pool.swim",
-                           "Yoga": "figure.yoga"][kind] ?? "figure.strengthtraining.traditional"
-                let mins = Int(parts.last?.components(separatedBy: " ").first ?? "") ?? 30
-                out.append(Row(id: "w-\(j.date.timeIntervalSince1970)", time: j.date, title: kind,
-                               detail: parts.dropFirst().joined(separator: " · ") + " · Apple Health", isNow: false, symbol: sym,
-                               end: j.date.addingTimeInterval(Double(mins) * 60), kind: .plan,
-                               note: "From Apple Health. It counts as something good today, so it won back points on your ring."))
+            // A workout from Apple Health: "Run · 5.2 km · 31 min".
+            let parts = j.text.components(separatedBy: " · ")
+            let kind = parts.first ?? "Workout"
+            let sym = ["Run": "figure.run", "Walk": "figure.walk", "Ride": "figure.outdoor.cycle", "Swim": "figure.pool.swim",
+                       "Yoga": "figure.yoga"][kind] ?? "figure.strengthtraining.traditional"
+            let mins = Int(parts.last?.components(separatedBy: " ").first ?? "") ?? 30
+            out.append(Row(id: "w-\(j.date.timeIntervalSince1970)", time: j.date, title: kind,
+                           detail: parts.dropFirst().joined(separator: " · ") + " · Apple Health", isNow: false, symbol: sym,
+                           end: j.date.addingTimeInterval(Double(mins) * 60), kind: .plan,
+                           note: "From Apple Health. It counts as something good today, so it won back points on your ring."))
         }
         let groups = JournalGroup.make(eligibleJournal.filter { $0.placeName != "Apple Health" }
             .sorted { $0.date > $1.date }, visits: visits)
