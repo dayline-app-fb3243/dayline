@@ -472,7 +472,7 @@ struct SearchPlaceView: View {
     }
     private var design: Int {
         let args = ProcessInfo.processInfo.arguments
-        guard let i = args.firstIndex(of: "-placeDesign"), i + 1 < args.count else { return 1 }
+        guard let i = args.firstIndex(of: "-placeDesign"), i + 1 < args.count else { return 17 }
         return Int(args[i + 1]) ?? 1
     }
     private var phoneURL: URL? { recalled?.phoneURL ?? match?.phoneNumber.flatMap { number in
@@ -508,12 +508,12 @@ struct SearchPlaceView: View {
         }
     }
     private var actionHeight: CGFloat {
-        switch design { case 14: 44; case 15: 42; case 16: 40; default: 50 }
+        switch design { case 14: 44; case 15, 17: 42; case 16: 40; default: 50 }
     }
     private var actionFont: Font {
-        switch design { case 14: .subheadline.weight(.medium); case 15: .subheadline.weight(.regular); case 16: .footnote.weight(.medium); default: .headline }
+        switch design { case 14: .subheadline.weight(.medium); case 15, 17: .subheadline.weight(.regular); case 16: .footnote.weight(.medium); default: .headline }
     }
-    private var actionSpacing: CGFloat { design == 16 ? 8 : 10 }
+    private var actionSpacing: CGFloat { design == 17 ? 3 : (design == 16 ? 8 : 10) }
     private var actionRow: some View {
         HStack(spacing: actionSpacing) {
             directions
@@ -560,7 +560,7 @@ struct SearchPlaceView: View {
             actionRow
             Text("Photos").font(.headline)
             combinedPhoto
-        case 10, 14, 15, 16:
+        case 10, 14, 15, 16, 17:
             Text(hit.place).font(.largeTitle.weight(.regular))
             Text(visitLabel).font(.subheadline).foregroundStyle(.secondary)
             placeMap
@@ -712,7 +712,7 @@ struct SearchPlaceView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 switch design {
-                case 9...16: combinedPage
+                case 9...17: combinedPage
                 case 4: photoFirstPage
                 case 5: mapFocusPage
                 case 6: journalPage
