@@ -21,13 +21,6 @@ struct WeekWidgetContent: View {
                         Capsule()
                             .fill(score < 45 ? Color.orange : blue(for: score))
                             .frame(height: max(23, CGFloat(score) * 0.55))
-                            .overlay {
-                                Text("\(score)")
-                                    .font(.system(size: 10, weight: .semibold, design: .rounded).monospacedDigit())
-                                    .minimumScaleFactor(0.7).lineLimit(1)
-                                    .foregroundStyle(score < 45 || score < 72 ? Color.black.opacity(0.85) : .white)
-                                    .padding(.horizontal, 1)
-                            }
                         Text(["S", "M", "T", "W", "T", "F", "S"][i])
                             .font(.system(.caption2, design: .default)).foregroundStyle(.secondary)
                     }
