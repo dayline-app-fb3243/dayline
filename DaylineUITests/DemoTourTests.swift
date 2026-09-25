@@ -751,7 +751,7 @@ final class DemoTourTests: XCTestCase {
         }
         let widget = sb.icons.matching(NSPredicate(format: "label ==[c] 'Dayline' AND value ==[c] 'Widget'")).firstMatch
         XCTAssertTrue(widget.waitForExistence(timeout: 8), "Installed widget missing")
-        shot("widget-home-default-native")
+        shot("widget-option-\(variant)-home-default-native")
         sb.coordinate(withNormalizedOffset: CGVector(dx: 0.76, dy: 0.65)).press(forDuration: 1.5)
         pause(0.5)
         let edit = sb.buttons["Edit"].firstMatch
@@ -760,12 +760,12 @@ final class DemoTourTests: XCTestCase {
         let customize = sb.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'Customize'")).firstMatch
         XCTAssertTrue(customize.waitForExistence(timeout: 4), "Home Screen Customize missing")
         customize.tap(); pause(1)
-        shot("widget-home-customize-sheet")
+        shot("widget-option-\(variant)-home-customize-sheet")
         for mode in ["Dark", "Tinted", "Clear", "Light"] {
             let option = sb.buttons.matching(NSPredicate(format: "label CONTAINS[c] %@", mode)).firstMatch
             XCTAssertTrue(option.waitForExistence(timeout: 5), "\(mode) option missing")
             option.tap(); pause(2)
-            shot("widget-home-\(mode.lowercased())-customize")
+            shot("widget-option-\(variant)-home-\(mode.lowercased())-customize")
             // A modal Customize sheet obscures the Home Screen. Dismiss it
             // before taking the picture David will actually review.
             sb.coordinate(withNormalizedOffset: CGVector(dx: 0.74, dy: 0.25)).tap()
@@ -773,7 +773,7 @@ final class DemoTourTests: XCTestCase {
             let finish = sb.buttons["Done"].firstMatch
             if finish.exists { finish.tap() }
             pause(1)
-            shot("widget-home-\(mode.lowercased())-native")
+            shot("widget-option-\(variant)-home-\(mode.lowercased())-native")
             if mode != "Light" {
                 sb.coordinate(withNormalizedOffset: CGVector(dx: 0.76, dy: 0.65)).press(forDuration: 1.5)
                 let editAgain = sb.buttons["Edit"].firstMatch
