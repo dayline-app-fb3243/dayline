@@ -796,7 +796,9 @@ final class DemoTourTests: XCTestCase {
         let field = app.textFields["searchField"]
         XCTAssertTrue(field.waitForExistence(timeout: 5))
         field.tap(); field.typeText("where was I 4 days ago")
-        app.keyboards.buttons["search"].firstMatch.tap()
+        let submit = app.keyboards.buttons["search"].firstMatch
+        if submit.waitForExistence(timeout: 3) { submit.tap() }
+        else { field.typeText("\n") }
         XCTAssertFalse(app.keyboards.firstMatch.waitForExistence(timeout: 2), "Search must dismiss keyboard")
         pause(5); shot("search-submit-photo-rows")
     }
