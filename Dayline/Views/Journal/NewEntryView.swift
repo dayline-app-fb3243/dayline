@@ -201,28 +201,15 @@ struct NewEntryView: View {
     // MARK: pieces
 
     /// Separate small glass buttons: camera and library on the left, mic on the right (like Messages).
-    /// Preview flag "editor.buttons" (David picking, Sep 24): now = outline symbols, B = filled symbols, C = camera + photos in one glass pill.
-    @AppStorage("editor.buttons") private var buttonStyle = "B"
     private var cameraOK: Bool { UIImagePickerController.isSourceTypeAvailable(.camera) || ProcessInfo.processInfo.arguments.contains("-demo") }
 
     private var addBar: some View {
         GlassEffectContainer(spacing: 10) {
             HStack(spacing: 10) {
-                if buttonStyle == "C" {
-                    HStack(spacing: 0) {
-                        pillButton("camera.fill", "Take photo") { camera = .photo }.disabled(!cameraOK)
-                            .contextMenu { cameraMenu }
-                        Divider().frame(height: 22)
-                        pillButton("photo.fill", "Photo and video library") { showLibrary = true }
-                    }
-                    .glassEffect(.regular.interactive(), in: .capsule)
-                } else {
-                    let filled = buttonStyle == "B"
-                    circleButton(filled ? "camera.fill" : "camera", "Take photo") { camera = .photo }
-                        .disabled(!cameraOK)
-                        .contextMenu { cameraMenu }
-                    circleButton(filled ? "photo.fill" : "photo.on.rectangle", "Photo and video library") { showLibrary = true }
-                }
+                circleButton("camera.fill", "Take photo") { camera = .photo }
+                    .disabled(!cameraOK)
+                    .contextMenu { cameraMenu }
+                circleButton("photo.fill", "Photo and video library") { showLibrary = true }
                 Spacer(minLength: 0)
                 // Touch and hold (handled by VoiceRecorderBar, which sits over this spot).
                 Image(systemName: "mic.fill").font(.scaled(size: 20, weight: .regular)).foregroundStyle(Theme.accent)
@@ -236,15 +223,6 @@ struct NewEntryView: View {
     @ViewBuilder private var cameraMenu: some View {
         Button("Take Photo", systemImage: "camera") { camera = .photo }
         Button("Record Video", systemImage: "video") { camera = .video }
-    }
-
-    private func pillButton(_ symbol: String, _ label: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: symbol).font(.scaled(size: 19, weight: .regular)).foregroundStyle(Theme.accent)
-                .frame(width: 52, height: 48).contentShape(.rect)
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(label)
     }
 
     private func circleButton(_ symbol: String, _ label: String, action: @escaping () -> Void) -> some View {
