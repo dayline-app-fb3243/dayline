@@ -109,14 +109,6 @@ final class DemoTourTests: XCTestCase {
         shot("native-notification-banner")
     }
 
-    func testDemoBannerPopIn() throws {
-        let app = XCUIApplication()
-        app.launchArguments = ["-demo", "-demoBannerNow"]
-        app.launch()
-        XCTAssertTrue(app.descendants(matching: .any)["demoNotificationBanner"].firstMatch.waitForExistence(timeout: 8))
-        shot("demo-notification-pop-in")
-    }
-
     func testAllNotificationPreviews() throws {
         let app = XCUIApplication()
         let spring = XCUIApplication(bundleIdentifier: "com.apple.springboard")
@@ -975,7 +967,7 @@ final class DemoTourTests: XCTestCase {
     /// Steps page (picked: Health-style chart), opened from the Steps tile: D and W.
     func testStepsPage() throws {
         let app = XCUIApplication()
-        app.launchArguments = ["-demo", "-demoNoBanner"]
+        app.launchArguments = ["-demo"]
         app.launch(); pause(1.5)
         tapID(app, "stepsTile"); pause(2); shot("sp1-day")
         tapSegment(app, "W"); pause(1.5); shot("sp2-week")
@@ -1259,7 +1251,7 @@ final class DemoTourTests: XCTestCase {
     /// Dark-mode surface hierarchy: black canvas, lighter grouped cards across five tabs.
     func testInsightsDayDark() throws {
         let app = XCUIApplication()
-        app.launchArguments = ["-demo", "-demoNoBanner"]
+        app.launchArguments = ["-demo"]
         app.launch()
         tab(app, "Insights")
         tapSegment(app, "Day")
