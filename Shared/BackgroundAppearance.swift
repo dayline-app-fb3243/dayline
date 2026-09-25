@@ -88,6 +88,8 @@ struct SharedBackgroundCanvas: View {
 
 /// Appearance data is shared independently of the score timeline, so changing wallpaper reloads immediately.
 enum SharedBackgroundStore {
+    static let syncKey = "background.widgetSync"
+    static var syncEnabled: Bool { defaults.bool(forKey: syncKey) }
     static let presetKey = "background.preset"
     static let styleKey = "background.style"
     static var defaults: UserDefaults { UserDefaults(suiteName: "group.app.dayline.shared") ?? .standard }

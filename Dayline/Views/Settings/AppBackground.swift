@@ -17,8 +17,10 @@ enum BackgroundStore {
         let resized = UIGraphicsImageRenderer(size: size).image { _ in image.draw(in: CGRect(origin: .zero, size: size)) }
         if let jpeg = resized.jpegData(compressionQuality: 0.85) {
             try? jpeg.write(to: photoURL)
-            if let shared = SharedBackgroundStore.photoURL { try? jpeg.write(to: shared) }
-            WidgetCenter.shared.reloadAllTimelines()
+            if SharedBackgroundStore.syncEnabled, let shared = SharedBackgroundStore.photoURL {
+                try? jpeg.write(to: shared)
+                WidgetCenter.shared.reloadAllTimelines()
+            }
         }
     }
     static func load() -> UIImage? { UIImage(contentsOfFile: photoURL.path()) }
@@ -46,6 +48,7 @@ struct BackgroundPickerView: View {
     @AppStorage("background.style") private var styleRaw = PhotoStyle.blur.rawValue
     @AppStorage("background.version") private var version = 0
     @State private var pick: PhotosPickerItem?
+    @AppStorage("background.widgetSync") private var syncWidget = false
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 12), count: 4)
 
     var body: some View {
@@ -95,6 +98,13 @@ struct BackgroundPickerView: View {
                     }
                     .pickerStyle(.segmented)
                 }
+                Toggle("Sync widget", isOn: $syncWidget)
+                    .font(.body)
+                    .padding(16)
+                    .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: Theme.cardRadius))
+                    .accessibilityIdentifier("syncWidgetToggle")
+                Text("Use this background on your Home Screen widgets too.")
+                    .font(.footnote).foregroundStyle(.secondary).padding(.horizontal, 12)
             }
             .padding(.horizontal, 18).padding(.bottom, 30)
         }
@@ -103,13 +113,28 @@ struct BackgroundPickerView: View {
         .backgroundNavBar()
         .navigationBarTitleDisplayMode(.inline)
         .toolbarVisibility(.hidden, for: .tabBar)
-        .onChange(of: presetRaw) { _, value in
-            SharedBackgroundStore.defaults.set(value, forKey: SharedBackgroundStore.presetKey)
+        .onChange(of: syncWidget) { _, value in
+            SharedBackgroundStore.defaults.set(value, forKey: SharedBackgroundStore.syncKey)
+            if value {
+                SharedBackgroundStore.defaults.set(presetRaw, forKey: SharedBackgroundStore.presetKey)
+                SharedBackgroundStore.defaults.set(styleRaw, forKey: SharedBackgroundStore.styleKey)
+                if let data = try? Data(contentsOf: BackgroundStore.photoURL), let shared = SharedBackgroundStore.photoURL {
+                    try? data.write(to: shared)
+                }
+            }
             WidgetCenter.shared.reloadAllTimelines()
         }
+        .onChange(of: presetRaw) { _, value in
+            if syncWidget {
+                SharedBackgroundStore.defaults.set(value, forKey: SharedBackgroundStore.presetKey)
+                WidgetCenter.shared.reloadAllTimelines()
+            }
+        }
         .onChange(of: styleRaw) { _, value in
-            SharedBackgroundStore.defaults.set(value, forKey: SharedBackgroundStore.styleKey)
-            WidgetCenter.shared.reloadAllTimelines()
+            if syncWidget {
+                SharedBackgroundStore.defaults.set(value, forKey: SharedBackgroundStore.styleKey)
+                WidgetCenter.shared.reloadAllTimelines()
+            }
         }
         .onChange(of: pick) { _, item in
             Task {

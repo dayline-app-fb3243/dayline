@@ -6,6 +6,7 @@ struct WidgetDesignGalleryView: View {
     let page: Int
     private let friends = DaylineWidgetFriend.preview
     private var dark: Bool { page == 2 }
+    private var syncPreview: Bool { ProcessInfo.processInfo.arguments.contains("-widgetSync") }
     private var preset: BackgroundPreset {
         let a = ProcessInfo.processInfo.arguments
         guard let i = a.firstIndex(of: "-background"), i + 1 < a.count else { return .system }
@@ -33,6 +34,9 @@ struct WidgetDesignGalleryView: View {
     }
     private func card<C: View>(_ width: CGFloat, _ height: CGFloat, @ViewBuilder content: () -> C) -> some View {
         content().padding(14).frame(width: width, height: height)
-            .background(SharedBackgroundCanvas(preset: preset, style: .blur, photo: nil), in: .rect(cornerRadius: 24))
+            .background {
+                if syncPreview { SharedBackgroundCanvas(preset: preset, style: .blur, photo: nil).clipShape(.rect(cornerRadius: 24)) }
+                else { Color(.secondarySystemGroupedBackground).clipShape(.rect(cornerRadius: 24)) }
+            }
     }
 }

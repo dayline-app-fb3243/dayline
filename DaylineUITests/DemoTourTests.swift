@@ -929,9 +929,22 @@ final class DemoTourTests: XCTestCase {
         app.launch(); pause(1.3)
         shot("wallpaper-sunset-app")
         app.terminate()
-        app.launchArguments = ["-demo", "-background", "sunset", "-widgetDesign", "14", "-widgetPage", "1"]
+        app.launchArguments = ["-demo", "-background", "sunset", "-widgetDesign", "14", "-widgetPage", "1", "-widgetSync"]
         app.launch(); pause(1.2)
         shot("wallpaper-sunset-widget")
+    }
+
+    /// Opt-in toggle is off by default and can be switched on from the picker.
+    func testWidgetSyncToggle() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo", "-background", "sunset", "-background.widgetSync", "NO"]
+        app.launch(); pause(1)
+        tab(app, "Profile"); pause(0.8)
+        tapID(app, "backgroundRow"); pause(1)
+        app.swipeUp(); pause(0.5)
+        shot("widget-sync-off")
+        let toggle = app.switches["Sync widget"]
+        if toggle.waitForExistence(timeout: 3) { toggle.tap(); pause(0.6); shot("widget-sync-on") }
     }
 
     /// Four genuinely different icon treatments on the same Day score factor rows.

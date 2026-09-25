@@ -51,7 +51,9 @@ struct TodayWidget: Widget {
         StaticConfiguration(kind: "TodayWidget", provider: DayProvider()) { entry in
             TodayWidgetView(entry: entry)
                 .containerBackground(for: .widget) {
-                    SharedBackgroundCanvas(preset: SharedBackgroundStore.preset(), style: SharedBackgroundStore.style(), photo: SharedBackgroundStore.photo())
+                    if SharedBackgroundStore.syncEnabled {
+                        SharedBackgroundCanvas(preset: SharedBackgroundStore.preset(), style: SharedBackgroundStore.style(), photo: SharedBackgroundStore.photo())
+                    } else { Color(.secondarySystemGroupedBackground) }
                 }
                 .widgetURL(URL(string: "dayline://today"))
         }
@@ -78,7 +80,9 @@ struct StreakWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: "StreakWidget", provider: DayProvider()) { entry in
             StreakWidgetView(entry: entry).containerBackground(for: .widget) {
-                SharedBackgroundCanvas(preset: SharedBackgroundStore.preset(), style: SharedBackgroundStore.style(), photo: SharedBackgroundStore.photo())
+                if SharedBackgroundStore.syncEnabled {
+                    SharedBackgroundCanvas(preset: SharedBackgroundStore.preset(), style: SharedBackgroundStore.style(), photo: SharedBackgroundStore.photo())
+                } else { Color(.secondarySystemGroupedBackground) }
             }
                 .widgetURL(URL(string: "dayline://streak"))
         }
