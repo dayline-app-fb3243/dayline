@@ -1109,7 +1109,7 @@ final class DemoTourTests: XCTestCase {
         shot("journal-mic-composer")
     }
 
-    /// Hold, slide up to lock, and capture the same bar in its live recording state.
+    /// Hold the microphone, then release to attach or slide away to cancel.
     func testJournalAudioBarRecording() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-demo"]
@@ -1117,9 +1117,8 @@ final class DemoTourTests: XCTestCase {
         tab(app, "Journal"); pause(1)
         tapID(app, "newEntry"); pause(1)
         let mic = app.descendants(matching: .any)["voiceMic"].firstMatch
-        let start = mic.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
-        let lock = mic.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: -1.7))
-        start.press(forDuration: 1.2, thenDragTo: lock)
+        XCTAssertTrue(mic.waitForExistence(timeout: 4))
+        mic.press(forDuration: 1.2)
         let allow = XCUIApplication(bundleIdentifier: "com.apple.springboard").buttons["Allow"]
         if allow.waitForExistence(timeout: 3) {
             allow.tap(); pause(0.7)

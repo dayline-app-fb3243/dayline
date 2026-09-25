@@ -49,9 +49,10 @@ struct VoiceBubble: View {
                 Text("\u{201C}\(words)\u{201D}").font(.subheadline).foregroundStyle(.white)
                     .padding(.top, 8).padding(.leading, 6)
             }
-            Text(transcribed ? "Transcribed" : failed ? "Transcript unavailable" : "Transcribing…")
-                .font(.caption.weight(.semibold)).foregroundStyle(.white.opacity(0.75))
-                .padding(.top, 4).padding(.leading, 6)
+            if !words.isEmpty && transcribed {
+                Text("Transcribed").font(.caption.weight(.semibold)).foregroundStyle(.white.opacity(0.75))
+                    .padding(.top, 4).padding(.leading, 6)
+            }
         }
         .padding(EdgeInsets(top: 8, leading: 8, bottom: 12, trailing: 14))
         .frame(maxWidth: 290, alignment: .leading)
