@@ -98,6 +98,22 @@ final class DemoTourTests: XCTestCase {
     }
 
 
+    func testCheckLocationInteractionVideo() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo", "-appearance", "light"]
+        app.launch(); pause(1)
+        tab(app, "Profile"); pause(1)
+        tapID(app, "checkLocationRow"); pause(3)
+        shot("location-before-interval")
+        tapID(app, "check-10"); pause(1)
+        shot("location-after-ten-minutes")
+        let thumbnail = app.descendants(matching: .any)["thumb-10"].firstMatch
+        XCTAssertTrue(thumbnail.waitForExistence(timeout: 5))
+        thumbnail.tap(); pause(0.8)
+        XCTAssertTrue(app.descendants(matching: .any)["bigCard"].firstMatch.exists)
+        shot("location-enlarged-map")
+    }
+
     func testJournalReminderToggle() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-demo"]

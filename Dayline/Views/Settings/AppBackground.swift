@@ -492,10 +492,15 @@ struct CheckLocationView: View {
     @AppStorage(LocationService.intervalKey) private var minutes = 5
     /// A mini iPhone at the right of each row shows the day route at that rate; tap to zoom it up.
     @State private var enlarged: Int?
+    @State private var showingPreview = false
     /// Each preview is a mini iPhone screen (David: like Apple's Tips app examples), tap to enlarge.
     private func thumb(_ m: Int, w: CGFloat, h: CGFloat) -> some View {
         MiniPhoneRoute(minutes: m, width: w)
-            .contentShape(.rect).onTapGesture { withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) { enlarged = m } }
+            .contentShape(.rect).onTapGesture {
+                enlarged = m
+                // Let the overlay's map mount at full size before animating its opacity and scale.
+                DispatchQueue.main.async { withAnimation(.smooth(duration: 0.34)) { showingPreview = true } }
+            }
             .accessibilityIdentifier("thumb-\(m)")
     }
     private let options: [(Int, String, String, String)] = [
@@ -519,12 +524,14 @@ struct CheckLocationView: View {
                                     VStack(alignment: .leading, spacing: 1) {
                                         Text(o.1).font(.body).foregroundStyle(.primary)
                                         Text(o.2).font(.subheadline).foregroundStyle(.secondary)
+                                            .lineLimit(2).frame(height: 38, alignment: .topLeading)
                                         Text("About \(o.3) battery a day").font(.subheadline).foregroundStyle(.secondary)
                                     }
-                                    Spacer()
-                                    if minutes == o.0 {
-                                        Image(systemName: "checkmark").font(.body.weight(.semibold)).foregroundStyle(Theme.accent)
-                                    }
+                                    Spacer(minLength: 8)
+                                    Image(systemName: "checkmark")
+                                        .font(.body.weight(.semibold)).foregroundStyle(Theme.accent)
+                                        .opacity(minutes == o.0 ? 1 : 0)
+                                        .frame(width: 20)
                                     thumb(o.0, w: 44, h: 0)
                                 }
                                 .padding(.horizontal, 18).padding(.vertical, 11)
@@ -545,11 +552,15 @@ struct CheckLocationView: View {
         .overlay {
             if let m = enlarged {
                 ZStack {
-                    Color.black.opacity(0.55).ignoresSafeArea()
+                    Color.black.opacity(showingPreview ? 0.55 : 0).ignoresSafeArea()
                     IntervalRouteCard(minutes: m)
+                        .scaleEffect(showingPreview ? 1 : 0.88)
+                        .opacity(showingPreview ? 1 : 0)
                 }
-                .onTapGesture { withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) { enlarged = nil } }
-                .transition(.opacity.combined(with: .scale(scale: 0.92)))
+                .onTapGesture {
+                    withAnimation(.smooth(duration: 0.28)) { showingPreview = false }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.28) { enlarged = nil }
+                }
                 .accessibilityIdentifier("bigCard")
             }
         }
