@@ -11,7 +11,6 @@ struct VoiceRecorderBar<Tools: View, Leading: View>: View {
 
     @State private var hintVisible = false
     @State private var hintTask: Task<Void, Never>?
-    @State private var holding = false
     @State private var readyToSend = false
     @State private var sending = false
     @State private var cancelled = false
@@ -19,6 +18,7 @@ struct VoiceRecorderBar<Tools: View, Leading: View>: View {
     @State private var startTask: Task<Void, Never>?
     @State private var pressGeneration = 0
     @State private var recordingUI = false
+    @State private var gestureActive = false
     @State private var player: AVAudioPlayer?
     private let minimumHold: TimeInterval = 0.45
     private let cancelDistance: CGFloat = 75
@@ -109,18 +109,19 @@ struct VoiceRecorderBar<Tools: View, Leading: View>: View {
                         .frame(width: 48, height: 48)
                         .glassEffect(.regular.interactive(), in: .circle)
                         .transition(.scale(scale: 0.2, anchor: .trailing).combined(with: .opacity))
-                    .gesture(DragGesture(minimumDistance: 0)
+                    .simultaneousGesture(DragGesture(minimumDistance: 0)
                         .onChanged { value in
                             guard !readyToSend, !recordingUI else { return }
-                            if !holding {
-                                holding = true; cancelled = false; pressStarted = .now
+                            if !gestureActive {
+                                gestureActive = true
+                                cancelled = false; pressStarted = .now
                                 hintTask?.cancel(); hintVisible = false
                                 pressGeneration += 1
                                 let generation = pressGeneration
                                 startTask?.cancel()
                                 startTask = Task { @MainActor in
                                     try? await Task.sleep(for: .seconds(minimumHold))
-                                    guard !Task.isCancelled, holding, !cancelled, pressGeneration == generation else { return }
+                                    guard !Task.isCancelled, gestureActive, !cancelled, pressGeneration == generation else { return }
                                     do { try await voice.start() } catch { return }
                                     guard voice.isRecording else { return }
                                     recordingUI = true
@@ -136,8 +137,8 @@ struct VoiceRecorderBar<Tools: View, Leading: View>: View {
                         }
                         .onEnded { _ in
                             guard !readyToSend else { return }
-                            if recordingUI { holding = false; return }
-                            holding = false; pressGeneration += 1; startTask?.cancel()
+                            if recordingUI { gestureActive = false; return }
+                            gestureActive = false; pressGeneration += 1; startTask?.cancel()
                             let longEnough = pressStarted.map { Date.now.timeIntervalSince($0) >= minimumHold } ?? false
                             if !longEnough && !cancelled {
                                 voice.cancel(); hintVisible = true
@@ -168,6 +169,7 @@ struct VoiceRecorderBar<Tools: View, Leading: View>: View {
 
     private func finishRecording() {
         voice.finishForReview()
+        gestureActive = false
         recordingUI = false
         readyToSend = true
     }
