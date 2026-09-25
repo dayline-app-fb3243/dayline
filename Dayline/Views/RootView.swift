@@ -13,7 +13,11 @@ struct RootView: View {
             Tab("Timeline", systemImage: "mappin", value: AppTab.timeline) { TimelineScreen().tint(ChromeStyle.tint) }
             Tab("Insights", systemImage: "chart.bar", value: AppTab.insights) { InsightsView(showStreak: $showStreak).tint(ChromeStyle.tint) }
             Tab("Journal", systemImage: "doc.text", value: AppTab.journal) { JournalView().tint(ChromeStyle.tint) }
-            Tab("Profile", systemImage: "person", value: AppTab.profile) { NavigationStack { ProfileView() }.tint(ChromeStyle.tint) }
+            if FriendsEntry.style == 1 {
+                Tab("Friends", systemImage: "person.2", value: AppTab.profile) { FriendsTab().tint(ChromeStyle.tint) }
+            } else {
+                Tab("Profile", systemImage: "person", value: AppTab.profile) { NavigationStack { ProfileView() }.tint(ChromeStyle.tint) }
+            }
         }
         // The tab bar stays put on every tab page; only detail screens hide it.
         .tabBarMinimizeBehavior(.never)

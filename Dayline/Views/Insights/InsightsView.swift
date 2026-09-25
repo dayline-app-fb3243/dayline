@@ -16,7 +16,11 @@ struct InsightsView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
                     TabTitle("Insights")
-                    CapsuleSegmented(selection: $range, options: InsightRange.allCases.map { ($0, $0.rawValue) }, plain: true).glassEffect(.regular, in: .capsule)
+                    if FriendsEntry.style == 5 {
+                        TodayStreakCard()
+                        TodayFriendsRow()
+                    }
+                    CapsuleSegmented(selection: $range, options: InsightRange.allCases.map { ($0, $0.rawValue) })
                     switch range {
                     case .day: classicDayView
                     case .month: monthView

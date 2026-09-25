@@ -22,7 +22,9 @@ struct TodayView: View {
                     header
                     LocationOffCard()
                     if TodayStepsNextTiles.ringStyle != 5 { scoreLink }
+                    if FriendsEntry.style == 3 { TodayStreakCard() }
                     TodayStepsNextTiles(result: result)
+                    if FriendsEntry.style == 2 { TodayFriendsRow() }
                     scheduleSection
                 }
                 .padding(.horizontal, 18)
@@ -40,6 +42,22 @@ struct TodayView: View {
             .accessibilityIdentifier("scoreCard")
     }
 
+    /// Friends button (option 4) or your picture that opens Profile (option 1, when Friends is a tab).
+    @ViewBuilder private var headerButton: some View {
+        switch FriendsEntry.style {
+        case 4:
+            NavigationLink { StreakView() } label: {
+                Image(systemName: "person.2.fill").font(.body).foregroundStyle(Theme.accent).frame(width: 44, height: 44)
+            }
+            .buttonStyle(.plain).glassEffect(.regular.interactive(), in: .circle)
+            .accessibilityLabel("Friends").accessibilityIdentifier("friendsEntry")
+        case 1:
+            NavigationLink { ProfileView() } label: { PersonAvatar(name: AuthService.shared.displayName, size: 40) }
+                .buttonStyle(.plain).accessibilityLabel("Profile")
+        default: EmptyView()
+        }
+    }
+
     private var header: some View {
         // Re-checks every minute so the greeting flips on its own while the app is open.
         TimelineView(.everyMinute) { ctx in
@@ -50,6 +68,8 @@ struct TodayView: View {
                     .contentTransition(.opacity)
                     .accessibilityIdentifier("todayGreeting")
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .overlay(alignment: .bottomTrailing) { headerButton }
             .padding(.top, 2)
         }
     }

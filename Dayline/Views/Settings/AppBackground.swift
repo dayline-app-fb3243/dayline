@@ -229,169 +229,19 @@ struct SectionHeader: View {
 }
 
 /// Fully rounded (pill) segmented control, to match the rest of the app's shapes.
+/// Day / Week / Month / Year switcher: Apple's own segmented control, so pressing and sliding the
+/// selection gets the same Liquid Glass lens (lift, stretch, squish, bounce) as the tab bar.
+/// Selected word in theme blue, like the selected tab.
 struct CapsuleSegmented<Value: Hashable>: View {
     @Binding var selection: Value
     var options: [(Value, String)]
-    /// No track behind it (used inside a glass capsule).
-    var plain = false
-    @Namespace private var ns
-    /// Preview flag pill.style = "flat" (awaiting David's OK): plain gray highlight at rest,
-    /// Liquid Glass only while the pill is moving or being dragged, like the tab bar.
-    @State private var moving = false
-    @State private var width: CGFloat = 0
-    private var flat: Bool { (UserDefaults.standard.string(forKey: "pill.style") ?? "flat") == "flat" }
-    private var showGlass: Bool { moving || UserDefaults.standard.bool(forKey: "pill.forceMoving") }
-    /// Preview flag "pill.jelly" (awaiting David's pick): while sliding, the glass lens grows past the bar
-    /// and stretches wide then squishes narrow, like the Find My tab bar. A = subtle, B = like Find My, C = strong.
-    @State private var stretch: CGFloat = 0
-    private var jelly: String { UserDefaults.standard.string(forKey: "pill.jelly") ?? "" }
-    private var jellyParams: (scale: CGFloat, maxStretch: CGFloat, damping: Double) {
-        switch jelly { case "A": (1.08, 0.22, 0.7); case "B": (1.22, 0.45, 0.55); case "C": (1.32, 0.7, 0.42); default: (1.1, 0, 1) }
-    }
-    private var shownStretch: CGFloat {
-        let forced = UserDefaults.standard.double(forKey: "pill.forceStretch")
-        return forced != 0 ? forced * jellyParams.maxStretch : stretch
-    }
-
     var body: some View {
-        if UserDefaults.standard.bool(forKey: "pill.native") {
-            // Preview flag "pill.native": the system segmented control,
-            // so the Liquid Glass lens, stretch, squish and edge bounce are Apple's own.
-            // Selected word in theme blue, like the selected tab in the tab bar.
-            let _ = segmentedSelectedTint
-            Picker("", selection: $selection) {
-                ForEach(options, id: \.0) { value, title in Text(title).tag(value) }
-            }
-            .pickerStyle(.segmented)
-            .controlSize(.large)
-            .padding(plain ? 3 : 0)
-        } else if plain && flat {
-            flatBody
-        } else if plain {
-            // Inside a glass bar: the selected item is a real Liquid Glass lens that morphs between options.
-            // The labels sit on top of the lens (not inside the glass), so the selected word stays sharp,
-            // and it turns blue like the selected tab in the tab bar (David).
-            ZStack {
-                GlassEffectContainer(spacing: 0) {
-                    HStack(spacing: 0) {
-                        ForEach(options, id: \.0) { value, _ in
-                            Color.clear.frame(maxWidth: .infinity, maxHeight: .infinity)
-                                .background {
-                                    if selection == value {
-                                        Color.clear
-                                            .glassEffect(.regular.tint(UserDefaults.standard.string(forKey: "pill.style") == "gray" ? Color.primary.opacity(0.08) : Theme.accent.opacity(0.12)).interactive(), in: .capsule) // preview flag pill.style: "gray" = neutral pill (awaiting David OK)
-                                            .glassEffectID("pill", in: ns)
-                                    }
-                                }
-                        }
-                    }
-                }
-                HStack(spacing: 0) {
-                    ForEach(options, id: \.0) { value, title in
-                        Button { withAnimation(.snappy) { selection = value } } label: {
-                            Text(title).font(.subheadline.weight(.semibold))
-                                .foregroundStyle(selection == value ? Theme.accent : Color.primary)
-                                .frame(maxWidth: .infinity).padding(.vertical, 8)
-                                .contentShape(.capsule)
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityAddTraits(selection == value ? .isSelected : [])
-                    }
-                }
-            }
-            .fixedSize(horizontal: false, vertical: true)
-            .padding(3)
-        } else {
-            solid
+        let _ = segmentedSelectedTint
+        Picker("", selection: $selection) {
+            ForEach(options, id: \.0) { value, title in Text(title).tag(value) }
         }
-    }
-
-    private func pick(_ value: Value) {
-        moving = true
-        if !jelly.isEmpty {
-            let from = options.firstIndex { $0.0 == selection } ?? 0
-            let to = options.firstIndex { $0.0 == value } ?? 0
-            let p = jellyParams
-            withAnimation(.easeOut(duration: 0.12)) { stretch = min(p.maxStretch, CGFloat(abs(to - from)) * p.maxStretch * 0.5) }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.14) {
-                withAnimation(.spring(response: 0.45, dampingFraction: p.damping)) { stretch = 0 }
-            }
-            withAnimation(.spring(response: 0.4, dampingFraction: p.damping)) { selection = value }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { withAnimation(.easeOut(duration: 0.25)) { moving = false } }
-            return
-        }
-        withAnimation(.snappy) { selection = value }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { withAnimation(.easeOut(duration: 0.2)) { moving = false } }
-    }
-
-    private var flatBody: some View {
-        HStack(spacing: 0) {
-            ForEach(options, id: \.0) { value, title in
-                Button { pick(value) } label: {
-                    Text(title).font(.subheadline.weight(.semibold))
-                        .foregroundStyle(selection == value ? Theme.accent : Color.primary)
-                        .frame(maxWidth: .infinity).padding(.vertical, 8)
-                        .background {
-                            if selection == value {
-                                ZStack {
-                                    Capsule().fill(Color.primary.opacity(showGlass ? 0 : 0.09))
-                                    if showGlass { Color.clear.glassEffect(.regular.interactive(), in: .capsule) }
-                                }
-                                .scaleEffect(x: showGlass ? jellyParams.scale * (1 + shownStretch) : 1,
-                                             y: showGlass ? jellyParams.scale * (1 - shownStretch * 0.28) : 1)
-                                .matchedGeometryEffect(id: "flatPill", in: ns)
-                            }
-                        }
-                        .contentShape(.capsule)
-                }
-                .buttonStyle(.plain)
-                .accessibilityAddTraits(selection == value ? .isSelected : [])
-            }
-        }
-        .padding(3)
-        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 8)
-                .onChanged { g in
-                    guard width > 0, !options.isEmpty else { return }
-                    if !moving { withAnimation(.snappy) { moving = true } }
-                    let i = min(max(Int(g.location.x / (width / CGFloat(options.count))), 0), options.count - 1)
-                    if !jelly.isEmpty {
-                        let p = jellyParams
-                        withAnimation(.interactiveSpring(response: 0.25, dampingFraction: p.damping)) {
-                            stretch = min(p.maxStretch, abs(g.velocity.width) / 2500 * p.maxStretch)
-                        }
-                    }
-                    if options[i].0 != selection { withAnimation(jelly.isEmpty ? .snappy : .spring(response: 0.4, dampingFraction: jellyParams.damping)) { selection = options[i].0 } }
-                }
-                .onEnded { _ in
-                    withAnimation(.spring(response: 0.45, dampingFraction: jellyParams.damping)) { stretch = 0 }
-                    withAnimation(.easeOut(duration: 0.25).delay(jelly.isEmpty ? 0 : 0.3)) { moving = false }
-                }
-        )
-    }
-
-    private var solid: some View {
-        HStack(spacing: 0) {
-            ForEach(options, id: \.0) { value, title in
-                Button { withAnimation(.snappy) { selection = value } } label: {
-                    Text(title).font(.subheadline.weight(.semibold))
-                        .foregroundStyle(selection == value ? Theme.accent : Color.primary)
-                        .frame(maxWidth: .infinity).padding(.vertical, 8)
-                        .background {
-                            if selection == value {
-                                Capsule().fill(Color(.systemBackground))
-                                    .shadow(color: .black.opacity(0.1), radius: 3, y: 1)
-                                    .matchedGeometryEffect(id: "pill", in: ns)
-                            }
-                        }
-                }
-                .buttonStyle(.plain)
-                .accessibilityAddTraits(selection == value ? .isSelected : [])
-            }
-        }
-        .padding(3)
-        .background(Color.primary.opacity(0.07), in: .capsule)
+        .pickerStyle(.segmented)
+        .controlSize(.large)
     }
 }
 

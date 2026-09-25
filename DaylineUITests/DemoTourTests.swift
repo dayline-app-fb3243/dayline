@@ -612,6 +612,52 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Five ways to reach streak and friends faster.
+    func testFriendsEntry() throws {
+        for n in 1...5 {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-friendsEntry", "\(n)"]
+            app.launch(); pause(1.5)
+            if n == 1 {
+                shot("fe1-today")
+                tab(app, "Friends"); pause(2); shot("fe1-tab")
+            } else if n == 5 {
+                tab(app, "Insights"); pause(2); shot("fe5-insights")
+            } else {
+                if n == 2 { app.swipeUp(); pause(1) }
+                shot("fe\(n)-today")
+                tapID(app, "friendsEntry"); pause(2); shot("fe\(n)-open")
+            }
+            app.terminate()
+        }
+    }
+
+    /// Day/Week/Month/Year: press and slide across the switcher (recorded as video).
+    func testSegmentedVideo() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo"]
+        app.launch(); pause(1.5)
+        tab(app, "Timeline"); pause(2.5)
+        let seg = app.segmentedControls.firstMatch
+        guard seg.waitForExistence(timeout: 3) else { shot("sv-missing"); return }
+        shot("sv1-timeline")
+        let day = seg.coordinate(withNormalizedOffset: CGVector(dx: 0.12, dy: 0.5))
+        let year = seg.coordinate(withNormalizedOffset: CGVector(dx: 0.88, dy: 0.5))
+        let week = seg.coordinate(withNormalizedOffset: CGVector(dx: 0.37, dy: 0.5))
+        day.press(forDuration: 0.4, thenDragTo: year, withVelocity: .slow, thenHoldForDuration: 0.6); pause(1.5)
+        year.press(forDuration: 0.3, thenDragTo: day, withVelocity: .default, thenHoldForDuration: 0.4); pause(1.5)
+        week.tap(); pause(1.2)
+        seg.coordinate(withNormalizedOffset: CGVector(dx: 0.63, dy: 0.5)).tap(); pause(1.2)
+        shot("sv2-month")
+        tab(app, "Insights"); pause(2)
+        let seg2 = app.segmentedControls.firstMatch
+        if seg2.waitForExistence(timeout: 3) {
+            seg2.coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.5)).press(forDuration: 0.4, thenDragTo: seg2.coordinate(withNormalizedOffset: CGVector(dx: 0.8, dy: 0.5)), withVelocity: .slow, thenHoldForDuration: 0.6)
+            pause(1.5); shot("sv3-insights")
+        }
+        pause(1)
+    }
+
     /// Day score breakdown: orange symbol on rows that took points away; circles vs bare symbols.
     func testFactorIcons() throws {
         for style in ["circle", "bare"] {

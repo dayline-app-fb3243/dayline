@@ -482,9 +482,7 @@ struct TimelineScreen: View {
                 // Slides up from behind the bar, inside the panel's clip.
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }
-            CapsuleSegmented(selection: $range, options: MapRange.allCases.map { ($0, $0.rawValue) }, plain: true)
-                .padding(.horizontal, 4).padding(.vertical, 6)
-                .glassEffect(.regular, in: .capsule)
+            CapsuleSegmented(selection: $range, options: MapRange.allCases.map { ($0, $0.rawValue) })
                 // Same gap on all sides, like Apple Maps: the bar sits centered in the closed panel.
                 .padding(.horizontal, 12).padding(.top, sheetOpen ? 0 : 14).padding(.bottom, 14)
                 .zIndex(1)
@@ -578,8 +576,7 @@ struct TimelineScreen: View {
     private var rangeControls: some View {
         VStack(spacing: 8) {
             // Real Liquid Glass bar, same material as the chips below.
-            CapsuleSegmented(selection: $range, options: MapRange.allCases.map { ($0, $0.rawValue) }, plain: true)
-                .glassEffect(.regular, in: .capsule)
+            CapsuleSegmented(selection: $range, options: MapRange.allCases.map { ($0, $0.rawValue) })
             if range != .day {
                 HStack {
                     Button("Previous", systemImage: "chevron.left") { step(-1) }.labelStyle(.iconOnly)
