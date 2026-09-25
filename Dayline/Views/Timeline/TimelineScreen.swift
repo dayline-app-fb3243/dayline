@@ -13,7 +13,8 @@ struct TimelineScreen: View {
     @Query(sort: \JournalEntry.date) private var journal: [JournalEntry]
     @State private var range: MapRange = .day
     @State private var anchor = Date.now
-    @State private var camera: MapCameraPosition = .automatic
+    @State private var camera: MapCameraPosition = .userLocation(fallback: .automatic)
+    @ObservedObject private var location = LocationService.shared
     @State private var showRoute = true
     @State private var showPhotos = true
     @State private var showJournal = true
@@ -29,6 +30,7 @@ struct TimelineScreen: View {
     /// The map is centered on your current location (filled arrow). Cleared when you pan away.
     @State private var onMyLocation = false
     @State private var myCoordinate: CLLocationCoordinate2D?
+    @State private var userMovedMap = false
     @State private var sheetOpen = UserDefaults.standard.bool(forKey: "map.sheetOpen")
 
     private var interval: DateInterval {
@@ -56,10 +58,12 @@ struct TimelineScreen: View {
             .tabRoot()
             .fullScreenCover(isPresented: $expanded) {
                 fullMap
-                    .onDisappear { is3D = false; onMyLocation = false; camera = .automatic }
+                    .onDisappear { is3D = false; onMyLocation = false; centerOnCurrentLocation(force: true) }
             }
-            .onChange(of: range) { onMyLocation = false; camera = .automatic }
-            .onChange(of: anchor) { onMyLocation = false; camera = .automatic }
+            .onChange(of: range) { onMyLocation = false; userMovedMap = false; centerOnCurrentLocation() }
+            .onChange(of: anchor) { onMyLocation = false; userMovedMap = false; centerOnCurrentLocation() }
+            .onChange(of: location.lastSample) { centerOnCurrentLocation() }
+            .onAppear { centerOnCurrentLocation() }
             .onReceive(NotificationCenter.default.publisher(for: .showOnMap)) { _ in openJump() }
             .onAppear { openJump() }
         }
@@ -262,6 +266,7 @@ struct TimelineScreen: View {
                 let c = context.region.center
                 if CLLocation(latitude: c.latitude, longitude: c.longitude).distance(from: CLLocation(latitude: me.latitude, longitude: me.longitude)) > 120 {
                     onMyLocation = false
+                    userMovedMap = true
                 }
             }
             // Two-finger tilt flips the 2D/3D label, like Apple Maps.
@@ -270,21 +275,23 @@ struct TimelineScreen: View {
         .task(id: "\(checkMinutes)-\(interval.start.timeIntervalSince1970)-\(range == .day)") { await buildStreetRoute() }
     }
 
-    /// Location keeps being recorded in the background either way; this only moves the map.
-    /// One tap = center on where you are now (no following, no heading).
-    private func recenterOnMe() {
-        guard let me = LocationService.shared.lastLocation?.coordinate else {
-            // No fix cached yet: let MapKit find you, and remember where it centered (first camera stop).
-            myCoordinate = nil
-            withAnimation(.snappy) { camera = .userLocation(fallback: .automatic) }
-            onMyLocation = true
+    /// Default to a neighborhood-scale camera. Never substitute a guessed city for missing permission.
+    private func centerOnCurrentLocation(force: Bool = false) {
+        guard force || (!onMyLocation && !userMovedMap) else { return }
+        if force { userMovedMap = false }
+        guard let fix = location.lastLocation, fix.horizontalAccuracy >= 0,
+              abs(fix.timestamp.timeIntervalSinceNow) < 15 * 60 else {
+            // MapKit waits for an authorized live fix rather than framing an empty continent.
+            camera = .userLocation(fallback: .automatic)
             return
         }
-        myCoordinate = me
-        let distance = max(800, min(4000, (region?.span.latitudeDelta ?? 0.02) * 111_000))
-        withAnimation(.snappy) { camera = .camera(MapCamera(centerCoordinate: me, distance: distance, heading: 0, pitch: is3D ? 60 : 0)) }
+        myCoordinate = fix.coordinate
+        camera = .camera(MapCamera(centerCoordinate: fix.coordinate, distance: 2200, heading: 0, pitch: 0))
         onMyLocation = true
     }
+
+    /// One tap returns to the user's actual location, at neighborhood scale.
+    private func recenterOnMe() { withAnimation(.snappy) { centerOnCurrentLocation(force: true) } }
 
     private func buildStreetRoute() async {
         guard range == .day else { streetRoute = []; return }
