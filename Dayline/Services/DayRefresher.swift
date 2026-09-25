@@ -30,7 +30,9 @@ enum DayRefresher {
         RoutineLearner.autoComplete(context: context)
         DayData.finalizePastDays(context: context)
 
-        let result = ScoreEngine.score(DayData.input(for: today, context: context))
+        let input = DayData.input(for: today, context: context)
+        let result = ScoreEngine.score(input)
+        let hasDayData = DemoData.isDemo || !input.visits.isEmpty || !input.journal.isEmpty || !input.plan.isEmpty || input.steps > 0 || input.remindersTotal > 0
         let streak = DayData.streak(context: context)
         let plan = DayData.input(for: today, context: context).plan
         let next = plan.filter { !$0.isDone && $0.end > .now }.sorted { $0.start < $1.start }.first
@@ -43,7 +45,7 @@ enum DayRefresher {
             SharedBackgroundStore.defaults.set(UserDefaults.standard.string(forKey: SharedBackgroundStore.presetKey) ?? "system", forKey: SharedBackgroundStore.presetKey)
             SharedBackgroundStore.defaults.set(UserDefaults.standard.string(forKey: SharedBackgroundStore.styleKey) ?? "blur", forKey: SharedBackgroundStore.styleKey)
         }
-        SharedStore.save(WidgetSnapshot(date: .now, score: result.score, label: result.label,
+        SharedStore.save(WidgetSnapshot(date: .now, score: result.score, hasDayData: hasDayData, label: result.label,
                                         summary: result.tip ?? result.summary, nextTitle: next?.title,
                                         nextStart: next?.start, streakDays: streak, recentScores: Array(recent),
                                         friendTags: FriendStore.friends.prefix(3).map { f in

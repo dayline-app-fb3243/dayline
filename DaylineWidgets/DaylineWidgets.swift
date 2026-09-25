@@ -30,6 +30,24 @@ struct TodayWidgetView: View {
 
     var body: some View {
         let s = entry.snapshot
+        if !s.hasDayData {
+            Group {
+                switch family {
+                case .accessoryCircular:
+                    Image(systemName: "ellipsis.circle").accessibilityLabel("No Day score yet")
+                case .accessoryRectangular:
+                    VStack(alignment: .leading) {
+                        Text("Day score").font(.headline)
+                        Text("No score yet").font(.caption)
+                    }
+                default:
+                    VStack(spacing: 10) {
+                        Image(systemName: "ellipsis.circle").font(.largeTitle).foregroundStyle(.secondary)
+                        Text("No score yet").font(.subheadline).foregroundStyle(.secondary)
+                    }.frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+            }
+        } else {
         switch family {
         case .accessoryCircular:
             Gauge(value: Double(s.score), in: 0...100) { Text("Day") } currentValueLabel: { Text("\(s.score)") }
@@ -47,6 +65,7 @@ struct TodayWidgetView: View {
             WidgetScoreOption(d: WidgetDesign.all.first { $0.id == 14 }!, score: s.score, wide: false)
         default:
             WidgetScoreOption(d: WidgetDesign.all.first { $0.id == 14 }!, score: s.score, wide: true)
+        }
         }
     }
 }
@@ -76,8 +95,13 @@ struct StreakWidgetView: View {
             DaylineWidgetFriend(name: t.name ?? t.initial, days: t.streak ?? 0,
                                 color: Color(red: t.red, green: t.green, blue: t.blue))
         }
-        WidgetFriendsOption(d: WidgetDesign.all.first { $0.id == 14 }!, days: entry.snapshot.streakDays,
-                            friends: people, wide: false)
+        if !entry.snapshot.hasDayData {
+            Text("No streak yet").font(.subheadline).foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else {
+            WidgetFriendsOption(d: WidgetDesign.all.first { $0.id == 14 }!, days: entry.snapshot.streakDays,
+                                friends: people, wide: false)
+        }
     }
 }
 
@@ -100,7 +124,7 @@ struct StreakWidget: Widget {
 struct WeekWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: "WeekWidget", provider: DayProvider()) { entry in
-            WeekWidgetContent(scores: Array(entry.snapshot.recentScores.suffix(7)))
+            WeekWidgetContent(scores: entry.snapshot.hasDayData ? Array(entry.snapshot.recentScores.suffix(7)) : [])
                 .containerBackground(for: .widget) {
                     if SharedBackgroundStore.syncEnabled {
                         SharedBackgroundCanvas(preset: SharedBackgroundStore.preset(), style: SharedBackgroundStore.style(), photo: SharedBackgroundStore.photo())

@@ -3,7 +3,7 @@ import SwiftUI
 /// Hidden demo page (from the Siri demo) that draws Dayline's widgets exactly as the
 /// widget extension does, on a Home Screen and Lock Screen, so the recording can show them.
 struct WidgetsDemoView: View {
-    private let snap = WidgetSnapshot(date: .now, score: 86, label: "Great day!", summary: "Up early, gym done.",
+    private let snap = WidgetSnapshot(date: .now, score: 86, hasDayData: true, label: "Great day!", summary: "Up early, gym done.",
                                       nextTitle: "Gym", nextStart: Calendar.current.date(bySettingHour: 18, minute: 0, second: 0, of: .now),
                                       streakDays: 6, recentScores: [72, 85, 90, 64, 88, 91, 86],
                                       friendTags: [.init(initial: "S", red: 1, green: 0.23, blue: 0.19),

@@ -7,6 +7,12 @@ struct WeekWidgetContent: View {
     @Environment(\.widgetFamily) private var family
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
+            if scores.isEmpty {
+                Spacer()
+                Text("No scores yet").font(.subheadline).foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity)
+                Spacer()
+            } else {
             HStack(alignment: .firstTextBaseline) {
                 Text("This week").font(.system(.headline, design: .default)).lineLimit(1).minimumScaleFactor(0.85)
                 Spacer(minLength: 4)
@@ -33,6 +39,7 @@ struct WeekWidgetContent: View {
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity)
                 }
+            }
             }
         }
         .padding(16)

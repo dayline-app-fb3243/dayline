@@ -5,6 +5,8 @@ import Foundation
 struct WidgetSnapshot: Codable, Equatable, Sendable {
     var date: Date
     var score: Int
+    /// No score has been observed yet, even if the scoring engine can produce a numeric zero.
+    var hasDayData: Bool
     var label: String
     var summary: String
     var nextTitle: String?
@@ -22,7 +24,7 @@ struct WidgetSnapshot: Codable, Equatable, Sendable {
     }
 
     static let placeholder = WidgetSnapshot(
-        date: .now, score: 0, label: "No day yet",
+        date: .now, score: 0, hasDayData: false, label: "No day yet",
         summary: "Open Dayline to get started.",
         nextTitle: nil, nextStart: nil,
         streakDays: 0, recentScores: [], friendTags: []
@@ -30,7 +32,7 @@ struct WidgetSnapshot: Codable, Equatable, Sendable {
 
     /// Gallery-only sample. Never used as a new user's actual widget state.
     static let gallerySample = WidgetSnapshot(
-        date: .now, score: 74, label: "On track",
+        date: .now, score: 74, hasDayData: true, label: "On track",
         summary: "Up early and gym done. Keep it going.",
         nextTitle: "Lunch out", nextStart: Calendar.current.date(bySettingHour: 12, minute: 30, second: 0, of: .now),
         streakDays: 6, recentScores: [82, 64, 90, 71, 88, 93, 74],
