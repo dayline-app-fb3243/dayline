@@ -91,7 +91,7 @@ struct DaylineWidgetFriendsRing: View {
             VStack(spacing: 0) {
                 Text("\(days)").font(.system(size: size * 0.3, weight: .bold)).monospacedDigit()
                 Text("days").font(.system(size: 11)).foregroundStyle(.secondary)
-                if namesInside {
+                if namesInside && size - 2 * width >= 80 {
                     HStack(spacing: 3) {
                         ForEach(friends.prefix(3)) { f in
                             Text(f.name.prefix(1)).foregroundStyle(f.color)
