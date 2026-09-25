@@ -1,6 +1,7 @@
 import SwiftUI
 import Charts
 import MapKit
+import SwiftData
 
 // Steps page (Health-style chart) and Gym page options (-detailVariant N previews alternatives).
 
@@ -161,7 +162,19 @@ struct StepsDetailView: View {
 
 struct GymDetailView: View {
     @Environment(\.colorScheme) private var mapScheme
-    /// Unselected Gym page; it has no normal entry point after Next was removed.
+    @Query(sort: \Visit.arrival, order: .reverse) private var allVisits: [Visit]
+    private var gymVisits: [Visit] { allVisits.filter { $0.category == .gym } }
+    private var configuredGym: SavedPlace? { UserSchedule.current.gymPlace }
+    private var gymName: String { configuredGym?.name ?? gymVisits.first?.placeName ?? "Gym" }
+    private var gymCoordinate: CLLocationCoordinate2D? { configuredGym?.coordinate ?? gymVisits.first?.coordinate }
+    private var recentGymVisits: [(String, String)] {
+        gymVisits.prefix(5).map { v in
+            let day = Calendar.current.isDateInToday(v.arrival) ? "Today" : v.arrival.formatted(.dateTime.weekday(.wide))
+            let minutes = max(0, Int(v.duration / 60))
+            return (day, minutes >= 60 ? "\(minutes / 60) h \(minutes % 60) min" : "\(minutes) min")
+        }
+    }
+    /// Default page is model-backed for real users; preview variants retain demo-only design data.
     var variant = TileDetailOption.variant
     var body: some View {
         Group {
@@ -175,12 +188,41 @@ struct GymDetailView: View {
                     case 5: withWeek
                     case 6, 7, 8: combined(variant)
                     case 9, 10, 11: quietNext(variant)
-                    default: place
+                    default: DemoData.isDemo ? place : realPlace
                     }
                 }
             }
         }
         .accessibilityIdentifier("gymDetail")
+    }
+
+    @ViewBuilder private var realPlace: some View {
+        if let coordinate = gymCoordinate {
+            Map(initialPosition: .camera(MapCamera(centerCoordinate: coordinate, distance: 900))) {
+                Marker(gymName, systemImage: "dumbbell.fill", coordinate: coordinate).tint(Theme.accent)
+            }
+            .mapStyle(.standard(pointsOfInterest: .excludingAll))
+            .environment(\.colorScheme, SystemMapAppearance.scheme)
+            .frame(height: 210).allowsHitTesting(false)
+            .clipShape(.rect(cornerRadius: Theme.cardRadius, style: .continuous))
+            Card { Text(gymName).font(.headline).frame(maxWidth: .infinity, alignment: .leading) }
+        } else {
+            Card { Text("No gym set yet").font(.headline).frame(maxWidth: .infinity, alignment: .leading) }
+        }
+        Header(text: "Recent Visits")
+        if recentGymVisits.isEmpty {
+            Card { Text("No gym visits recorded yet.").font(.subheadline).foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading) }
+        } else {
+            Card(padding: 0) {
+                VStack(spacing: 0) {
+                    ForEach(recentGymVisits.indices, id: \.self) { i in
+                        Row(symbol: "clock.fill", title: recentGymVisits[i].0, value: recentGymVisits[i].1)
+                        if i < recentGymVisits.count - 1 { Divider().padding(.leading, 59) }
+                    }
+                }
+            }
+        }
     }
 
     private func map(height: CGFloat) -> some View {
