@@ -30,6 +30,9 @@ struct ScoreDetailView: View {
                 }
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
+            // Let the list run under the home indicator to the screen edge, like Apple's lists (the paging view
+            // otherwise stops its pages at the safe area and the last card looks cut off above the bottom).
+            .ignoresSafeArea(.container, edges: .bottom)
         }
         .onAppear { if !didSetStart { didSetStart = true; back = min(startBack, maxBack) } }
         .background(AppBackgroundView())
@@ -59,37 +62,32 @@ struct ScoreDetailView: View {
         }
     }
 
+    /// Day title in the middle; swipe left/right to change days (no arrow buttons, per David).
     private var dateBar: some View {
-        HStack {
-            roundButton("chevron.left", id: "previousDay") { withAnimation(.snappy) { back = min(back + 1, maxBack) } }
-                .opacity(back >= maxBack ? 0.35 : 1)
-            Spacer()
-            Button { showPicker = true } label: {
-                VStack(spacing: 1) {
-                    HStack(spacing: 5) {
-                        Text(title(back)).font(.headline)
-                        Image(systemName: "arrowtriangle.down.fill").font(.scaled(size: 8)).foregroundStyle(Theme.accent)
-                    }
-                    Text(subtitle(back)).font(.caption).foregroundStyle(.secondary)
+        Button { showPicker = true } label: {
+            VStack(spacing: 1) {
+                HStack(spacing: 5) {
+                    Text(title(back)).font(.headline)
+                    Image(systemName: "arrowtriangle.down.fill").font(.caption2).imageScale(.small).foregroundStyle(Theme.accent)
+                }
+                Text(subtitle(back)).font(.caption).foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("dayTitle")
+        // VoiceOver: swipe up/down on the title to change days.
+        .accessibilityAdjustableAction { dir in
+            withAnimation(.snappy) {
+                switch dir {
+                case .decrement: back = min(back + 1, maxBack)
+                case .increment: back = max(back - 1, 0)
+                @unknown default: break
                 }
             }
-            .buttonStyle(.plain)
-            .accessibilityIdentifier("dayTitle")
-            Spacer()
-            roundButton("chevron.right", id: "nextDay") { withAnimation(.snappy) { back = max(back - 1, 0) } }
-                .opacity(back == 0 ? 0.35 : 1)
         }
     }
 
-    private func roundButton(_ symbol: String, id: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: symbol).font(.scaled(size: 14, weight: .semibold)).foregroundStyle(.primary)
-                .frame(width: 36, height: 36)
-                .glassEffect(.regular.interactive(), in: .circle)
-        }
-        .buttonStyle(.plain)
-        .accessibilityIdentifier(id)
-    }
 
     private func title(_ b: Int) -> String {
         switch b {
@@ -172,6 +170,8 @@ struct ScoreDetailView: View {
             }
             .padding(.horizontal, 18).padding(.bottom, 30)
         }
+        // The page runs under the home indicator; keep the last card clear of it when scrolled to the end.
+        .contentMargins(.bottom, 34, for: .scrollContent)
         .accessibilityIdentifier("dayPage-\(b)")
     }
 }

@@ -183,7 +183,7 @@ final class DemoTourTests: XCTestCase {
         tapID(app, "scoreCard"); pause(2); shot("14-day-score"); app.swipeUp(); pause(1.2); shot("15-day-score-scrolled")
         app.swipeDown(); pause(0.8)
         // Swipe back through earlier days, like Screen Time.
-        app.swipeRight(); pause(1.5); tapID(app, "previousDay"); pause(1.5); shot("16-day-score-past")
+        app.swipeRight(); pause(1.5); app.swipeRight(); pause(1.5); shot("16-day-score-past")
         app.swipeUp(); pause(1.2); shot("17-day-score-past-scrolled"); app.swipeDown(); pause(0.8)
         tapID(app, "dayTitle"); pause(1.8); shot("18-day-picker")
         app.swipeDown(); pause(1.2)
@@ -547,6 +547,22 @@ final class DemoTourTests: XCTestCase {
         tapID(app, "person-Sam"); pause(2); shot("pc3-person-sam"); goBack(app); pause(1)
         app.swipeUp(); pause(1)
         tapID(app, "addPerson"); pause(2); shot("pc4-add-people")
+    }
+
+    /// Bottom edge check (dark): each main page scrolled to the end, so the last card should run to the screen edge.
+    func testBottomEdgesDark() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo"]
+        app.launch(); pause(1.5)
+        func toEnd(_ name: String) { for _ in 0..<5 { app.swipeUp(); pause(0.4) }; pause(1); shot(name) }
+        tab(app, "Today"); pause(1.5); toEnd("be1-today")
+        app.swipeDown(); app.swipeDown(); pause(1)
+        tapID(app, "scoreCard"); pause(2); toEnd("be2-day-score"); app.swipeDown(); pause(0.6); shot("be2b-day-score-mid")
+        app.swipeRight(); pause(1.5); shot("be2c-day-score-yesterday"); goBack(app); pause(1)
+        tab(app, "Timeline"); pause(2.5); toEnd("be3-timeline")
+        tab(app, "Insights"); pause(1.5); toEnd("be4-insights")
+        tab(app, "Journal"); pause(1.5); toEnd("be5-journal")
+        tab(app, "Profile"); pause(1.5); toEnd("be6-profile")
     }
 
     /// Anything good wins points back: a run from Apple Health and lots of steps, on the ring and in the day story.
