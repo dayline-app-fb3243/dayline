@@ -432,6 +432,8 @@ struct ProfileRow: View {
             Text(title).foregroundStyle(.primary)
             Spacer()
             if !value.isEmpty { Text(value).foregroundStyle(.secondary).lineLimit(1) }
+            Image(systemName: "chevron.right")
+                .font(.body.weight(.semibold)).foregroundStyle(.tertiary)
         }
         .padding(.horizontal, 14).padding(.vertical, 11)
         .contentShape(.rect)
