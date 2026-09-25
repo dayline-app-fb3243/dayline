@@ -43,7 +43,7 @@ import WidgetKit
             context.setLineCap(.butt)
             for index in 0..<slices {
                 let t = CGFloat(index) / CGFloat(slices - 1)
-                let ice = pow(1 - t, 1.35)
+                let ice = CGFloat(pow(Double(1 - t), 1.35))
                 context.setStrokeColor(UIColor(red: 0.0 + 0.61 * ice,
                                                 green: 0.38 + 0.47 * ice,
                                                 blue: 0.90 + 0.10 * ice,
