@@ -81,7 +81,7 @@ private struct VoiceCaptureSheet: View {
                     Task {
                         if voice.isRecording {
                             saving = true
-                            await voice.stop(context: context, coordinate: nil)
+                            _ = await voice.stop(context: context, coordinate: nil)
                             dismiss()
                         } else {
                             try? await voice.start()

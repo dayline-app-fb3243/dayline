@@ -22,6 +22,7 @@ struct EntryBlock: Identifiable {
     var text = ""
     var media: [EntryMedia] = []
     var seconds: Double = 0
+    var voiceFileName: String? = nil
 }
 
 /// Movie picked from the library, copied into Documents/Video.
@@ -64,6 +65,7 @@ struct NewEntryView: View {
     var editing: JournalGroup? = nil
     @Environment(\.modelContext) private var context
     @Query(sort: \Visit.arrival, order: .reverse) private var visits: [Visit]
+    @Query(sort: \JournalEntry.date, order: .reverse) private var voiceEntries: [JournalEntry]
     @StateObject private var voice = VoiceNoteService.shared
     @State private var title = ""
     @State private var blocks: [EntryBlock] = [EntryBlock(kind: .text)]
@@ -121,7 +123,12 @@ struct NewEntryView: View {
                     case .media:
                         mediaGrid(block)
                     case .voice:
-                        VoiceBubble(seconds: block.seconds, seed: block.id.uuidString)
+                        let recorded = voiceEntries.first { $0.kind == .voice && $0.audioFileName == block.voiceFileName }
+                        VoiceBubble(seconds: block.seconds, words: recorded?.text ?? "",
+                                    transcribed: recorded?.isTranscribed ?? false,
+                                    failed: recorded?.transcriptionFailed ?? false,
+                                    seed: block.voiceFileName ?? block.id.uuidString,
+                                    audioURL: block.voiceFileName.map { VoiceNoteService.folder.appending(path: $0) })
                             .contextMenu { Button("Remove", systemImage: "trash", role: .destructive) { remove(block.id) } }
                     }
                 }
@@ -289,10 +296,10 @@ struct NewEntryView: View {
     private func stopVoice() async {
         let secs = voice.elapsed
         let at = focusedIndex()
-        await voice.stop(context: context, coordinate: coordinate)   // saves only real voice, pinned here
-        guard secs >= 1.0 else { return }
+        let savedVoice = await voice.stop(context: context, coordinate: coordinate)
+        guard let savedVoice else { return }
         let next = EntryBlock(kind: .text)
-        blocks.insert(contentsOf: [EntryBlock(kind: .voice, seconds: secs), next], at: min(at + 1, blocks.count))
+        blocks.insert(contentsOf: [EntryBlock(kind: .voice, seconds: secs, voiceFileName: savedVoice.audioFileName), next], at: min(at + 1, blocks.count))
         focus = next.id
     }
 
@@ -318,7 +325,7 @@ struct NewEntryView: View {
             return EntryMedia(image: img, videoURL: e.videoFileName.flatMap { VideoStore.url(for: $0) }, duration: e.videoDuration)
         }
         if !media.isEmpty { list.append(EntryBlock(kind: .media, media: media)) }
-        for v in g.entries where v.kind == .voice { list.append(EntryBlock(kind: .voice, seconds: v.audioDuration)) }
+        for v in g.entries where v.kind == .voice { list.append(EntryBlock(kind: .voice, seconds: v.audioDuration, voiceFileName: v.audioFileName)) }
         blocks = list
     }
 

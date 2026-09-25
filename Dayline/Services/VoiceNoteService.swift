@@ -102,10 +102,10 @@ final class VoiceNoteService: NSObject, ObservableObject {
     }
 
     /// Stops, saves the entry, then fills in the transcript when it's ready.
-    func stop(context: ModelContext, coordinate: (Double, Double)?) async {
-        guard let recorder, let file = currentFile else { return }
+    func stop(context: ModelContext, coordinate: (Double, Double)?) async -> JournalEntry? {
+        guard let recorder, let file = currentFile else { return nil }
         let duration = max(recorder.currentTime, elapsed)
-        if duration < 1.0 { cancel(); return }
+        if duration < 1.0 { cancel(); return nil }
         recorder.stop()
         meterTimer?.invalidate()
         isRecording = false
@@ -130,6 +130,7 @@ final class VoiceNoteService: NSObject, ObservableObject {
             }
             try? context.save()
         }
+        return entry
     }
 }
 
