@@ -181,6 +181,7 @@ struct StreakView: View {
 /// Friends option 2 preview (score.friends "2"): the friends' streaks on the Day score page the Today ring opens.
 struct FriendsTodayCard: View {
     @Environment(\.modelContext) private var context
+    @Query(sort: \DayScore.day) private var scores: [DayScore]
     @AppStorage("hiddenFriends") private var hiddenRaw = ""
     var body: some View {
         let streak = DayData.streak(context: context)
@@ -198,7 +199,7 @@ struct FriendsTodayCard: View {
                             }
                             .buttonStyle(.plain)
                         } else {
-                            FriendRow(initials: "Me", color: Theme.accent, name: "You", best: streak, current: streak)
+                            FriendRow(initials: "Me", color: Theme.accent, name: "You", best: max(StreakMath.best(scores), streak), current: streak)
                         }
                         Divider().padding(.leading, 58)
                     }
