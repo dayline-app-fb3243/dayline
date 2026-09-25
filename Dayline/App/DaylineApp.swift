@@ -41,7 +41,9 @@ struct DaylineApp: App {
     var body: some Scene {
         WindowGroup {
             Group {
-                if let i = ProcessInfo.processInfo.arguments.firstIndex(of: "-widgetConcept"),
+                if ProcessInfo.processInfo.arguments.contains("-weekWidgetSize") {
+                    WeekWidgetSizePreview()
+                } else if let i = ProcessInfo.processInfo.arguments.firstIndex(of: "-widgetConcept"),
                    ProcessInfo.processInfo.arguments.count > i + 1,
                    let n = Int(ProcessInfo.processInfo.arguments[i + 1]) {
                     WidgetConceptsGallery(concept: n)

@@ -728,6 +728,15 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    func testWeekWidgetSizeLight() throws { captureWeekWidgetSize() }
+    func testWeekWidgetSizeDark() throws { captureWeekWidgetSize() }
+    private func captureWeekWidgetSize() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo", "-weekWidgetSize"]
+        app.launch(); pause(1)
+        shot("week-widget-size")
+    }
+
     /// Five landing options on an actual phone keyboard; live autocomplete and typo recovery.
     func testSearchDesigns() throws {
         for n in 1...5 {

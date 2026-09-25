@@ -92,6 +92,23 @@ struct StreakWidget: Widget {
     }
 }
 
+struct WeekWidget: Widget {
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: "WeekWidget", provider: DayProvider()) { entry in
+            WeekWidgetContent(scores: Array(entry.snapshot.recentScores.suffix(7)))
+                .containerBackground(for: .widget) {
+                    if SharedBackgroundStore.syncEnabled {
+                        SharedBackgroundCanvas(preset: SharedBackgroundStore.preset(), style: SharedBackgroundStore.style(), photo: SharedBackgroundStore.photo())
+                    } else { Color(.secondarySystemGroupedBackground) }
+                }
+                .widgetURL(URL(string: "dayline://today"))
+        }
+        .configurationDisplayName("This week")
+        .description("Your last seven Day scores.")
+        .supportedFamilies([.systemSmall, .systemMedium])
+    }
+}
+
 /// Lock screen / Control Center button to jump straight into a voice note.
 struct VoiceNoteControl: ControlWidget {
     var body: some ControlWidgetConfiguration {
@@ -116,6 +133,7 @@ struct DaylineWidgetBundle: WidgetBundle {
     var body: some Widget {
         TodayWidget()
         StreakWidget()
+        WeekWidget()
         VoiceNoteControl()
     }
 }
