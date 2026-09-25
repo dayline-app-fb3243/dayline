@@ -334,8 +334,6 @@ struct ProfileView: View {
                         .onChange(of: checkIns) { _, on in if on { Task { await Notifications.requestPermission() } } }
                     }
                 }
-                Text("Dayline asks quick yes/no questions, like \u{201C}Going to sleep now?\u{201D}, when it isn\u{2019}t sure. Answer right from the notification. Off by default.")
-                    .font(.footnote).helperText().padding(.horizontal, 16).padding(.top, 6)
                 if SiriSupport.isAvailable {
                     profileHeader("Siri")
                     Card(padding: 0) {
