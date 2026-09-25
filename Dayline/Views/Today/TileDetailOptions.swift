@@ -17,13 +17,6 @@ private enum StepsDemo {
     /// Steps per hour, 6 AM to 11 PM (demo).
     static let hourly: [(Int, Int)] = [(6, 0), (7, 420), (8, 1310), (9, 640), (10, 180), (11, 220), (12, 960), (13, 540), (14, 160), (15, 210), (16, 380), (17, 820), (18, 0), (19, 0), (20, 0), (21, 0), (22, 0)]
     static let week: [(String, Int)] = [("Sat", 9120), ("Sun", 6450), ("Mon", 8830), ("Tue", 7210), ("Wed", 10240), ("Thu", 8600), ("Fri", 5840)]
-    static let legs: [(String, String, String, Int)] = [
-        ("house.fill", "Home to Gym", "7:40 - 7:58 AM", 1480),
-        ("dumbbell.fill", "At Iron Works Gym", "8:00 - 8:52 AM", 1310),
-        ("briefcase.fill", "Gym to Office", "9:05 - 9:22 AM", 1350),
-        ("fork.knife", "Lunch at Joe's", "12:20 - 1:10 PM", 1500),
-        ("figure.walk", "Around the office", "All day", 200),
-    ]
 }
 
 private enum GymDemo {
@@ -33,9 +26,6 @@ private enum GymDemo {
         ("Monday", "6:55 - 7:45 AM", "50 min"), ("Saturday", "10:10 - 11:20 AM", "70 min"),
         ("Thursday, Sep 17", "7:05 - 7:55 AM", "50 min"),
     ]
-    static let weeks: [(String, Int)] = [("Aug 24", 2), ("Aug 31", 3), ("Sep 7", 4), ("Sep 14", 3), ("Sep 21", 4)]
-    /// Days of September with a gym visit.
-    static let days: Set<Int> = [1, 3, 5, 8, 10, 12, 15, 17, 19, 21, 22, 24, 25]
 }
 
 // MARK: - Shared pieces
@@ -72,17 +62,6 @@ private struct Row: View {
 private struct Header: View {
     var text: String
     var body: some View { Text(text).font(.subheadline.weight(.semibold)).helperText().padding(.leading, 16).padding(.top, 6) }
-}
-
-private struct GoalRing: View {
-    var value: Double; var lineWidth: CGFloat
-    var body: some View {
-        ZStack {
-            Circle().stroke(Theme.accent.opacity(0.18), lineWidth: lineWidth)
-            Circle().trim(from: 0, to: min(value, 1)).stroke(Theme.accent, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)).rotationEffect(.degrees(-90))
-        }
-        .padding(lineWidth / 2)
-    }
 }
 
 // MARK: - Steps
@@ -181,173 +160,156 @@ struct StepsDetailView: View {
 // MARK: - Gym
 
 struct GymDetailView: View {
+    /// Picked: the place page (map, next visit, recent visits). -detailVariant 1-5 = variations of it.
     var variant = TileDetailOption.variant
     var body: some View {
-        Page(title: "Gym") {
-            switch variant {
-            case 2: month
-            case 3: plan
-            case 4: history
-            case 5: weekGoal
-            default: place
+        Group {
+            if variant == 2 {
+                heroPage
+            } else {
+                Page(title: "Gym") {
+                    switch variant {
+                    case 3: overlaid
+                    case 4: withStats
+                    case 5: withWeek
+                    default: place
+                    }
+                }
             }
         }
         .accessibilityIdentifier("gymDetail")
     }
 
-    private var nextCard: some View {
-        Card {
-            HStack(spacing: 13) {
-                ProfileIcon(symbol: "dumbbell.fill", size: 44)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("NEXT").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
-                    Text("Gym around 6:00 PM").font(.headline)
-                    Text("Iron Works Gym · 12 min walk").font(.subheadline).foregroundStyle(.secondary)
-                }
-            }
-        }
-    }
-
-    /// 1. The place: map, next visit, last visits.
-    @ViewBuilder private var place: some View {
+    private func map(height: CGFloat) -> some View {
         Map(initialPosition: .camera(MapCamera(centerCoordinate: GymDemo.place, distance: 900, heading: 20, pitch: 45))) {
             Marker("Iron Works Gym", systemImage: "dumbbell.fill", coordinate: GymDemo.place).tint(Theme.accent)
         }
         .mapStyle(.standard(pointsOfInterest: .excludingAll))
-        .frame(height: 210).clipShape(.rect(cornerRadius: Theme.cardRadius, style: .continuous)).allowsHitTesting(false)
-        nextCard
-        Header(text: "Recent Visits")
+        .frame(height: height).allowsHitTesting(false)
+    }
+
+    private var nextCard: some View {
+        Card { nextContent }
+    }
+    private var nextContent: some View {
+        HStack(spacing: 13) {
+            ProfileIcon(symbol: "dumbbell.fill", size: 44)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("NEXT").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
+                Text("Gym around 6:00 PM").font(.headline)
+                Text("Iron Works Gym · 12 min walk").font(.subheadline).foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 0)
+        }
+    }
+
+    /// Recent visits; with times when `times` is on.
+    private func visits(_ count: Int, times: Bool = false) -> some View {
         Card(padding: 0) {
             VStack(spacing: 0) {
-                ForEach(Array(GymDemo.visits.prefix(3).enumerated()), id: \.offset) { i, v in
-                    Row(symbol: "clock.fill", title: v.0, value: v.2)
-                    if i < 2 { Divider().padding(.leading, 59) }
+                ForEach(Array(GymDemo.visits.prefix(count).enumerated()), id: \.offset) { i, v in
+                    if times {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(v.0).font(.body)
+                                Text(v.1).font(.subheadline).foregroundStyle(.secondary).monospacedDigit()
+                            }
+                            Spacer()
+                            Text(v.2).font(.body).foregroundStyle(.secondary).monospacedDigit()
+                        }
+                        .padding(.horizontal, 16).padding(.vertical, 10)
+                        if i < count - 1 { Divider().padding(.leading, 16) }
+                    } else {
+                        Row(symbol: "clock.fill", title: v.0, value: v.2)
+                        if i < count - 1 { Divider().padding(.leading, 59) }
+                    }
                 }
             }
         }
     }
 
-    /// 2. The month with gym days marked, like Fitness history.
-    @ViewBuilder private var month: some View {
-        Card {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text("September").font(.title3.weight(.semibold))
-                    Spacer()
-                    Text("13 visits").font(.subheadline).foregroundStyle(.secondary)
-                }
-                let cols = Array(repeating: GridItem(.flexible(), spacing: 4), count: 7)
-                LazyVGrid(columns: cols, spacing: 8) {
-                    ForEach(["S", "M", "T", "W", "T", "F", "S"].indices, id: \.self) { i in
-                        Text(["S", "M", "T", "W", "T", "F", "S"][i]).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+    /// 1. Map card, next visit, last visits.
+    @ViewBuilder private var place: some View {
+        map(height: 210).clipShape(.rect(cornerRadius: Theme.cardRadius, style: .continuous))
+        nextCard
+        Header(text: "Recent Visits")
+        visits(3)
+    }
+
+    /// 2. Like an Apple Maps place page: the map runs edge to edge under the bar, then the page.
+    private var heroPage: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 14) {
+                map(height: 330)
+                VStack(alignment: .leading, spacing: 14) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Iron Works Gym").font(.largeTitle.weight(.bold))
+                        Text("Gym · 12 min walk").font(.subheadline).foregroundStyle(.secondary)
                     }
-                    ForEach(0..<2, id: \.self) { _ in Color.clear.frame(height: 34) }
-                    ForEach(1...30, id: \.self) { d in
-                        let on = GymDemo.days.contains(d)
-                        Text("\(d)").font(.subheadline.weight(on ? .semibold : .regular)).monospacedDigit()
-                            .foregroundStyle(on ? .white : (d > 25 ? Color.secondary : Color.primary))
-                            .frame(width: 34, height: 34)
-                            .background(on ? Theme.accent : .clear, in: .circle)
-                    }
+                    nextCard
+                    Header(text: "Recent Visits")
+                    visits(4, times: true)
                 }
+                .padding(.horizontal, 18)
             }
+            .padding(.bottom, 30)
         }
+        .ignoresSafeArea(edges: .top)
+        .background(AppBackgroundView())
+        .toolbarVisibility(.hidden, for: .tabBar)
+    }
+
+    /// 3. The next visit sits on the map in glass; stats and visits below.
+    @ViewBuilder private var overlaid: some View {
+        map(height: 290)
+            .overlay(alignment: .bottom) {
+                nextContent.padding(14)
+                    .glassEffect(.regular, in: .rect(cornerRadius: 22, style: .continuous))
+                    .padding(8)
+            }
+            .clipShape(.rect(cornerRadius: Theme.cardRadius, style: .continuous))
         Card(padding: 0) {
             VStack(spacing: 0) {
                 Row(symbol: "flame.fill", title: "Weeks in a Row", value: "5"); Divider().padding(.leading, 59)
                 Row(symbol: "clock.fill", title: "Average Visit", value: "57 min")
             }
         }
+        Header(text: "Recent Visits")
+        visits(3)
     }
 
-    /// 3. Today's plan: when, what it does to the score, mark it done.
-    @ViewBuilder private var plan: some View {
+    /// 4. Map, next visit, three numbers, visits with times.
+    @ViewBuilder private var withStats: some View {
+        map(height: 190).clipShape(.rect(cornerRadius: Theme.cardRadius, style: .continuous))
         nextCard
-        Card {
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Adds up to 8 points").font(.headline)
-                Text("Going before 8 PM keeps today at Great. Dayline marks it done on its own when you get to the gym.").font(.body).foregroundStyle(.secondary)
-            }
+        HStack(spacing: 8) {
+            StreakStat(title: "This Week", value: "4 visits")
+            StreakStat(title: "In a Row", value: "5 weeks")
+            StreakStat(title: "Average", value: "57 min")
         }
-        Button {} label: { Text("Mark as Done").font(.headline).frame(maxWidth: .infinity) }
-            .buttonStyle(.glassProminent).tint(Theme.accent).controlSize(.large)
-        Header(text: "Plan")
-        Card(padding: 0) {
-            VStack(spacing: 0) {
-                Row(symbol: "calendar", title: "Days", value: "Mon, Wed, Fri, Sat"); Divider().padding(.leading, 59)
-                Row(symbol: "clock.fill", title: "Go Before", value: "8:00 PM"); Divider().padding(.leading, 59)
-                Row(symbol: "bell.fill", title: "Reminder", value: "5:30 PM")
-            }
-        }
+        Header(text: "Recent Visits")
+        visits(4, times: true)
     }
 
-    /// 4. History: visits per week and the list.
-    @ViewBuilder private var history: some View {
+    /// 5. Map, next visit, this week's gym days, visits.
+    @ViewBuilder private var withWeek: some View {
+        map(height: 190).clipShape(.rect(cornerRadius: Theme.cardRadius, style: .continuous))
+        nextCard
+        Header(text: "This Week")
         Card {
-            VStack(alignment: .leading, spacing: 12) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("THIS WEEK").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
-                    HStack(alignment: .firstTextBaseline, spacing: 4) {
-                        Text("4").font(.largeTitle.weight(.semibold))
-                        Text("visits").font(.body).foregroundStyle(.secondary)
+            HStack(spacing: 0) {
+                ForEach(Array(["S", "M", "T", "W", "T", "F", "S"].enumerated()), id: \.offset) { i, d in
+                    let went = [1, 3, 5].contains(i), today = i == 5
+                    VStack(spacing: 6) {
+                        Text(d).font(.caption.weight(.semibold)).foregroundStyle(today ? Theme.accent : .secondary)
+                        Image(systemName: went ? "checkmark.circle.fill" : "circle")
+                            .font(.title2).foregroundStyle(went ? Theme.accent : Color(.tertiaryLabel))
                     }
-                }
-                Chart(GymDemo.weeks, id: \.0) { w in
-                    BarMark(x: .value("Week", w.0), y: .value("Visits", w.1), width: 26)
-                        .foregroundStyle(w.0 == "Sep 21" ? Theme.accent : Theme.accent.opacity(0.45)).cornerRadius(5)
-                }
-                .chartYAxis { AxisMarks(values: [0, 2, 4]) }
-                .frame(height: 160)
-            }
-        }
-        Header(text: "Visits")
-        Card(padding: 0) {
-            VStack(spacing: 0) {
-                ForEach(Array(GymDemo.visits.enumerated()), id: \.offset) { i, v in
-                    HStack {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(v.0).font(.body)
-                            Text(v.1).font(.subheadline).foregroundStyle(.secondary)
-                        }
-                        Spacer()
-                        Text(v.2).font(.body).foregroundStyle(.secondary)
-                    }
-                    .padding(.horizontal, 16).padding(.vertical, 10)
-                    if i < GymDemo.visits.count - 1 { Divider().padding(.leading, 16) }
+                    .frame(maxWidth: .infinity)
                 }
             }
         }
-    }
-
-    /// 5. Weekly goal ring plus when you usually go.
-    @ViewBuilder private var weekGoal: some View {
-        Card {
-            HStack(spacing: 20) {
-                ZStack {
-                    GoalRing(value: 0.75, lineWidth: 16).frame(width: 120, height: 120)
-                    VStack(spacing: 0) {
-                        Text("3 of 4").font(.title2.weight(.semibold))
-                        Text("this week").font(.caption).foregroundStyle(.secondary)
-                    }
-                }
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("One more to go").font(.headline)
-                    Text("Today around 6:00 PM would finish the week.").font(.subheadline).foregroundStyle(.secondary)
-                }
-            }
-        }
-        Header(text: "When You Usually Go")
-        Card {
-            Chart([("6 AM", 9), ("8 AM", 3), ("12 PM", 1), ("6 PM", 4), ("8 PM", 1)], id: \.0) { t in
-                BarMark(x: .value("Visits", t.1), y: .value("Time", t.0), height: 16).foregroundStyle(Theme.accent).cornerRadius(4)
-            }
-            .frame(height: 170)
-        }
-        Card(padding: 0) {
-            VStack(spacing: 0) {
-                Row(symbol: "clock.fill", title: "Average Visit", value: "57 min"); Divider().padding(.leading, 59)
-                Row(symbol: "flame.fill", title: "Weeks in a Row", value: "5")
-            }
-        }
+        Header(text: "Recent Visits")
+        visits(3)
     }
 }
