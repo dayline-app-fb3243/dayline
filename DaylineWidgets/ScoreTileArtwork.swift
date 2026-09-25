@@ -36,35 +36,31 @@ import WidgetKit
             let fraction = CGFloat(min(max(score, 0), 100)) / 100
             let start = -CGFloat.pi / 2
             let end = start + 2 * .pi * fraction
-            // Draw a single arc to avoid seams and moire from adjacent strokes.
-            // The ice cap starts the arc, which then becomes continuous Dayline blue.
-            context.setStrokeColor(UIColor(red: 0.0, green: 0.38, blue: 0.90, alpha: 1).cgColor)
-            context.setLineCap(.round)
-            context.addArc(center: center, radius: radius, startAngle: start, endAngle: end, clockwise: false)
-            context.strokePath()
-            // Tint just the first 22 degrees of the already-drawn blue stroke.
-            // Each narrow slice stays on the same centerline and has butt caps,
-            // so the ice fades into blue without a second rounded oval.
-            let tipSpan = min(end - start, 0.38)
-            let slices = 48
+            // One continuous-looking stroke, shaded across its full length.
+            // Butt-capped overlapping slices share a centerline; rounded caps
+            // are painted only at the two true ends, never in the middle.
+            let slices = 240
             context.setLineCap(.butt)
             for index in 0..<slices {
-                let t = CGFloat(index) / CGFloat(slices)
-                let ice = 1 - t
+                let t = CGFloat(index) / CGFloat(slices - 1)
+                let ice = pow(1 - t, 1.35)
                 context.setStrokeColor(UIColor(red: 0.0 + 0.61 * ice,
                                                 green: 0.38 + 0.47 * ice,
                                                 blue: 0.90 + 0.10 * ice,
                                                 alpha: 1).cgColor)
                 context.addArc(center: center, radius: radius,
-                               startAngle: start + tipSpan * t,
-                               endAngle: start + tipSpan * CGFloat(index + 1) / CGFloat(slices),
+                               startAngle: start + (end - start) * CGFloat(index) / CGFloat(slices),
+                               endAngle: start + (end - start) * CGFloat(index + 1.02) / CGFloat(slices),
                                clockwise: false)
                 context.strokePath()
             }
-            UIColor(red: 0.61, green: 0.85, blue: 1, alpha: 1).setFill()
-            let tip = CGPoint(x: center.x + radius * cos(start), y: center.y + radius * sin(start))
-            UIBezierPath(ovalIn: CGRect(x: tip.x - width / 2, y: tip.y - width / 2,
-                                        width: width, height: width)).fill()
+            for (angle, color) in [(start, UIColor(red: 0.61, green: 0.85, blue: 1, alpha: 1)),
+                                   (end, UIColor(red: 0, green: 0.38, blue: 0.9, alpha: 1))] {
+                color.setFill()
+                let point = CGPoint(x: center.x + radius * cos(angle), y: center.y + radius * sin(angle))
+                UIBezierPath(ovalIn: CGRect(x: point.x - width / 2, y: point.y - width / 2,
+                                            width: width, height: width)).fill()
+            }
             if score > 0 {
                 let point = CGPoint(x: center.x + radius * cos(end), y: center.y + radius * sin(end))
                 let number = NSAttributedString(string: "\(score)", attributes: [
