@@ -76,17 +76,19 @@ struct AppBackgroundView: View {
     var body: some View {
         let preset = BackgroundPreset(rawValue: presetRaw) ?? .system
         ZStack {
-            Color(.systemGroupedBackground)
+            // Settings hierarchy: black canvas and lighter grouped cards in dark mode.
+            (scheme == .dark ? Color.black : Color(.systemGroupedBackground))
             switch preset {
             case .system:
-                // Dayline's default soft blue light behind solid cards.
-                GeometryReader { geo in
-                    ZStack {
-                        blob(Color(red: 0.61, green: 0.76, blue: 1.0), 320).position(x: -80 + 160, y: -60 + 160)
-                        blob(Color(red: 0.81, green: 0.88, blue: 1.0), 300).position(x: geo.size.width + 120 - 150, y: 180 + 150)
-                        blob(Color(red: 0.73, green: 0.83, blue: 1.0), 320).position(x: -60 + 160, y: geo.size.height + 40 - 160)
+                if scheme != .dark {
+                    // The light-mode soft blue glow stays behind solid cards.
+                    GeometryReader { geo in
+                        ZStack {
+                            blob(Color(red: 0.61, green: 0.76, blue: 1.0), 320).position(x: -80 + 160, y: -60 + 160)
+                            blob(Color(red: 0.81, green: 0.88, blue: 1.0), 300).position(x: geo.size.width + 120 - 150, y: 180 + 150)
+                            blob(Color(red: 0.73, green: 0.83, blue: 1.0), 320).position(x: -60 + 160, y: geo.size.height + 40 - 160)
+                        }.opacity(0.75)
                     }
-                    .opacity(scheme == .dark ? 0.35 * 0.55 : 0.75)
                 }
             case .photo:
                 if let image = BackgroundStore.load() {
@@ -97,8 +99,10 @@ struct AppBackgroundView: View {
                         .id(version)
                 }
             default:
-                LinearGradient(colors: preset.colors, startPoint: .topLeading, endPoint: .bottomTrailing)
-                    .opacity(scheme == .dark && preset != .night ? 0.35 : 1)
+                if scheme != .dark || preset != .white {
+                    LinearGradient(colors: preset.colors, startPoint: .topLeading, endPoint: .bottomTrailing)
+                        .opacity(scheme == .dark && preset != .night ? 0.35 : 1)
+                }
             }
         }
         .ignoresSafeArea()

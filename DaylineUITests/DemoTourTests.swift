@@ -844,6 +844,18 @@ final class DemoTourTests: XCTestCase {
         tab(app, "Journal"); pause(1.5); shot("wb5-journal")
     }
 
+    /// Dark-mode surface hierarchy: black canvas, lighter grouped cards across five tabs.
+    func testDarkSurfacesDark() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo"]
+        app.launch(); pause(1)
+        for (tabName, shotName) in [("Today", "dk1-today"), ("Timeline", "dk2-timeline"),
+                                    ("Insights", "dk3-insights"), ("Journal", "dk4-journal"),
+                                    ("Profile", "dk5-profile")] {
+            tab(app, tabName); pause(1.3); shot(shotName)
+        }
+    }
+
     /// Bottom edge check (dark): each main page scrolled to the end, so the last card should run to the screen edge.
     func testBottomEdgesDark() throws {
         let app = XCUIApplication()
