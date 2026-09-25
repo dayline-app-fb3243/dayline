@@ -88,8 +88,6 @@ struct SplashView: View {
     private var title: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Your day,\nremembered.").font(.largeTitle.bold())
-            Text("Dayline builds your timeline from where you go. Low-power, so it\u{2019}s easy on your battery.")
-                .font(.body).foregroundStyle(.secondary)
         }
     }
     private var continueButton: some View {
@@ -144,8 +142,6 @@ struct SplashView: View {
             bigIcon.padding(.bottom, 30)
             VStack(spacing: 10) {
                 Text("Your day, remembered.").font(.largeTitle.bold()).multilineTextAlignment(.center)
-                Text("Dayline builds your timeline from where you go. Low-power, so it\u{2019}s easy on your battery.")
-                    .font(.body).foregroundStyle(.secondary).multilineTextAlignment(.center)
             }
             Spacer()
             continueButton.padding(.bottom, 16)
@@ -256,8 +252,6 @@ struct SplashView: View {
                 .ignoresSafeArea(edges: .top)
             VStack(alignment: .leading, spacing: 10) {
                 Text("Your day,\nremembered.").font(.largeTitle.bold())
-                Text("Dayline builds your timeline from where you go. Low-power, so it\u{2019}s easy on your battery.")
-                    .font(.body).foregroundStyle(.secondary)
             }
             .padding(.horizontal, 28).padding(.top, -40)
             Spacer()
