@@ -18,12 +18,16 @@ struct WeekWidgetContent: View {
                 ForEach(0..<7, id: \.self) { i in
                     let score = i < scores.count ? min(100, max(0, scores[i])) : 0
                     VStack(spacing: 3) {
-                        Text("\(score)")
-                            .font(.system(.caption2, design: .default).monospacedDigit())
-                            .foregroundStyle(score < 45 ? .orange : .secondary)
                         Capsule()
-                            .fill(score < 45 ? Color.orange : Color.blue.opacity(score >= 80 ? 0.9 : 0.65))
-                            .frame(height: max(8, CGFloat(score) * 0.55))
+                            .fill(score < 45 ? Color.orange : blue(for: score))
+                            .frame(height: max(23, CGFloat(score) * 0.55))
+                            .overlay {
+                                Text("\(score)")
+                                    .font(.system(size: 10, weight: .semibold, design: .rounded).monospacedDigit())
+                                    .minimumScaleFactor(0.7).lineLimit(1)
+                                    .foregroundStyle(score < 45 || score < 72 ? Color.black.opacity(0.85) : .white)
+                                    .padding(.horizontal, 1)
+                            }
                         Text(["S", "M", "T", "W", "T", "F", "S"][i])
                             .font(.system(.caption2, design: .default)).foregroundStyle(.secondary)
                     }
@@ -33,6 +37,12 @@ struct WeekWidgetContent: View {
             .frame(maxHeight: .infinity, alignment: .bottom)
         }
         .padding(16)
+    }
+
+    /// A higher score is a deeper blue; a lower non-orange score is a lighter blue.
+    private func blue(for score: Int) -> Color {
+        let t = min(1.0, max(0.0, Double(score - 45) / 55.0))
+        return Color(red: 0.43 - 0.39 * t, green: 0.72 - 0.37 * t, blue: 0.96 - 0.18 * t)
     }
 }
 
