@@ -148,7 +148,7 @@ struct TimelineScreen: View {
     }
     /// Day: map, title, captioned photos in a row, then stops grouped by part of day.
     @ViewBuilder private var dayPage: some View {
-        mapCard(height: 170, hint: true)
+        if hasMapAnchor { mapCard(height: 170, hint: true) }
         if !DemoData.isDemo && visits.isEmpty && samples.isEmpty && journal.isEmpty {
             ContentUnavailableView("No timeline yet", systemImage: "mappin.and.ellipse",
                                    description: Text("Your places and photos will appear here as Dayline learns your day."))
@@ -168,7 +168,7 @@ struct TimelineScreen: View {
     }
     /// Week / Month / Year: map, title, the range's photos in a row, then the places card.
     @ViewBuilder private var rangePage: some View {
-        mapCard(height: 200, hint: false)
+        if hasMapAnchor { mapCard(height: 200, hint: false) }
         if !DemoData.isDemo && visits.isEmpty && samples.isEmpty && journal.isEmpty {
             ContentUnavailableView("No timeline yet", systemImage: "mappin.and.ellipse",
                                    description: Text("Your places and photos will appear here as Dayline learns your day."))
@@ -380,20 +380,13 @@ struct TimelineScreen: View {
 
     /// Map card: tap anywhere to open the full-screen map.
     private func mapCard(height: CGFloat, hint: Bool) -> some View {
-        Group {
-            if hasMapAnchor { mapView(interactive: false, showsControls: false) }
-            else {
-                ContentUnavailableView("Location not available yet", systemImage: "location.slash",
-                                       description: Text("Your map will appear when Dayline receives your location."))
-                    .background(Color(.secondarySystemGroupedBackground))
-            }
-        }
+        mapView(interactive: false, showsControls: false)
             .frame(height: height)
             .clipShape(.rect(cornerRadius: Theme.cardRadius, style: .continuous))
             .contentShape(.rect(cornerRadius: Theme.cardRadius))
-            .onTapGesture { if hasMapAnchor { expanded = true } }
+            .onTapGesture { expanded = true }
             .overlay(alignment: .topTrailing) {
-                if hasMapAnchor { Button { expanded = true } label: {
+                Button { expanded = true } label: {
                     Image(systemName: "arrow.up.left.and.arrow.down.right").font(.scaled(size: 13, weight: .bold))
                         .foregroundStyle(.primary).frame(width: 34, height: 34)
                 }
@@ -401,7 +394,6 @@ struct TimelineScreen: View {
                 .glassEffect(.regular.interactive(), in: .circle)
                 .accessibilityLabel("Open map")
                 .padding(10)
-                }
             }
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier("mapCard")
