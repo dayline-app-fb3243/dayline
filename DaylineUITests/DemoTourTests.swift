@@ -1528,11 +1528,11 @@ final class DemoTourTests: XCTestCase {
         clearKeyboardLesson(app)
         let mic = app.descendants(matching: .any)["voiceMic"].firstMatch
         XCTAssertTrue(mic.waitForExistence(timeout: 4))
-        mic.press(forDuration: 1.2)
+        mic.coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5)).press(forDuration: 1.2)
         let allow = XCUIApplication(bundleIdentifier: "com.apple.springboard").buttons["Allow"]
         if allow.waitForExistence(timeout: 3) {
             allow.tap(); pause(0.7)
-            mic.press(forDuration: 1.2)
+            mic.coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5)).press(forDuration: 1.2)
         }
         pause(1.5)
         let red = app.descendants(matching: .any)["audioHoldBar"].firstMatch
