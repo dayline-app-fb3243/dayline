@@ -99,20 +99,22 @@ enum JournalSearch {
                 let v = nearestVisit(e)
                 let place = e.placeName ?? v?.placeName ?? "Journal"
                 let text = [e.text, e.title ?? "", place].joined(separator: " ").lowercased()
-                if let k = keys.first(where: { SearchSuggestions.matches($0, in: text) }) {
+                if keys.allSatisfy({ SearchSuggestions.matches($0, in: text) }) {
+                    let k = keys[0]
                     let why = e.kind == .voice ? "Voice memo: \u{201C}\(e.text.prefix(48))\u{201D}" : (place.lowercased().contains(k) ? "Place name" : "Journal: \u{201C}\(e.text.prefix(48))\u{201D}")
                     hits.append(SearchHit(place: place, date: e.date, reason: why, symbol: v?.category.symbol ?? "doc.text.fill", thumbnail: e.thumbnail, coordinate: e.coordinate ?? v?.coordinate))
                     continue
                 }
                 if e.kind == .photo {
                     let labels = labels(for: e)
-                    if let k = keys.first(where: { key in labels.contains { SearchSuggestions.matches(key, in: $0) } }) {
+                    if keys.allSatisfy({ key in labels.contains { SearchSuggestions.matches(key, in: $0) } }) {
+                        let k = keys[0]
                         let shown = labels.filter { !$0.isEmpty }.prefix(3).joined(separator: ", ")
                         hits.append(SearchHit(place: place, date: e.date, reason: "Photo shows \(shown.isEmpty ? k : shown)", symbol: v?.category.symbol ?? "photo.fill", thumbnail: e.thumbnail, coordinate: e.coordinate ?? v?.coordinate))
                     }
                 }
             }
-            for v in visits where inRange(v.arrival) && keys.contains(where: { SearchSuggestions.matches($0, in: v.placeName) }) {
+            for v in visits where inRange(v.arrival) && keys.allSatisfy({ SearchSuggestions.matches($0, in: v.placeName) }) {
                 if !hits.contains(where: { $0.place == v.placeName && cal.isDate($0.date, inSameDayAs: v.arrival) }) {
                     hits.append(SearchHit(place: v.placeName, date: v.arrival, reason: "You were here", symbol: v.category.symbol, coordinate: v.coordinate))
                 }

@@ -660,7 +660,10 @@ final class DemoTourTests: XCTestCase {
         let hit = app.descendants(matching: .any)["searchHit"].firstMatch
         if hit.waitForExistence(timeout: 4) { hit.tap(); pause(2); shot("search-place-page") }
         let back = app.navigationBars.buttons.firstMatch
-        if back.exists { back.tap(); pause(1); shot("search-back-results") }
+        if back.exists { back.tap(); pause(1) }
+        let dismiss = app.buttons["Continue"]
+        if dismiss.exists { dismiss.tap(); pause(0.6) }
+        shot("search-back-results")
     }
 
     /// Steps page (picked: Health-style chart), opened from the Steps tile: D and W.
