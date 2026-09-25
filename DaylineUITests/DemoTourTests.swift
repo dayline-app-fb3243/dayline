@@ -717,7 +717,7 @@ final class DemoTourTests: XCTestCase {
     /// Flip the real Profile switch, then revisit Timeline and the schedule without relaunching.
     func testSymbolsToggleLive() throws {
         let app = XCUIApplication()
-        app.launchArguments = ["-demo", "-symbols.show", "YES"]
+        app.launchArguments = ["-demo"]
         app.launchEnvironment["TZ"] = Self.morningZone
         app.launch(); pause(1)
         tab(app, "Profile"); pause(0.8)
@@ -1031,7 +1031,7 @@ final class DemoTourTests: XCTestCase {
     /// Opt-in toggle is off by default and can be switched on from the picker.
     func testWidgetSyncToggle() throws {
         let app = XCUIApplication()
-        app.launchArguments = ["-demo", "-background", "sunset", "-background.widgetSync", "NO"]
+        app.launchArguments = ["-demo", "-background", "sunset"]
         app.launch(); pause(1)
         tab(app, "Profile"); pause(0.8)
         tapID(app, "backgroundRow"); pause(1)
