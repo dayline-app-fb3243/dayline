@@ -894,12 +894,13 @@ struct SplashLoop: View {
             tracks.track(current).start = .now
             withAnimation(.easeIn(duration: 1.0)) { shown = true }
             while !Task.isCancelled {
-                // 4 s on its own, then the next scene starts loading underneath (3 s head start), then a 1.6 s crossfade.
+                // 4 s on its own, then the next scene starts loading underneath (3 s head start), then a 2.6 s crossfade
+                // while both scenes keep turning, so one blends into the next.
                 try? await Task.sleep(for: .seconds(4))
                 next = (current + 1) % Self.scenes.count
                 try? await Task.sleep(for: .seconds(3))
                 if let n = next { tracks.track(n).start = .now; crossStart = .now }
-                withAnimation(.easeInOut(duration: 1.6)) { showNext = true }
+                withAnimation(.easeInOut(duration: 2.6)) { showNext = true }
                 if smoothPin || routePin, let n = next {
                     // Halfway through the crossfade: a gentle dip, the symbol swaps, and it springs back.
                     Task { @MainActor in
@@ -909,7 +910,7 @@ struct SplashLoop: View {
                         withAnimation(.spring(duration: 0.6, bounce: 0.2)) { pinSymbol = Self.symbols[n]; pinPulse = false }
                     }
                 }
-                try? await Task.sleep(for: .seconds(1.7))
+                try? await Task.sleep(for: .seconds(2.7))
                 // Drop the old map right away so only one keeps rendering.
                 var t = Transaction(); t.disablesAnimations = true
                 withTransaction(t) { current = next ?? current; next = nil; showNext = false; crossStart = nil }
@@ -920,7 +921,7 @@ struct SplashLoop: View {
     /// 0 before the crossfade, 1 when the next scene has fully taken over (eased).
     private func crossFraction(at now: Date) -> Double {
         guard next != nil, let cs = crossStart else { return 0 }
-        let raw = min(1, max(0, now.timeIntervalSince(cs) / 1.6))
+        let raw = min(1, max(0, now.timeIntervalSince(cs) / 2.6))
         return raw * raw * (3 - 2 * raw)
     }
 
@@ -928,7 +929,7 @@ struct SplashLoop: View {
     private func routePoint(at now: Date) -> CGPoint? {
         let a = tracks.track(current).point(at: now)
         guard let n = next, let cs = crossStart, let b = tracks.track(n).point(at: now) else { return a }
-        let raw = min(1, max(0, now.timeIntervalSince(cs) / 1.6))
+        let raw = min(1, max(0, now.timeIntervalSince(cs) / 2.6))
         let c = raw * raw * (3 - 2 * raw)  // ease in-out
         guard let a else { return b }
         return CGPoint(x: a.x + (b.x - a.x) * c, y: a.y + (b.y - a.y) * c)
@@ -1142,21 +1143,33 @@ struct SplashLiveMap: View {
                   .standard(pointsOfInterest: .excludingAll))
         .mapControlVisibility(.hidden)
         .mapCameraKeyframeAnimator(trigger: drift) { cam in
-            // Route mode: no turn. The camera center sits a bit past the place (so the pin lands in the clear top
-            // part), and turning around that point would swing the place off to the side.
-            KeyframeTrack(\MapCamera.heading) { LinearKeyframe(cam.heading + (routeMode ? 0 : 18), duration: 12) }
-            KeyframeTrack(\MapCamera.distance) { LinearKeyframe(cam.distance * (routeMode ? 0.94 : 0.85), duration: 12) }
+            // Route mode moves its own camera (orbit below), so this only drives the other styles.
+            KeyframeTrack(\MapCamera.heading) { LinearKeyframe(cam.heading + 18, duration: 12) }
+            KeyframeTrack(\MapCamera.distance) { LinearKeyframe(cam.distance * 0.85, duration: 12) }
         }
         .safeAreaPadding(.bottom, routeMode ? Self.logoInset : 0)
         .task {
             if routeMode {
                 await loadRoute()
-                await frameForRoute()
-                if drifting { drift = true }
-                // Move the pin along the line ~30 times a second while it glides, then leave it still.
+                let lead = await frameForRoute()
+                // The camera turns slowly around the place and pushes in, like Apple's Maps splash. It orbits the
+                // place itself (the camera center swings around with the heading), so the place and its pin stay
+                // put on screen while the city turns behind them. The pin rides the line at the same ~30 fps.
+                let orbitStart = Date()
                 while !Task.isCancelled {
+                    if drifting, let c0 = position.camera, let hero = stops.first(where: { $0.name == heroName }) {
+                        let raw = min(1, Date().timeIntervalSince(orbitStart) / Self.orbitSeconds)
+                        let t = raw * raw * (3 - 2 * raw) * 0.5 + raw * 0.5  // gentle start, steady middle
+                        let ratio = 1 - 0.14 * t
+                        let heading = c0.heading + Self.orbitDegrees * t
+                        var tr = Transaction(); tr.disablesAnimations = true
+                        withTransaction(tr) {
+                            cam = .camera(MapCamera(centerCoordinate: Self.shift(hero.c, meters: lead * ratio, heading: heading),
+                                                    distance: c0.distance * ratio, heading: heading, pitch: c0.pitch + 4 * t))
+                        }
+                    }
                     if let track { pinCoord = track.coordinate(now: .now) }
-                    try? await Task.sleep(for: .milliseconds(track?.gliding == true ? 33 : 250))
+                    try? await Task.sleep(for: .milliseconds(33))
                 }
                 return
             }
@@ -1213,8 +1226,17 @@ struct SplashLiveMap: View {
     /// part, above the white fade). Center the camera on the place, then slide the camera along its heading and
     /// measure where the place lands on screen, correcting a few times (MapKit's pitch and insets make the exact
     /// screen spot hard to predict, so measure it).
-    private func frameForRoute() async {
-        guard let c0 = position.camera, let hero = stops.first(where: { $0.name == heroName }) else { return }
+    /// Seconds and degrees of the slow turn in route mode; long enough to keep moving through the crossfade.
+    static let orbitSeconds: Double = 14
+    static let orbitDegrees: Double = 22
+    static func shift(_ c: CLLocationCoordinate2D, meters m: Double, heading deg: Double) -> CLLocationCoordinate2D {
+        let h = deg * .pi / 180
+        return .init(latitude: c.latitude + m * cos(h) / 111_320,
+                     longitude: c.longitude + m * sin(h) / (111_320 * cos(c.latitude * .pi / 180)))
+    }
+    /// Returns how far past the place (meters, along the heading) the camera center sits.
+    private func frameForRoute() async -> Double {
+        guard let c0 = position.camera, let hero = stops.first(where: { $0.name == heroName }) else { return 0 }
         func set(_ c: CLLocationCoordinate2D) {
             var t = Transaction(); t.disablesAnimations = true
             withTransaction(t) { cam = .camera(MapCamera(centerCoordinate: c, distance: c0.distance, heading: c0.heading, pitch: c0.pitch)) }
@@ -1235,7 +1257,7 @@ struct SplashLiveMap: View {
         let target: CGFloat = 300
         var m = 0.0
         set(shifted(m))
-        guard var y0 = await heroY() else { return }
+        guard var y0 = await heroY() else { return 0 }
         var step = c0.distance * 0.1
         for _ in 0..<5 {
             if abs(y0 - target) < 6 { break }
@@ -1247,6 +1269,7 @@ struct SplashLiveMap: View {
             step = Double(target - y0) / gain
         }
         try? await Task.sleep(for: .milliseconds(100))
+        return m
     }
 
     /// Walking routes are fetched once per scene and reused every time the loop comes back around.
