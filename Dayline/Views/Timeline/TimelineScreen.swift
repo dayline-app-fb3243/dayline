@@ -96,7 +96,7 @@ struct TimelineScreen: View {
     }
     private func photoCaption(_ entry: JournalEntry) -> String {
         let date = entry.date
-        switch range {
+        return switch range {
         case .day: [placeName(of: entry), DayActivityList.clock.string(from: date)].compactMap { $0 }.joined(separator: " · ")
         case .week: [date.formatted(.dateTime.weekday(.abbreviated)), placeName(of: entry)].compactMap { $0 }.joined(separator: " · ")
         case .month: [date.formatted(.dateTime.month(.abbreviated).day()), placeName(of: entry)].compactMap { $0 }.joined(separator: " · ")
