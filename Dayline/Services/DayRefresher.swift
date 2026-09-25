@@ -31,7 +31,9 @@ enum DayRefresher {
         DayData.finalizePastDays(context: context)
 
         let input = DayData.input(for: today, context: context)
-        let result = ScoreEngine.score(input)
+        // The seeded app's Today card uses DemoData.todayScore. Publish that same
+        // result to the real Home Screen extension, never a different score.
+        let result = DemoData.isDemo ? DemoData.todayScore : ScoreEngine.score(input)
         let hasDayData = DemoData.isDemo || !input.visits.isEmpty || !input.journal.isEmpty || !input.plan.isEmpty || input.steps > 0 || input.remindersTotal > 0
         let streak = DayData.streak(context: context)
         let plan = DayData.input(for: today, context: context).plan
