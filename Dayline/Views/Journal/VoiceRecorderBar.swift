@@ -120,7 +120,6 @@ struct VoiceRecorderBar<Tools: View, Leading: View>: View {
                         .contentShape(Circle())
                     }
                         .buttonStyle(.plain)
-                        .transition(.scale(scale: 0.2, anchor: .trailing).combined(with: .opacity))
                         .gesture(LongPressGesture(minimumDuration: minimumHold, maximumDistance: cancelDistance)
                             .onEnded { _ in
                                 guard !readyToSend, !recordingUI else { return }
@@ -128,7 +127,7 @@ struct VoiceRecorderBar<Tools: View, Leading: View>: View {
                                 startTask = Task { @MainActor in
                                     do { try await voice.start() } catch { return }
                                     guard voice.isRecording else { return }
-                                    recordingUI = true
+                                    withTransaction(Transaction(animation: nil)) { recordingUI = true }
                                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                                 }
                             })
@@ -144,7 +143,6 @@ struct VoiceRecorderBar<Tools: View, Leading: View>: View {
         }
         .padding(.horizontal, 16)
         .padding(.bottom, 12)
-        .animation(.snappy(duration: 0.25), value: recordingUI)
         .animation(.snappy(duration: 0.25), value: readyToSend)
         .animation(.snappy(duration: 0.25), value: hintVisible)
     }
