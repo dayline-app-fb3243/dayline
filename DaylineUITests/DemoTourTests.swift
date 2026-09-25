@@ -763,13 +763,13 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
-    func testWeekWidgetSizeLight() throws { captureWeekWidgetSize() }
-    func testWeekWidgetSizeDark() throws { captureWeekWidgetSize() }
-    private func captureWeekWidgetSize() {
+    func testWeekWidgetSizeLight() throws { captureWeekWidgetSize("light") }
+    func testWeekWidgetSizeDark() throws { captureWeekWidgetSize("dark") }
+    private func captureWeekWidgetSize(_ appearance: String) {
         let app = XCUIApplication()
         app.launchArguments = ["-demo", "-weekWidgetSize"]
         app.launch(); pause(1)
-        shot("week-widget-size")
+        shot("week-widget-size-\(appearance)")
     }
 
     func testSearchSuggestionFill() throws {
