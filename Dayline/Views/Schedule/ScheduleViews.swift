@@ -12,24 +12,14 @@ struct YourScheduleView: View {
     @State private var s = UserSchedule.current
     @State private var editing: WorkBlock?
     @State private var adding = false
-    /// Preview "gym.ask": what happens when you turn the Gym habit on. Only asks where your gym is.
-    /// A = a sheet with the Apple Maps search. B = a "Gym Location" row right in the list. C = the search,
-    /// then a card with the gym and its closing time.
-    /// "" = the old plain Go By picker.
-    @AppStorage("gym.ask") private var ask = ""
-    @State private var askingGym = false
+    @State private var pickingWork = false
     @State private var pickingGym = false
-
-    /// "8:00 PM · sample hours": the gym's closing time, only when real hours are known.
-    private var closesShort: String? {
-        guard s.gymPlace != nil || DemoData.isDemo, let c = GymHours.cached, let close = GymHours.closing(on: .now) else { return nil }
-        return "\(UserSchedule.date(close, on: .now).formatted(date: .omitted, time: .shortened))\(c.sample ? " · sample" : "")"
+    private func savePlace(_ item: MKMapItem, kind: String) {
+        s.places.removeAll { $0.kind == kind }
+        s.places.append(SavedPlace(kind: kind, name: item.name ?? (kind == "work" ? "Work" : "Gym"),
+                                   address: AddPlaceView.address(item), latitude: item.location.coordinate.latitude,
+                                   longitude: item.location.coordinate.longitude))
     }
-    private var closesText: String? {
-        guard let c = GymHours.cached, let close = GymHours.closing(on: .now) else { return nil }
-        return "\(c.name) closes \(UserSchedule.date(close, on: .now).formatted(date: .omitted, time: .shortened))\(c.sample ? " · sample hours" : "")"
-    }
-    private func setGym(_ item: MKMapItem) { s.setGym(item) }
 
     var body: some View {
         Form {
@@ -51,6 +41,15 @@ struct YourScheduleView: View {
             }
             Section {
                 Toggle("I Work", isOn: $s.works.animation()).accessibilityIdentifier("worksToggle")
+                if s.works {
+                    Button { pickingWork = true } label: {
+                        LabeledContent("Work Location") {
+                            Text(s.workPlace?.name ?? "Choose")
+                                .foregroundStyle(s.workPlace == nil ? Theme.accent : .secondary)
+                        }
+                    }
+                    .tint(.primary).accessibilityIdentifier("workLocation")
+                }
                 if s.works {
                     ForEach(s.workBlocks) { b in
                         Button { editing = b } label: {
@@ -75,42 +74,21 @@ struct YourScheduleView: View {
             }
             Section {
                 Toggle("Gym", isOn: $s.gym)
-                if s.gym && ask == "B" {
+                if s.gym {
                     Button { pickingGym = true } label: {
                         LabeledContent("Gym Location") {
-                            Text(s.gymPlace?.name ?? "Choose").foregroundStyle(s.gymPlace == nil ? Theme.accent : .secondary)
+                            Text(s.gymPlace?.name ?? "Choose")
+                                .foregroundStyle(s.gymPlace == nil ? Theme.accent : .secondary)
                         }
                     }
-                    .tint(.primary)
-                    .accessibilityIdentifier("gymLocation")
-                    if let closes = closesShort {
-                        LabeledContent("Closes") { Text(closes) }.accessibilityIdentifier("gymBy")
-                    }
-                } else if s.gym && (ask == "A" || ask == "C") {
-                    Button { askingGym = true } label: {
-                        LabeledContent("Gym Location") {
-                            Text(s.gymPlace?.name ?? "Choose").foregroundStyle(s.gymPlace == nil ? Theme.accent : .secondary)
-                        }
-                    }
-                    .tint(.primary)
-                    if let closes = closesShort {
-                        LabeledContent("Closes") { Text(closes) }.accessibilityIdentifier("gymBy")
-                    }
-                } else if s.gym, GymHours.enabled, let c = GymHours.cached, let close = GymHours.closing(on: .now) {
-                    // Preview "gym.hours": the real closing time replaces the picker.
-                    LabeledContent("Go By") {
-                        VStack(alignment: .trailing, spacing: 1) {
+                    .tint(.primary).accessibilityIdentifier("gymLocation")
+                    if let gym = s.gymPlace,
+                       let c = GymHours.cached, !c.sample, c.name == gym.name,
+                       let close = GymHours.closing(on: .now) {
+                        LabeledContent("Closes") {
                             Text(UserSchedule.date(close, on: .now).formatted(date: .omitted, time: .shortened))
-                            Text("\(c.name) closes\(c.sample ? " · sample hours" : "")").font(.footnote).foregroundStyle(.secondary)
-                        }
+                        }.accessibilityIdentifier("gymBy")
                     }
-                    .accessibilityIdentifier("gymBy")
-                } else if s.gym && !GymHours.enabled {
-                    // Old Go By picker, only with "gym.hours" off. With it on and hours unknown, no time is shown.
-                    DatePicker("Go By", selection: Binding(
-                        get: { UserSchedule.date(s.gymDeadline, on: .now) },
-                        set: { s.gymBy = UserSchedule.minutes(of: $0) }), displayedComponents: .hourAndMinute)
-                        .accessibilityIdentifier("gymBy")
                 }
                 Toggle(isOn: $s.walk) {
                     VStack(alignment: .leading, spacing: 2) {
@@ -118,8 +96,6 @@ struct YourScheduleView: View {
                         Text("Step goal: \(s.stepGoal.formatted()) \u{00B7} based on your usual day").font(.footnote).foregroundStyle(.secondary)
                     }
                 }
-                Toggle("Time Outside", isOn: $s.outside)
-                Toggle("Get Out of the House", isOn: $s.getOut)
                 Toggle("Journal", isOn: $s.journal)
             } header: { Text("My Habits") } footer: {
                 Text("Your day score only counts what\u{2019}s on. Points are shared between them, so a full day of your own routine is 100. A habit only counts as missed once its time is up.")
@@ -130,15 +106,18 @@ struct YourScheduleView: View {
         .navigationTitle("Your Schedule")
         .backgroundNavBar()
         .navigationBarTitleDisplayMode(.inline)
-        .onChange(of: s.gym) { _, on in
-            if on && s.gymPlace == nil && (ask == "A" || ask == "C") { askingGym = true }
-        }
-        .sheet(isPresented: $askingGym) {
-            GymAskSheet(style: ask, s: $s).presentationDetents(ask == "C" ? [.large] : [.large])
+        .sheet(isPresented: $pickingWork) {
+            NavigationStack {
+                AddPlaceView(title: "Work Location", prompt: "Search for work") { item in
+                    savePlace(item, kind: "work")
+                }
+            }
         }
         .sheet(isPresented: $pickingGym) {
             NavigationStack {
-                AddPlaceView(title: "Your Gym", prompt: "Search for your gym", categories: [.fitnessCenter]) { item in setGym(item) }
+                AddPlaceView(title: "Gym Location", prompt: "Search for your gym", categories: [.fitnessCenter]) { item in
+                    savePlace(item, kind: "gym")
+                }
             }
         }
         .onChange(of: s) { _, new in UserSchedule.current = new }

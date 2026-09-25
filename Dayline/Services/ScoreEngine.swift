@@ -74,9 +74,8 @@ enum ScoreEngine {
             let deadline = GymHours.enabled ? (GymHours.closing(on: day, calendar: calendar) ?? bed) : s.gymDeadline
             moveBy = max(moveBy, deadline)
         }
-        if s.walk || s.outside { moveBy = max(moveBy, bed - 60) }
-        if moveBy > 0 { miss(.moving, s.gym && !(s.walk || s.outside) ? "Gym" : "Moving", deadline: moveBy) }
-        miss(.gotOut, "Getting out", deadline: bed - 60)
+        if s.walk { moveBy = max(moveBy, bed - 60) }
+        if moveBy > 0 { miss(.moving, s.gym && !s.walk ? "Gym" : "Moving", deadline: moveBy) }
         miss(.journal, "Journal", deadline: bed)
         miss(.bed, "Bedtime", deadline: bed + 10)
         let madeUp = Double(max(0, factors.filter { $0.part == bonusPart }.reduce(0) { $0 + $1.points }))
@@ -120,8 +119,7 @@ enum ScoreEngine {
         let s = input.schedule
         var parts: [Part] = [.wake, .bed, .plans]
         if s.work(on: input.day, calendar: calendar) != nil { parts.append(.work) }
-        if s.gym || s.walk || s.outside { parts.append(.moving) }
-        if s.getOut { parts.append(.gotOut) }
+        if s.gym || s.walk { parts.append(.moving) }
         if s.journal { parts.append(.journal) }
         return parts
     }
@@ -207,20 +205,8 @@ enum ScoreEngine {
                 let f = Double(input.steps) / Double(max(1, s.stepGoal))
                 if f > best { best = f; title = "\(input.steps.formatted()) steps"; if f >= 1 { bit = "hit your steps" } }
             }
-            if s.outside, best < 1 {
-                let mins = outside.filter { $0.category == .outdoors }.reduce(0) { $0 + $1.duration } / 60
-                let f = mins / 30
-                if f > best { best = f; title = "Time outside"; if f >= 1 { bit = "got outside" } }
-            }
             if let bit { summaryBits.append(bit) }
             factors.append(.init(part: .moving, title: best > 0 ? title : "Move later", effect: best > 0 ? .up : .pending, points: pts(.moving, best)))
-        }
-
-        // 6. Got out: 3 places (coffee and restaurants count) = full
-        if w[.gotOut] != nil {
-            let places = Set(outside.filter { $0.category != .work }.map(\.placeKey)).count
-            if places > 0 { factors.append(.init(part: .gotOut, title: "\(places) place\(places == 1 ? "" : "s")", effect: .up, points: pts(.gotOut, Double(places) / 3))) }
-            if outside.contains(where: { $0.category == .food || $0.category == .coffee }) { summaryBits.append("went out") }
         }
 
         // Apple Health workouts arrive as journal lines ("Run · 5.2 km · 31 min"); they count as activity, not journaling.

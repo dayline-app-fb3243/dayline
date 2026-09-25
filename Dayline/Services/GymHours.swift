@@ -36,6 +36,8 @@ enum GymHours {
     /// The gym's closing time on that day, when the preview is on and hours are known.
     static func closing(on day: Date, calendar: Calendar = .current) -> Int? {
         guard enabled, let c = cached else { return nil }
+        // Demo's example hours are for previews only, never a deadline when no gym has been chosen.
+        if c.sample && UserSchedule.current.gymPlace == nil { return nil }
         return c.closes[calendar.component(.weekday, from: day)]
     }
 

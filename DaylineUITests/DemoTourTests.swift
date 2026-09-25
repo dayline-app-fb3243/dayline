@@ -634,6 +634,24 @@ final class DemoTourTests: XCTestCase {
         shot("compact-sleep-rows")
     }
 
+    /// Work and gym pickers are directly on Your Schedule; old habits are gone.
+    func testScheduleLocations() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo"]
+        app.launch(); pause(1)
+        tab(app, "Profile"); pause(0.8)
+        tapID(app, "yourScheduleRow"); pause(1.3)
+        app.swipeUp(); pause(0.8)
+        shot("schedule-locations-and-habits")
+        XCTAssertFalse(app.staticTexts["Time Outside"].exists)
+        XCTAssertFalse(app.staticTexts["Get Out of the House"].exists)
+        let work = app.descendants(matching: .any)["workLocation"].firstMatch
+        if work.waitForExistence(timeout: 3) { work.tap(); pause(1.2); shot("schedule-work-picker") }
+        goBack(app)
+        let gym = app.descendants(matching: .any)["gymLocation"].firstMatch
+        if gym.waitForExistence(timeout: 3) { gym.tap(); pause(1.2); shot("schedule-gym-picker") }
+    }
+
     /// Show Symbols affects rows on Today, its schedule, Timeline, Day score, and Profile.
     func testSymbolsOnOff() throws {
         for (enabled, label) in [(true, "on"), (false, "off")] {
