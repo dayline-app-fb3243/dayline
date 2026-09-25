@@ -136,12 +136,12 @@ struct StreakView: View {
                             ForEach(Array(people.enumerated()), id: \.offset) { i, f in
                                 if let f {
                                     NavigationLink { FriendStreakView(friend: f, yourStreak: streak) } label: {
-                                        FriendRow(initials: String(f.name.prefix(1)), color: f.color, name: f.name, best: f.best, current: f.current)
+                                        FriendRow(initials: f.fullName, color: f.color, name: f.name, best: f.best, current: f.current)
                                     }
                                     .buttonStyle(.plain)
                                     .accessibilityIdentifier("friend-\(f.name)")
                                 } else {
-                                    FriendRow(initials: "Me", color: Theme.accent, name: "You", best: max(StreakMath.best(scores), streak), current: streak)
+                                    FriendRow(initials: "M E", color: Theme.accent, name: "You", best: max(StreakMath.best(scores), streak), current: streak)
                                 }
                                 if i < people.count - 1 { Divider().padding(.leading, 58) }
                             }
@@ -185,10 +185,9 @@ private struct FriendRow: View {
     var current: Int
     var body: some View {
         HStack(spacing: 12) {
-            Text(initials).font(.caption.bold()).foregroundStyle(.white)
-                .markerBackground(color, size: 30)
+            PersonAvatar(name: initials, size: 30)
             VStack(alignment: .leading, spacing: 1) {
-                Text(name).font(.body)
+                Text(name).font(.body.weight(.semibold))
                 Text("Best \(best) days").font(.subheadline).foregroundStyle(.secondary)
             }
             Spacer()
@@ -395,9 +394,9 @@ struct StreakDayView: View {
                         VStack(spacing: 0) {
                             ForEach(Array(people.enumerated()), id: \.offset) { i, f in
                                 if let f {
-                                    FriendRow(initials: String(f.name.prefix(1)), color: f.color, name: f.name, best: f.best, current: f.streak(asOf: day))
+                                    FriendRow(initials: f.fullName, color: f.color, name: f.name, best: f.best, current: f.streak(asOf: day))
                                 } else {
-                                    FriendRow(initials: "Me", color: Theme.accent, name: "You", best: max(StreakMath.best(scores), mine), current: mine)
+                                    FriendRow(initials: "M E", color: Theme.accent, name: "You", best: max(StreakMath.best(scores), mine), current: mine)
                                 }
                                 if i < people.count - 1 { Divider().padding(.leading, 58) }
                             }
@@ -423,15 +422,16 @@ struct StreakDayView: View {
 /// People page: switch friends on/off on your streak ring, find people to follow, invite a friend.
 // MARK: - People (Health-style sharing pages)
 
-/// Person avatar: colored circle with initials (gray for people not sharing yet).
+/// Person avatar: Contacts-style monogram (gray-blue gradient, up to two initials).
 struct PersonAvatar: View {
     var name: String
-    var color: Color? = nil
     var size: CGFloat = 40
     var body: some View {
-        let initials = name.split(separator: " ").prefix(2).compactMap(\.first).map { String($0) }.joined()
-        Text(initials).font(.scaled(size: size * 0.42, weight: .semibold)).minimumScaleFactor(0.5).lineLimit(1).foregroundStyle(.white)
-            .markerBackground(color.map { AnyShapeStyle($0) } ?? AnyShapeStyle(LinearGradient(colors: [Color(white: 0.66), Color(white: 0.53)], startPoint: .top, endPoint: .bottom)), size: size)
+        let initials = name.split(separator: " ").prefix(2).compactMap(\.first).map { String($0) }.joined().uppercased()
+        Text(initials).font(.scaled(size: size * (initials.count > 1 ? 0.4 : 0.44), weight: .semibold)).minimumScaleFactor(0.5).lineLimit(1).foregroundStyle(.white)
+            .frame(width: size, height: size)
+            .background(LinearGradient(colors: [Color(red: 0.63, green: 0.71, blue: 0.86), Color(red: 0.46, green: 0.51, blue: 0.74)], startPoint: .top, endPoint: .bottom), in: .circle)
+            .accessibilityHidden(true)
     }
 }
 
@@ -473,15 +473,15 @@ private struct PersonRow<Trailing: View>: View {
     var compact = false
     var name: String
     var subtitle: String
-    var color: Color? = nil
+    var avatarName: String? = nil
     var last = false
     @ViewBuilder var trailing: Trailing
     var body: some View {
         HStack(spacing: compact ? 12 : 14) {
-            PersonAvatar(name: name, color: color, size: compact ? 34 : 40)
+            PersonAvatar(name: avatarName ?? name, size: compact ? 34 : 40)
             VStack(alignment: .leading, spacing: 1) {
-                Text(name).font(compact ? .body : .body.weight(.semibold)).foregroundStyle(.primary)
-                Text(subtitle).font(compact ? .subheadline : .subheadline.weight(.medium)).foregroundStyle(.secondary)
+                Text(name).font(.body.weight(.semibold)).foregroundStyle(.primary)
+                Text(subtitle).font(.subheadline).foregroundStyle(.secondary)
             }
             Spacer()
             trailing
@@ -591,7 +591,7 @@ struct PeopleView: View {
                             .frame(maxWidth: .infinity, alignment: .leading).padding(16)
                     }
                     ForEach(Array(FriendStore.friends.enumerated()), id: \.element.id) { i, f in
-                        PersonRow(compact: true, name: f.name, subtitle: "Show on my streak", color: f.color, last: i == FriendStore.friends.count - 1) {
+                        PersonRow(compact: true, name: f.name, subtitle: "Show on my streak", avatarName: f.fullName, last: i == FriendStore.friends.count - 1) {
                             Toggle("", isOn: FriendVisibility.binding(f.name, raw: $hiddenRaw)).labelsHidden()
                         }
                         .accessibilityIdentifier("friendSwitch\(f.name)")
@@ -609,7 +609,7 @@ struct PeopleView: View {
                 SettingsGroup {
                     ForEach(PeopleStore.sharingWith) { f in
                         NavigationLink { PersonView(friend: f) } label: {
-                            PersonRow(compact: true, name: f.name, subtitle: "Sees your streak", color: f.color) { Chevron() }
+                            PersonRow(compact: true, name: f.name, subtitle: "Sees your streak", avatarName: f.fullName) { Chevron() }
                         }
                         .accessibilityIdentifier("person-\(f.name)")
                     }
@@ -671,7 +671,7 @@ struct PersonView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 VStack(spacing: 4) {
-                    PersonAvatar(name: friend.name, color: friend.color, size: 96)
+                    PersonAvatar(name: friend.fullName, size: 96)
                     Text(friend.fullName).font(.title.bold()).padding(.top, 6)
                     Text("Sharing since \(friend.since)").font(.subheadline.weight(.medium)).foregroundStyle(.secondary)
                 }
@@ -810,7 +810,7 @@ struct ShareWithView: View {
                             .accessibilityIdentifier("share-\(c.0)")
                         }
                         ForEach(Array(followers.enumerated()), id: \.offset) { i, f in
-                            PersonRow(name: f.fullName, subtitle: "Shares with you", color: f.color, last: i == followers.count - 1) {
+                            PersonRow(name: f.fullName, subtitle: "Shares with you", last: i == followers.count - 1) {
                                 PillButton(title: "Share", done: "Sharing")
                             }
                             .accessibilityIdentifier("share-\(f.name)")
