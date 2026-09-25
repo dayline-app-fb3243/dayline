@@ -180,6 +180,18 @@ final class DemoTourTests: XCTestCase {
         shot("journal-media-dialog-dark")
     }
 
+    func testDefaultWorkHoursWeekdays() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-onboarding.done", "YES"]
+        app.launch(); pause(1)
+        app.tabBars.buttons["Profile"].tap(); pause(1)
+        tapID(app, "Your Schedule"); pause(1)
+        let weekdays = app.descendants(matching: .any)["workBlock-Weekdays"].firstMatch
+        XCTAssertTrue(weekdays.waitForExistence(timeout: 6))
+        XCTAssertTrue(weekdays.label.contains("9:00") && weekdays.label.contains("5:00"))
+        shot("default-work-hours-weekdays")
+    }
+
     func testPeopleSearchFiltersContacts() {
         let app = XCUIApplication()
         app.launchArguments = ["-demo", "-testPeopleSearch"]

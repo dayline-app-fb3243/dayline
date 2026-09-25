@@ -3,7 +3,7 @@ import CoreLocation
 import CoreMotion
 import HealthKit
 
-/// One set of work hours, e.g. Mon-Thu 9-5 or Friday 9-3. Minutes after midnight.
+/// One set of work hours, e.g. weekdays 9-5. Minutes after midnight.
 struct WorkBlock: Codable, Hashable, Identifiable, Sendable {
     var id = UUID()
     var days: Set<Int>          // Calendar weekday: 1 = Sunday ... 7 = Saturday
@@ -45,8 +45,7 @@ struct UserSchedule: Codable, Equatable, Sendable {
     var wake: Int = 7 * 60
     var bed: Int = 23 * 60
     var works = true
-    var workBlocks: [WorkBlock] = [WorkBlock(days: [2, 3, 4, 5], start: 9 * 60, end: 17 * 60),
-                                   WorkBlock(days: [6], start: 9 * 60, end: 15 * 60)]
+    var workBlocks: [WorkBlock] = [WorkBlock(days: [2, 3, 4, 5, 6], start: 9 * 60, end: 17 * 60)]
     var gym = false
     /// When your gym closes: the gym counts as missed after this. Optional so older saved settings still load.
     var gymBy: Int? = nil
