@@ -84,7 +84,7 @@ struct DaylineApp: App {
     private func startUp() async {
         let context = ModelStore.container.mainContext
         #if DEBUG
-        if ProcessInfo.processInfo.arguments.contains("-testJournalMediaGroup") {
+        if !SampleMode.on && ProcessInfo.processInfo.arguments.contains("-testJournalMediaGroup") {
             // UI-test fixture: one composer save stores text, three photos and a voice note.
             // All five records share the same ID and must count/display as one entry.
             let group = UUID().uuidString
