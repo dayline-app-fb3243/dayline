@@ -34,9 +34,20 @@ struct YourScheduleView: View {
     var body: some View {
         Form {
             Section("Sleep") {
-                DatePicker("Wake Up", selection: timeBinding($s.wake), displayedComponents: .hourAndMinute)
-                    .accessibilityIdentifier("wakePicker")
-                DatePicker("Bedtime", selection: timeBinding($s.bed), displayedComponents: .hourAndMinute)
+                HStack {
+                    Text("Wake Up")
+                    Spacer()
+                    DatePicker("Wake Up", selection: timeBinding($s.wake), displayedComponents: .hourAndMinute)
+                        .labelsHidden().accessibilityIdentifier("wakePicker")
+                }
+                .frame(minHeight: 44).listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
+                HStack {
+                    Text("Bedtime")
+                    Spacer()
+                    DatePicker("Bedtime", selection: timeBinding($s.bed), displayedComponents: .hourAndMinute)
+                        .labelsHidden().accessibilityIdentifier("bedPicker")
+                }
+                .frame(minHeight: 44).listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
             }
             Section {
                 Toggle("I Work", isOn: $s.works.animation()).accessibilityIdentifier("worksToggle")

@@ -624,6 +624,16 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Sleep time pickers use compact Settings-style rows, without the old tall padding.
+    func testCompactSleepRows() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo"]
+        app.launch(); pause(1)
+        tab(app, "Profile"); pause(1)
+        tapID(app, "yourScheduleRow"); pause(1.5)
+        shot("compact-sleep-rows")
+    }
+
     /// Show Symbols affects rows on Today, its schedule, Timeline, Day score, and Profile.
     func testSymbolsOnOff() throws {
         for (enabled, label) in [(true, "on"), (false, "off")] {
