@@ -98,6 +98,23 @@ final class DemoTourTests: XCTestCase {
     }
 
 
+    func testJournalReminderToggle() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo"]
+        app.launch(); pause(1)
+        tab(app, "Profile"); pause(1)
+        tapID(app, "notificationsRow"); pause(1)
+        let row = app.switches["Daily Journal Reminder"]
+        XCTAssertTrue(row.waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["journalReminderTime"].exists)
+        XCTAssertTrue(app.staticTexts["When on, a reminder arrives 15 minutes before your bedtime set in Your Schedule."].exists)
+        shot("journal-reminder-off")
+        if row.value as? String == "1" { row.tap() }
+        row.tap()
+        XCTAssertEqual(row.value as? String, "1")
+        shot("journal-reminder-on")
+    }
+
     func testNativeNotificationBanner() throws {
         let app = XCUIApplication()
         let spring = XCUIApplication(bundleIdentifier: "com.apple.springboard")

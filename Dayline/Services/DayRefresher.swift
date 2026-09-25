@@ -25,6 +25,7 @@ enum DayRefresher {
             await GymHours.refresh(context: context)
         }
         await PhotoService.shared.importPhotos(on: today, context: context)
+        await Notifications.refreshJournalReminderIfNeeded()
         RoutineLearner.fillToday(context: context)
         RoutineLearner.autoComplete(context: context)
         DayData.finalizePastDays(context: context)
@@ -67,29 +68,42 @@ enum Notifications {
         _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])
     }
 
-    /// The reminder is opt-in. No hour is assumed on the user's behalf.
+    /// The reminder is opt-in and follows the bedtime set in Your Schedule.
     static func cancelJournalReminder() {
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ["journal-daily"])
+        UserDefaults.standard.removeObject(forKey: "notify.journal.scheduledBed")
+    }
+
+    /// Rebuild only when the set bedtime changes, including a change made while the app was away.
+    static func refreshJournalReminderIfNeeded() async {
+        let d = UserDefaults.standard
+        guard !DemoData.isDemo, d.bool(forKey: "notify.journal.daily") else { return }
+        let bedtime = UserSchedule.current.bed
+        guard d.object(forKey: "notify.journal.scheduledBed") as? Int != bedtime else { return }
+        await scheduleJournalReminder()
     }
 
     static func scheduleJournalReminder() async {
         cancelJournalReminder()
-        guard !DemoData.isDemo, UserDefaults.standard.bool(forKey: "notify.journal.daily"),
-              let hour = UserDefaults.standard.object(forKey: "notify.journal.hour") as? Int,
-              (0...23).contains(hour),
-              let minute = UserDefaults.standard.object(forKey: "notify.journal.minute") as? Int,
-              (0...59).contains(minute) else { return }
+        guard !DemoData.isDemo, UserDefaults.standard.bool(forKey: "notify.journal.daily") else { return }
+        // A minute-of-day calculation handles midnight without creating a stale one-off date.
+        let reminderMinute = (UserSchedule.current.bed - 15 + 1440) % 1440
         await requestPermission()
         let content = UNMutableNotificationContent()
         content.title = "A moment for your journal"
         content.body = "How did your day go? Add a note, photo or voice memo."
         content.sound = .default
         var components = DateComponents()
-        components.hour = hour
-        components.minute = minute
+        components.hour = reminderMinute / 60
+        components.minute = reminderMinute % 60
         let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: true)
-        try? await UNUserNotificationCenter.current().add(
-            UNNotificationRequest(identifier: "journal-daily", content: content, trigger: trigger))
+        do {
+            try await UNUserNotificationCenter.current().add(
+                UNNotificationRequest(identifier: "journal-daily", content: content, trigger: trigger))
+            UserDefaults.standard.set(UserSchedule.current.bed, forKey: "notify.journal.scheduledBed")
+        } catch {
+            UserDefaults.standard.removeObject(forKey: "notify.journal.scheduledBed")
+        }
     }
 
     /// Demo-only notification previews use the actual local notification center.

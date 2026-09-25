@@ -120,7 +120,10 @@ struct YourScheduleView: View {
                 }
             }
         }
-        .onChange(of: s) { _, new in UserSchedule.current = new }
+        .onChange(of: s) { old, new in
+            UserSchedule.current = new
+            if old.bed != new.bed { Task { await Notifications.refreshJournalReminderIfNeeded() } }
+        }
         .onAppear { s = UserSchedule.current }
         .sheet(item: $editing) { b in
             NavigationStack {
