@@ -173,7 +173,7 @@ struct NewEntryView: View {
             }
         }
         .safeAreaInset(edge: .bottom) {
-            VoiceRecorderBar(voice: voice, onSend: { await stopVoice() }, leading: { addMediaButton }) { Color.clear }
+            VoiceRecorderBar(voice: voice, onSend: { await stopVoice() }, leading: { addMediaButton }) { EmptyView() }
         }
         .confirmationDialog("Add photo or video", isPresented: $showMediaChoices, titleVisibility: .visible) {
             Button("Photo and Video Library", systemImage: "photo.fill") { showLibrary = true }

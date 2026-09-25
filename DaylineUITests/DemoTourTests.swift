@@ -1428,7 +1428,12 @@ final class DemoTourTests: XCTestCase {
         XCTAssertFalse(app.descendants(matching: .any)["voiceHoldHint"].firstMatch.exists)
         shot("journal-mic-hint-collapsed")
         mic.press(forDuration: 3.0)
-        pause(0.5); shot("journal-mic-after-hold")
+        pause(0.5)
+        let send = app.buttons["voiceSend"].firstMatch
+        XCTAssertTrue(send.waitForExistence(timeout: 3), "Release should show a send button")
+        shot("journal-mic-ready-to-send")
+        send.tap(); pause(1)
+        shot("journal-mic-sent-collapsed")
     }
 
     /// Hold the microphone, then release to attach or slide away to cancel.
