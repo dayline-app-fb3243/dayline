@@ -90,8 +90,6 @@ struct TodayFriendsCircleCard: View {
         let streak = DayData.streak(context: context)
         let hidden = Set(hiddenRaw.split(separator: ",").map(String.init))
         let friends = FriendStore.friends.filter { !hidden.contains($0.name) }
-        let arcs = [StreakRing.Arc(id: "you", value: streak, color: Theme.accent, showsBadge: false)]
-            + friends.map { StreakRing.Arc(id: $0.id, value: $0.current, color: $0.color, showsBadge: true) }
         NavigationLink { StreakView() } label: {
             Card {
                 HStack(spacing: 16) {
