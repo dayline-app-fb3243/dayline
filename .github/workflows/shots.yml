@@ -102,6 +102,7 @@ jobs:
             xcrun simctl terminate "${{ steps.sim.outputs.udid }}" app.dayline 2>/dev/null || true
           done
           cp /tmp/dayline-shots/*.png shots/ || true
+          cp /tmp/dayline-shots/*.txt shots/ 2>/dev/null || true
           ls shots
 
       - name: Zip simulator app (for browser streaming)
