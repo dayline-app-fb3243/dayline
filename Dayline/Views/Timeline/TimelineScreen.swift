@@ -964,7 +964,8 @@ struct TimelineScreen: View {
 
     struct Cluster { var key: String; var name: String; var coordinate: CLLocationCoordinate2D; var hours: Double; var visits: Int; var category: PlaceCategory }
     private var placeClusters: [Cluster] {
-        Dictionary(grouping: rangeVisits.filter { $0.category != .home }, by: \.placeKey).compactMap { key, stays in
+        // Grouped by name, so one place saved as two nearby spots (same name) shows once.
+        Dictionary(grouping: rangeVisits.filter { $0.category != .home }, by: { $0.placeName.lowercased() }).compactMap { key, stays in
             guard let first = stays.first else { return nil }
             return Cluster(key: key, name: first.placeName, coordinate: first.coordinate, hours: stays.reduce(0) { $0 + $1.duration } / 3600,
                            visits: stays.count, category: first.category)
