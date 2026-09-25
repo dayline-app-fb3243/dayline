@@ -52,7 +52,7 @@ struct TodayView: View {
     }
 
     private var scoreLink: some View {
-        NavigationLink { ScoreDetailView(result: result) } label: { ScoreCard(result: result, showsChevron: true) }
+        NavigationLink { ScoreDetailView(result: result) } label: { ScoreCard(result: result) }
             .buttonStyle(.plain)
             .accessibilityIdentifier("scoreCard")
     }
@@ -123,7 +123,6 @@ struct TodayView: View {
 
 struct ScoreCard: View {
     var result: ScoreEngine.Result
-    var showsChevron = false
     /// The tip follows the time of day and what's still open.
     private var tipText: String {
         if DemoData.isDemo, !(UserDefaults.standard.string(forKey: "demo.pace") ?? "").isEmpty { return result.tip ?? result.summary }
@@ -141,9 +140,6 @@ struct ScoreCard: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 0)
-                if showsChevron {
-                    Image(systemName: "chevron.right").font(.subheadline.weight(.semibold)).foregroundStyle(.tertiary)
-                }
             }
             .padding(.vertical, 4)
         }
@@ -233,7 +229,6 @@ struct TodayStepsNextTiles: View {
                             .foregroundStyle(tint == "blue" ? Theme.accent : .orange).lineLimit(1).minimumScaleFactor(0.8)
                     }
                     Spacer(minLength: 0)
-                    Image(systemName: "chevron.right").font(.subheadline.weight(.semibold)).foregroundStyle(.tertiary)
                 }
                 .padding(.vertical, 4)
             }
@@ -257,7 +252,6 @@ struct TodayStepsNextTiles: View {
                         Text(n.title).font(.title2.weight(.bold)).foregroundStyle(.primary)
                     }
                     Spacer(minLength: 0)
-                    Image(systemName: "chevron.right").font(.subheadline.weight(.semibold)).foregroundStyle(.tertiary)
                 }.padding(.vertical, 4)
             }
         }

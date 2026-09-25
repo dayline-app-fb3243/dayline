@@ -193,7 +193,6 @@ struct InsightsView: View {
                 Text("\(score)").font(.title.bold())
             }
             .foregroundStyle(score < 45 ? Theme.bad : Theme.accent)
-            Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(.tertiary)
         }
         .padding(.horizontal, 16).padding(.vertical, 11)
         .contentShape(.rect)

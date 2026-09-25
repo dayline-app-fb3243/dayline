@@ -22,7 +22,6 @@ struct TodayFriendsRow: View {
                 HStack {
                     Text("Friends").font(.headline).foregroundStyle(.primary)
                     Spacer()
-                    Image(systemName: "chevron.right").font(.subheadline.weight(.semibold)).foregroundStyle(.tertiary)
                 }
                 Card(padding: 14) {
                     HStack(alignment: .top, spacing: 0) {
@@ -63,7 +62,6 @@ struct TodayStreakCard: View {
                             PersonAvatar(name: f.fullName, size: 34).overlay(Circle().stroke(Color(.systemBackground), lineWidth: 2))
                         }
                     }
-                    Image(systemName: "chevron.right").font(.subheadline.weight(.semibold)).foregroundStyle(.tertiary)
                 }
                 .padding(.vertical, 2)
             }
@@ -107,7 +105,6 @@ struct TodayFriendsCircleCard: View {
                             .font(.subheadline).foregroundStyle(.secondary).lineLimit(1)
                     }
                     Spacer(minLength: 0)
-                    Image(systemName: "chevron.right").font(.subheadline.weight(.semibold)).foregroundStyle(.tertiary)
                 }
                 .padding(.vertical, 3)
             }
