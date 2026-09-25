@@ -324,6 +324,7 @@ struct AddPlaceView: View {
                     }
                 }
                 .buttonStyle(.plain)
+                .accessibilityIdentifier("placeResult")
             }
         }
         .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: prompt)

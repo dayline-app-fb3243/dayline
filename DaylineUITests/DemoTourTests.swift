@@ -1436,6 +1436,41 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Your Schedule sample 1, step by step: turn Gym on, pick the gym, see it in Places and Times, set the time, then School.
+    func testScheduleSteps() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo", "-settings.layout", "1", "-settings.fresh", "YES"]
+        app.launch(); pause(1.5)
+        tab(app, "Profile"); pause(1.5)
+        tapID(app, "yourScheduleRow"); pause(2)
+        shot("st-1-start")
+        func flip(_ name: String) {
+            let t = app.descendants(matching: .any)["habit-\(name)"].firstMatch
+            if t.waitForExistence(timeout: 4) { t.coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5)).tap() }
+        }
+        func pickPlace(_ query: String) {
+            let field = app.searchFields.firstMatch
+            if field.waitForExistence(timeout: 4) { field.tap(); pause(0.5); field.typeText(query) }
+            pause(4)
+        }
+        flip("Gym"); pause(2); shot("st-2-gym-sheet")
+        pickPlace("Equinox"); shot("st-3-gym-search")
+        let r = app.buttons.matching(identifier: "placeResult").firstMatch
+        if r.waitForExistence(timeout: 5) { r.tap() }
+        pause(3); shot("st-4-gym-on")
+        app.swipeUp(); pause(1.2); shot("st-5-places-times")
+        let gt = app.descendants(matching: .any)["gymTime"].firstMatch
+        if gt.waitForExistence(timeout: 3) { gt.coordinate(withNormalizedOffset: CGVector(dx: 0.85, dy: 0.5)).tap() }
+        pause(1.5); shot("st-6-gym-time")
+        app.tap(); pause(1); app.swipeDown(); pause(1)
+        flip("School"); pause(2)
+        pickPlace("Baruch College"); shot("st-7-school-search")
+        let r2 = app.buttons.matching(identifier: "placeResult").firstMatch
+        if r2.waitForExistence(timeout: 5) { r2.tap() }
+        pause(3); shot("st-8-school-on")
+        app.swipeUp(); pause(1.2); shot("st-9-school-places")
+    }
+
     /// Your Schedule settings redesign samples 1-8 (Places / Times / Habits), top and scrolled.
     func testSettingsSamples() throws {
         for v in ["1", "2", "3", "4", "5", "6", "7", "8"] {

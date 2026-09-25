@@ -12,7 +12,15 @@ struct YourScheduleEntry: View {
 
 struct ScheduleSettingsSamples: View {
     var style: String
-    @State private var gym = true
+    /// "settings.fresh": start sample 1 as a new user would (Gym and School off, no gym or school set) to show each step.
+    private static let fresh = UserDefaults.standard.bool(forKey: "settings.fresh")
+    @State private var gym = !Self.fresh
+    @State private var gymPlace: String? = Self.fresh ? nil : "Iron Works Gym"
+    @State private var workPlace: String? = "Park Ave S"
+    @State private var schoolPlace: String? = nil
+    /// Which place is being asked for right after a habit is turned on ("Gym", "Work", "School").
+    @State private var asking: AskPlace?
+    fileprivate struct AskPlace: Identifiable { var id: String }
     @State private var run = false
     @State private var walk = true
     @State private var journal = true
@@ -54,16 +62,22 @@ struct ScheduleSettingsSamples: View {
             Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(.tertiary)
         }
     }
+    private func place(for title: String) -> String? {
+        switch title { case "Gym": gymPlace; case "Work": workPlace; case "School": schoolPlace; default: nil }
+    }
     private func habitToggle(_ h: Habit, detail: Bool = true) -> some View {
         Toggle(isOn: h.on.animation()) {
             HStack(spacing: 12) {
                 icon(h.symbol)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(h.title)
-                    if detail { Text(h.detail).font(.footnote).foregroundStyle(.secondary) }
+                    if style == "1", h.on.wrappedValue, let p = place(for: h.title) {
+                        Label(p, systemImage: "mappin").font(.footnote).foregroundStyle(Theme.accent)
+                    } else if detail { Text(h.detail).font(.footnote).foregroundStyle(.secondary) }
                 }
             }
         }
+        .accessibilityIdentifier("habit-\(h.title)")
     }
     private var addPlaceMenu: some View {
         Menu {
@@ -76,9 +90,9 @@ struct ScheduleSettingsSamples: View {
     @ViewBuilder private var placesSection: some View {
         Section {
             placeRow("Home", "house.fill", "E 34th St")
-            if gym { placeRow("Gym", "dumbbell.fill", "Iron Works Gym") }
-            if work { placeRow("Work", "briefcase.fill", "Park Ave S") }
-            if school { placeRow("School", "graduationcap.fill", "Add") }
+            if gym { placeRow("Gym", "dumbbell.fill", gymPlace ?? "Add") }
+            if work { placeRow("Work", "briefcase.fill", workPlace ?? "Add") }
+            if school { placeRow("School", "graduationcap.fill", schoolPlace ?? "Add") }
             placeRow("Grandpa\u{2019}s House", "mappin", "Kew Gardens")
             addPlaceMenu
         } header: { Text("Places") } footer: {
@@ -90,7 +104,8 @@ struct ScheduleSettingsSamples: View {
             DatePicker("Wake Up", selection: $wake, displayedComponents: .hourAndMinute)
             DatePicker("Bedtime", selection: $bed, displayedComponents: .hourAndMinute)
             if work { LabeledContent("Work") { Text("Mon – Fri, 9:00 AM – 5:00 PM") } }
-            if gym { DatePicker("Gym Time", selection: $gymTime, displayedComponents: .hourAndMinute) }
+            if gym { DatePicker("Gym Time", selection: $gymTime, displayedComponents: .hourAndMinute).accessibilityIdentifier("gymTime") }
+            if school { LabeledContent("Classes") { Text("Mon – Fri, 8:30 AM – 3:00 PM") } }
         }
     }
     @ViewBuilder private var habitsSection: some View {
@@ -120,6 +135,24 @@ struct ScheduleSettingsSamples: View {
         .backgroundNavBar()
         .navigationBarTitleDisplayMode(.inline)
         .accessibilityIdentifier("settingsSample")
+        .onChange(of: gym) { _, on in if style == "1", on, gymPlace == nil { asking = AskPlace(id: "Gym") } }
+        .onChange(of: work) { _, on in if style == "1", on, workPlace == nil { asking = AskPlace(id: "Work") } }
+        .onChange(of: school) { _, on in if style == "1", on, schoolPlace == nil { asking = AskPlace(id: "School") } }
+        .sheet(item: $asking, onDismiss: {
+            // Cancelled without a place: the habit goes back off.
+            if gym && gymPlace == nil { gym = false }
+            if work && workPlace == nil { work = false }
+            if school && schoolPlace == nil { school = false }
+        }) { a in
+            NavigationStack {
+                AddPlaceView(title: "Your \(a.id)", prompt: "Search for your \(a.id.lowercased())") { item in
+                    let name = item.name ?? a.id
+                    withAnimation {
+                        switch a.id { case "Gym": gymPlace = name; case "Work": workPlace = name; default: schoolPlace = name }
+                    }
+                }
+            }
+        }
     }
 
     /// 3: Home and sleep on top, then each habit with its own place and time inside it.
