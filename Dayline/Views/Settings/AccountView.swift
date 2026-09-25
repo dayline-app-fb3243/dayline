@@ -38,8 +38,6 @@ struct AccountAvatar: View {
 /// Opens from the top row on Profile: who is signed in, backup, and Sign Out.
 struct AccountView: View {
     @ObservedObject private var auth = AuthService.shared
-    @AppStorage("backup.enabled") private var backupOn = false
-    @AppStorage("backup.last") private var lastBackup: Double = 0
     @State private var confirmSignOut = false
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
@@ -47,13 +45,6 @@ struct AccountView: View {
     private var emailText: String {
         if auth.email.isEmpty { return "Not shared" }
         return auth.email.hasSuffix("privaterelay.appleid.com") ? "Hidden by Apple" : auth.email
-    }
-    private var lastText: String {
-        guard backupOn else { return "Off" }
-        guard lastBackup > 0 else { return "Not yet" }
-        let d = Date(timeIntervalSince1970: lastBackup)
-        let time = d.formatted(date: .omitted, time: .shortened)
-        return Calendar.current.isDateInToday(d) ? "Today, \(time)" : d.formatted(date: .abbreviated, time: .shortened)
     }
 
     var body: some View {
@@ -81,10 +72,10 @@ struct AccountView: View {
                 SectionHeader("Backup")
                 Card(padding: 0) {
                     VStack(spacing: 0) {
-                        row("iCloud Backup", "Not configured")
+                        row("iCloud Backup", SampleMode.on ? "Synced (demo)" : "Not configured")
                     }
                 }
-                footnote("Dayline data stays on this iPhone. iCloud backup needs setup before it can protect or restore your data.")
+                footnote(SampleMode.on ? "Demo preview only. No real iCloud data is uploaded or restored." : "Dayline data stays on this iPhone. iCloud backup needs setup before it can protect or restore your data.")
 
                 Card(padding: 0) {
                     Button { if let url = URL(string: "https://account.apple.com") { openURL(url) } } label: {
@@ -118,7 +109,7 @@ struct AccountView: View {
             Button("Cancel", role: .cancel) {}
             Button("Sign Out", role: .destructive) { auth.signOut(); dismiss() }
         } message: {
-            Text("Your timeline stays on this iPhone. iCloud sync is not configured in this build.")
+            Text(SampleMode.on ? "This demo does not upload or restore iCloud data." : "Your timeline stays on this iPhone. iCloud sync is not configured in this build.")
         }
     }
 
