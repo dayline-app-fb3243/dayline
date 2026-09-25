@@ -584,9 +584,9 @@ struct PermissionsView: View {
         Page(kind: "reminders", title: "Turning on Reminders lets Dayline:",
              rows: [("checklist", "Count reminders due today in your day score"), ("checkmark.circle", "Give you points when you finish them"), ("eye", "Only read them. Dayline never changes your reminders")],
              note: "Reminders stay on your iPhone. You can change this later in Settings."),
-        Page(kind: "notifications", title: "Turning on Notifications lets Dayline:",
-             rows: [("person.badge.plus", "Tell you when someone asks to follow you"), ("star", "Tell you when you hit 80"), ("book", "Remind you to journal at the time you choose")],
-             note: "The journal reminder is off until you choose a time in Settings. You can change notifications later."),
+        Page(kind: "notifications", title: "Allow Notifications",
+             rows: [("bell", "Allow iOS notifications from Dayline"), ("book", "Choose a journal reminder time in Settings")],
+             note: "The journal reminder is off until you choose a time. Demo does not send sample notifications; real delivery needs testing on an iPhone."),
     ]
 
     var body: some View {
