@@ -157,7 +157,7 @@ struct StepsRing: View {
                 Circle().fill(start).frame(width: lineWidth, height: lineWidth).offset(y: -size / 2)
             }
             Text(steps.formatted())
-                .font(.scaled(size: size * 0.22, weight: .bold, relativeTo: .title)).minimumScaleFactor(0.5).lineLimit(1)
+                .font(.scaled(size: size * 0.22, weight: .bold, relativeTo: .title1)).minimumScaleFactor(0.5).lineLimit(1)
                 .monospacedDigit().padding(.horizontal, lineWidth + 2)
                 .contentTransition(.numericText())
         }
