@@ -22,12 +22,24 @@ struct TodayView: View {
                 VStack(alignment: .leading, spacing: 14) {
                     header
                     LocationOffCard()
+                    if !DemoData.isDemo && allPlan.isEmpty && journal.isEmpty && visits.isEmpty {
+                        ContentUnavailableView {
+                            Label("Your day starts here", systemImage: "calendar.badge.clock")
+                        } description: {
+                            Text("As you use Dayline, your places, schedule and journal will appear here. Add a journal entry to begin.")
+                        } actions: {
+                            Button("Add Journal Entry") { capture = .text }
+                                .buttonStyle(.borderedProminent)
+                        }
+                        .accessibilityIdentifier("todayEmptyState")
+                    } else {
                     if TodayStepsNextTiles.ringStyle != 5 { scoreLink }
                     if FriendsEntry.style == 0 { TodayFriendsCircleCard() }
                     if FriendsEntry.style == 3 { TodayStreakCard() }
                     if FriendsEntry.style == 2 { TodayFriendsRow() }
                     TodayStepsNextTiles(result: result)
                     scheduleSection
+                    }
                 }
                 .padding(.horizontal, 18)
                 .padding(.bottom, 24)

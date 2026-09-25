@@ -47,7 +47,11 @@ struct TimelineScreen: View {
                 VStack(alignment: .leading, spacing: 12) {
                     TabTitle("Timeline")
                     rangeControls
-                    if range == .day {
+                    if !DemoData.isDemo && visits.isEmpty && samples.isEmpty && journal.isEmpty {
+                        ContentUnavailableView("No timeline yet", systemImage: "mappin.and.ellipse",
+                                               description: Text("Your places and photos will appear here as Dayline learns your day."))
+                            .accessibilityIdentifier("timelineEmptyState")
+                    } else if range == .day {
                         dayPage
                     } else {
                         rangePage

@@ -21,10 +21,16 @@ struct InsightsView: View {
                         TodayFriendsRow()
                     }
                     CapsuleSegmented(selection: $range, options: InsightRange.allCases.map { ($0, $0.rawValue) })
+                    if !DemoData.isDemo && scores.isEmpty && visits.isEmpty {
+                        ContentUnavailableView("Insights will grow with you", systemImage: "chart.bar",
+                                               description: Text("Keep using Dayline. Your trends appear after your first days."))
+                            .accessibilityIdentifier("insightsEmptyState")
+                    } else {
                     switch range {
                     case .day: classicDayView
                     case .month: monthView
                     case .year: yearView
+                    }
                     }
                 }
                 .padding(.horizontal, 18).padding(.bottom, 24)
