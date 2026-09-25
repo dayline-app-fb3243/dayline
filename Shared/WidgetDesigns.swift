@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// Twelve close variations of the two widgets David asked for. All use the same Dayline
 /// blue Day score and the multicolour friends-streak ring, not a second visual theme.
@@ -98,7 +99,13 @@ struct SeamlessWidgetScoreRing: View {
                 .rotationEffect(.degrees(-90))
                 .frame(width: diameter, height: diameter)
                 .widgetAccentable()
-            if score > 0 {
+            if score > 0 && renderingMode == .accented {
+                Image(uiImage: endpointNumber(score, width: width))
+                    .resizable().interpolation(.high)
+                    .widgetAccentedRenderingMode(.fullColor)
+                    .frame(width: width * 0.9, height: width * 0.62)
+                    .offset(x: radius * cos(angle), y: radius * sin(angle))
+            } else if score > 0 {
                 Text("\(score)")
                     .font(.system(size: width * 0.47, weight: .bold, design: .default))
                     .minimumScaleFactor(0.7).lineLimit(1).monospacedDigit()
@@ -110,6 +117,19 @@ struct SeamlessWidgetScoreRing: View {
         }
         .frame(width: size, height: size)
         .accessibilityLabel("Day score \(score) out of 100")
+    }
+
+    private func endpointNumber(_ number: Int, width: CGFloat) -> UIImage {
+        let bounds = CGSize(width: width * 0.9 * 3, height: width * 0.62 * 3)
+        let renderer = UIGraphicsImageRenderer(size: bounds)
+        return renderer.image { _ in
+            let style = NSMutableParagraphStyle()
+            style.alignment = .center
+            let font = UIFont.systemFont(ofSize: width * 0.47 * 3, weight: .bold)
+            let value = "\(number)" as NSString
+            let rect = CGRect(origin: .zero, size: bounds)
+            value.draw(in: rect, withAttributes: [.font: font, .foregroundColor: UIColor.darkGray, .paragraphStyle: style])
+        }
     }
 }
 
