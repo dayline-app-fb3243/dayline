@@ -17,30 +17,13 @@ struct TimelineScreen: View {
     @State private var showJournal = true
     @State private var expanded = false
     @State private var region: MKCoordinateRegion?
-    /// Preview flag "route.style" (awaiting David's pick): now = straight lines between points,
-    /// snap = path snapped to streets with Apple directions, gps = precise GPS-style track.
-    @AppStorage("route.style") private var routeStyle = "snap"
     /// Route detail follows the Check Location setting: one point per check, snapped to streets.
     @AppStorage(LocationService.intervalKey) private var checkMinutes = 5
     @State private var streetRoute: [CLLocationCoordinate2D] = []
-    /// Preview flag "map.3d" (awaiting David's pick): the full-screen map opens tilted in 3D with real buildings,
-    /// and gets a 2D/3D button. The route is drawn into the map, so it tilts with it.
-    @AppStorage("map.3d") private var map3DFlag = true
     @State private var is3D = false
     /// The map is centered on your current location (filled arrow). Cleared when you pan away.
     @State private var onMyLocation = false
     @State private var myCoordinate: CLLocationCoordinate2D?
-    /// Preview flag "pin.style" (awaiting David's pick): "" = current pins, A = big Apple pin with dot,
-    /// B = compact Apple pin with tail, C = native Apple Maps marker.
-    @AppStorage("pin.style") private var pinStyle = "D"
-    /// "map.sheet": G (default; option F in the preview sheets) = Apple Maps style outline panel with the Day/Week/Month/Year pill
-    /// centered inside; pulling up grows only the outline, with the F glass card inside.
-    /// A = Find My card, B = Settings-style icons, C = compact (older options).
-    @AppStorage("map.sheet") private var mapSheet = "G"
-    /// Preview flag "map.grabber": where the grabber sits so the range words stay centered.
-    /// A = grabber drawn over the top edge (takes no space), B = grabber just above the bar, C = even space above and below the words.
-    @AppStorage("map.grabber") private var grabber = "C"
-    @AppStorage("map.sheetRows") private var sheetRows = "F"
     @State private var sheetOpen = UserDefaults.standard.bool(forKey: "map.sheetOpen")
 
     private var interval: DateInterval {
@@ -59,34 +42,10 @@ struct TimelineScreen: View {
                 VStack(alignment: .leading, spacing: 12) {
                     TabTitle("Timeline")
                     rangeControls
-                    if range == .day && !tlPage.isEmpty {
-                        dayPageSample
-                    } else if range == .day {
-                        // Day: small map on top (tap for full screen), then one photo card per stop.
-                        mapCard(height: 150, hint: true)
-                        Text(title).font(.title2.bold()).padding(.horizontal, 2).padding(.top, 4)
-                        HStack(spacing: 6) {
-                            infoChip("\(placeCount)", "places")
-                            infoChip(distanceText, "moved")
-                            infoChip("\(rangePhotos.count)", "photos")
-                        }
-                        DayPhotoCards(visits: rangeVisits, journal: journal.filter { interval.contains($0.date) })
-                    } else if range4 {
-                        rangePage4
+                    if range == .day {
+                        dayPage
                     } else {
-                        // Week / month / year: every place and route in the range, stats on the map, then a plain list.
-                        mapCard(height: 330, hint: false)
-                            .overlay(alignment: .bottom) {
-                                GlassEffectContainer(spacing: 6) {
-                                    HStack(spacing: 6) {
-                                        glassChip("\(placeCount)", "places")
-                                        glassChip(distanceText, "moved")
-                                        glassChip("\(rangeSamples.count)", "check-ins")
-                                    }
-                                }
-                                .padding(10)
-                            }
-                        MostVisitedList(clusters: placeClusters)
+                        rangePage
                     }
                 }
                 .padding(.horizontal, 16).padding(.bottom, 24)
@@ -105,29 +64,14 @@ struct TimelineScreen: View {
         }
     }
 
-    /// Preview "timeline.page" 1-5: Day view layouts ("" = the current one). Sample-only until one is picked.
-    /// 1 = big map with the numbers on it. 2 = a line through the day with a pin per stop and photos inline.
-    /// 3 = numbers first as big tiles, then map and cards. 4 = photos in a side-scrolling row, stops listed below.
-    /// 5 = map, then stops grouped into Morning / Afternoon / Evening.
-    /// 4a-4c = more takes on 4: a = place and time on each photo, b = numbers row and square photos,
-    /// c = captioned photos with stops grouped by part of day. "timeline.range4" shows Week / Month / Year in the same style.
-    /// Day view: 4c is the default. "" = the page before that.
-    @AppStorage("timeline.page") private var tlPage = "4c"
-    /// "timeline.range4": Week / Month / Year in the sample-4 style. Now the default; set NO for the old look.
-    @AppStorage("timeline.range4") private var range4 = true
     private var dayVisits: [Visit] { rangeVisits.sorted { $0.arrival < $1.arrival } }
-    private func photos(for v: Visit) -> [UIImage] {
-        let end = v.departure ?? .now
-        return journal.filter { $0.kind == .photo && $0.date >= v.arrival && $0.date <= end }
-            .compactMap { $0.thumbnail.flatMap(UIImage.init(data:)) }
-    }
     private func stopRow(_ v: Visit) -> some View {
         HStack(spacing: 12) {
-            Image(systemName: v.category.symbol).font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.accent)
+            Image(systemName: v.category.symbol).font(.subheadline).foregroundStyle(Theme.accent)
                 .frame(width: 30, height: 30).background(Theme.accent.opacity(0.14), in: .circle)
             VStack(alignment: .leading, spacing: 1) {
-                Text(v.placeName).font(.body.weight(.semibold))
-                Text(stopRange(v)).font(.caption).foregroundStyle(.secondary).monospacedDigit()
+                Text(v.placeName).font(.body)
+                Text(stopRange(v)).font(.subheadline).foregroundStyle(.secondary).monospacedDigit()
             }
             Spacer()
         }
@@ -136,90 +80,7 @@ struct TimelineScreen: View {
         let f = DayActivityList.clock
         return "\(f.string(from: v.arrival)) – \(v.departure.map { f.string(from: $0) } ?? "now")"
     }
-    private func bigTile(_ value: String, _ label: String) -> some View {
-        VStack(spacing: 2) {
-            Text(value).font(.title2.bold()).monospacedDigit()
-            Text(label).font(.caption).foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity).padding(.vertical, 12)
-        .background(.background, in: .rect(cornerRadius: 18, style: .continuous))
-    }
-    @ViewBuilder private var dayPageSample: some View {
-        switch tlPage {
-        case "1":
-            mapCard(height: 320, hint: true)
-                .overlay(alignment: .bottom) {
-                    GlassEffectContainer(spacing: 6) {
-                        HStack(spacing: 6) {
-                            glassChip("\(placeCount)", "places"); glassChip(distanceText, "moved"); glassChip("\(rangePhotos.count)", "photos")
-                        }
-                    }
-                    .padding(10)
-                }
-            Text(title).font(.title2.bold()).padding(.horizontal, 2).padding(.top, 4)
-            DayPhotoCards(visits: rangeVisits, journal: journal.filter { interval.contains($0.date) })
-        case "2":
-            mapCard(height: 150, hint: true)
-            Text(title).font(.title2.bold()).padding(.horizontal, 2).padding(.top, 4)
-            Card(padding: 0) {
-                VStack(alignment: .leading, spacing: 0) {
-                    ForEach(Array(dayVisits.enumerated()), id: \.offset) { i, v in
-                        HStack(alignment: .top, spacing: 12) {
-                            VStack(spacing: 0) {
-                                Rectangle().fill(i == 0 ? .clear : Theme.accent.opacity(0.35)).frame(width: 2, height: 10)
-                                Image(systemName: v.category.symbol).font(.system(size: 13, weight: .semibold)).foregroundStyle(.white)
-                                    .frame(width: 28, height: 28).background(Theme.accent, in: .circle)
-                                Rectangle().fill(i == dayVisits.count - 1 ? .clear : Theme.accent.opacity(0.35)).frame(width: 2).frame(maxHeight: .infinity)
-                            }
-                            VStack(alignment: .leading, spacing: 6) {
-                                Text(v.placeName).font(.body.weight(.semibold)).padding(.top, 12)
-                                Text(stopRange(v)).font(.caption).foregroundStyle(.secondary).monospacedDigit()
-                                let pics = photos(for: v)
-                                if !pics.isEmpty {
-                                    HStack(spacing: 6) {
-                                        ForEach(pics.indices.prefix(3), id: \.self) { k in
-                                            Image(uiImage: pics[k]).resizable().scaledToFill().frame(width: 72, height: 72).clipShape(.rect(cornerRadius: 10))
-                                        }
-                                    }
-                                }
-                            }
-                            .padding(.bottom, 12)
-                            Spacer()
-                        }
-                        .padding(.horizontal, 14)
-                    }
-                }
-            }
-        case "3":
-            HStack(spacing: 8) {
-                bigTile("\(placeCount)", "places"); bigTile(distanceText, "moved"); bigTile("\(rangePhotos.count)", "photos")
-            }
-            mapCard(height: 180, hint: true)
-            DayPhotoCards(visits: rangeVisits, journal: journal.filter { interval.contains($0.date) })
-        case "4", "4a", "4b", "4c":
-            day4
-        default:
-            mapCard(height: 170, hint: true)
-            let parts = [("Morning", 0, 12), ("Afternoon", 12, 17), ("Evening", 17, 24)]
-            ForEach(parts.indices, id: \.self) { pi in
-                let part = parts[pi]
-                let list = dayVisits.filter { let h = Calendar.current.component(.hour, from: $0.arrival); return h >= part.1 && h < part.2 }
-                if !list.isEmpty {
-                    Text(part.0).font(.subheadline.weight(.semibold)).foregroundStyle(.secondary).padding(.leading, 4).padding(.top, 4)
-                    Card(padding: 0) {
-                        VStack(spacing: 0) {
-                            ForEach(Array(list.enumerated()), id: \.offset) { i, v in
-                                stopRow(v).padding(.horizontal, 14).padding(.vertical, 10)
-                                if i < list.count - 1 { Divider().padding(.leading, 56) }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    // MARK: Timeline sample 4 and its variants (Day), plus Week / Month / Year in the same style
+    // MARK: Day, Week / Month / Year pages
 
     private var photoItems: [(image: UIImage, date: Date)] {
         journal.filter { interval.contains($0.date) && $0.kind == .photo }
@@ -265,40 +126,23 @@ struct TimelineScreen: View {
             }
         }
     }
-    private var numbersRow: some View {
-        HStack(spacing: 6) {
-            infoChip("\(placeCount)", "places"); infoChip(distanceText, "moved"); infoChip("\(photoItems.count)", "photos")
-        }
-    }
-    @ViewBuilder private var day4: some View {
+    /// Day: map, title, captioned photos in a row, then stops grouped by part of day.
+    @ViewBuilder private var dayPage: some View {
         mapCard(height: 170, hint: true)
         Text(title).font(.title2.bold()).padding(.horizontal, 2).padding(.top, 4)
-        switch tlPage {
-        case "4a":
-            photoRow(width: 170, height: 210, captions: true)
-            stopList(dayVisits)
-        case "4b":
-            numbersRow
-            photoRow(width: 120, height: 120, captions: false)
-            stopList(dayVisits)
-        case "4c":
-            photoRow(width: 150, height: 190, captions: true)
-            let parts = [("Morning", 0, 12), ("Afternoon", 12, 17), ("Evening", 17, 24)]
-            ForEach(parts.indices, id: \.self) { pi in
-                let part = parts[pi]
-                let list = dayVisits.filter { let h = Calendar.current.component(.hour, from: $0.arrival); return h >= part.1 && h < part.2 }
-                if !list.isEmpty {
-                    Text(part.0).font(.subheadline.weight(.semibold)).foregroundStyle(.secondary).padding(.leading, 4).padding(.top, 2)
-                    stopList(list)
-                }
+        photoRow(width: 150, height: 190, captions: true)
+        let parts = [("Morning", 0, 12), ("Afternoon", 12, 17), ("Evening", 17, 24)]
+        ForEach(parts.indices, id: \.self) { pi in
+            let part = parts[pi]
+            let list = dayVisits.filter { let h = Calendar.current.component(.hour, from: $0.arrival); return h >= part.1 && h < part.2 }
+            if !list.isEmpty {
+                Text(part.0).font(.subheadline.weight(.semibold)).foregroundStyle(.secondary).padding(.leading, 4).padding(.top, 2)
+                stopList(list)
             }
-        default:
-            photoRow(width: 150, height: 190, captions: false)
-            stopList(dayVisits)
         }
     }
-    /// Week / Month / Year when a sample-4 page is on: map, title, the range's photos in a row, then the places card.
-    @ViewBuilder private var rangePage4: some View {
+    /// Week / Month / Year: map, title, the range's photos in a row, then the places card.
+    @ViewBuilder private var rangePage: some View {
         mapCard(height: 200, hint: false)
         Text(title).font(.title2.bold()).padding(.horizontal, 2).padding(.top, 4)
         HStack(spacing: 6) {
@@ -328,9 +172,9 @@ struct TimelineScreen: View {
         Map(position: $camera, interactionModes: interactive ? .all : []) {
             UserAnnotation()
             if showRoute {
-                if range == .day && routeStyle != "now" && streetRoute.count > 1 {
+                if range == .day && streetRoute.count > 1 {
                     MapPolyline(coordinates: streetRoute)
-                        .stroke(Theme.accent, style: StrokeStyle(lineWidth: routeStyle == "gps" ? 3.5 : 5, lineCap: .round, lineJoin: .round))
+                        .stroke(Theme.accent, style: StrokeStyle(lineWidth: 5, lineCap: .round, lineJoin: .round))
                 } else if range == .day {
                     MapPolyline(coordinates: Self.thinned(rangeSamples, minutes: checkMinutes))
                         .stroke(Theme.accent, style: StrokeStyle(lineWidth: 5, lineCap: .round, lineJoin: .round))
@@ -339,24 +183,14 @@ struct TimelineScreen: View {
                     let segs = routeSegments
                     ForEach(segs.indices, id: \.self) { i in
                         MapPolyline(coordinates: segs[i])
-                            // Preview flag "route.blue": every route line the same solid theme blue.
-                            .stroke(UserDefaults.standard.bool(forKey: "route.blue") ? Theme.accent : Theme.accent.opacity(0.45), style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
+                            .stroke(Theme.accent.opacity(0.45), style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
                     }
                 }
             }
             if range == .day {
                 ForEach(rangeVisits) { v in
-                    if pinStyle == "C" {
-                        Marker("", systemImage: v.category.symbol, coordinate: v.coordinate).tint(v.category.pinColor)
-                    } else if !pinStyle.isEmpty {
-                        Annotation("", coordinate: v.coordinate, anchor: .bottom) {
-                            ApplePin(symbol: v.category.symbol, color: pinStyle == "D" ? Theme.accent : v.category.pinColor, big: pinStyle == "A", dot: pinStyle == "D" ? true : nil)
-                        }
-                    } else {
-                    Annotation("", coordinate: v.coordinate) {
-                        Image(systemName: v.category.symbol).font(.scaled(size: 13, weight: .bold)).foregroundStyle(Theme.accent)
-                            .markerBackground(Color.white, size: 32, isMapPin: true).shadow(color: .black.opacity(0.2), radius: 5, y: 2)
-                    }
+                    Annotation("", coordinate: v.coordinate, anchor: .bottom) {
+                        ApplePin(symbol: v.category.symbol, color: Theme.accent, big: false, dot: true)
                     }
                 }
             } else {
@@ -371,42 +205,20 @@ struct TimelineScreen: View {
             }
             if showJournal {
                 ForEach(rangeNotes.suffix(40)) { entry in
-                    if pinStyle == "C" {
-                        Marker("", systemImage: "book.closed.fill", coordinate: entry.coordinate!).tint(.purple)
-                    } else if !pinStyle.isEmpty {
-                        Annotation("", coordinate: entry.coordinate!, anchor: .bottom) {
-                            ApplePin(symbol: pinStyle == "D" ? "doc.text.fill" : "book.closed.fill", color: pinStyle == "D" ? Theme.accent : .purple, big: pinStyle == "A", dot: pinStyle == "D" ? true : nil)
-                        }
-                    } else {
-                    Annotation("", coordinate: entry.coordinate!) {
-                        Image(systemName: "pencil")
-                            .font(.caption.weight(.bold)).foregroundStyle(.white)
-                            .frame(width: 34, height: 34).background(Theme.accent, in: .circle)
-                            .overlay(Circle().stroke(.white, lineWidth: 3)).shadow(radius: 4)
-                    }
+                    Annotation("", coordinate: entry.coordinate!, anchor: .bottom) {
+                        ApplePin(symbol: "doc.text.fill", color: Theme.accent, big: false, dot: true)
                     }
                 }
             }
             if showPhotos { ForEach(rangePhotos.suffix(40)) { entry in
-                if pinStyle == "C" {
-                    Marker("", systemImage: "photo.fill", coordinate: entry.coordinate!).tint(.teal)
-                } else if !pinStyle.isEmpty {
-                    Annotation("", coordinate: entry.coordinate!, anchor: .bottom) {
-                        if let data = entry.thumbnail, let image = UIImage(data: data) {
-                            ApplePhotoPin(image: image, big: pinStyle == "A", dot: pinStyle == "D" ? true : nil)
-                        }
-                    }
-                } else {
-                Annotation("", coordinate: entry.coordinate!) {
+                Annotation("", coordinate: entry.coordinate!, anchor: .bottom) {
                     if let data = entry.thumbnail, let image = UIImage(data: data) {
-                        Image(uiImage: image).resizable().scaledToFill().frame(width: 48, height: 48)
-                            .clipShape(.rect(cornerRadius: 14)).overlay(RoundedRectangle(cornerRadius: 14).stroke(.white, lineWidth: 3)).shadow(color: .black.opacity(0.25), radius: 6, y: 3)
+                        ApplePhotoPin(image: image, big: false, dot: true)
                     }
-                }
                 }
             } }
         }
-        .mapStyle((is3D || (map3DFlag && interactive)) && !showsControls ? .standard(elevation: .realistic, pointsOfInterest: .excludingAll)
+        .mapStyle((is3D || interactive) && !showsControls ? .standard(elevation: .realistic, pointsOfInterest: .excludingAll)
                                          : .standard(emphasis: .muted, pointsOfInterest: .excludingAll))
         .mapControls { MapCompass(); MapScaleView() }
         .mapControlVisibility(showsControls ? .automatic : .hidden)
@@ -421,9 +233,9 @@ struct TimelineScreen: View {
                 }
             }
             // Two-finger tilt flips the 2D/3D label, like Apple Maps.
-            if interactive && map3DFlag { is3D = context.camera.pitch > 10 }
+            if interactive { is3D = context.camera.pitch > 10 }
         }
-        .task(id: "\(routeStyle)-\(checkMinutes)-\(interval.start.timeIntervalSince1970)-\(range == .day)") { await buildStreetRoute() }
+        .task(id: "\(checkMinutes)-\(interval.start.timeIntervalSince1970)-\(range == .day)") { await buildStreetRoute() }
     }
 
     /// Location keeps being recorded in the background either way; this only moves the map.
@@ -443,7 +255,7 @@ struct TimelineScreen: View {
     }
 
     private func buildStreetRoute() async {
-        guard routeStyle != "now", range == .day else { streetRoute = []; return }
+        guard range == .day else { streetRoute = []; return }
         // Only the points where you moved: checks during a stay are all the same spot.
         let pts = Self.moving(Self.thinned(rangeSamples, minutes: checkMinutes))
         guard pts.count > 1 else { streetRoute = []; return }
@@ -459,7 +271,6 @@ struct TimelineScreen: View {
                 all += seg
             } else { all += [a, b] }
         }
-        if routeStyle == "gps" { all = Self.gpsTrack(all) }
         streetRoute = all
     }
 
@@ -515,23 +326,6 @@ struct TimelineScreen: View {
         return out.map(\.coordinate)
     }
 
-    /// Densify every ~12 m and add a few meters of wobble, like a real GPS track.
-    private static func gpsTrack(_ route: [CLLocationCoordinate2D]) -> [CLLocationCoordinate2D] {
-        var out: [CLLocationCoordinate2D] = []; var seed: UInt64 = 42
-        func rnd() -> Double { seed = seed &* 6364136223846793005 &+ 1442695040888963407; return Double(seed >> 33) / Double(1 << 31) - 0.5 }
-        for (a, b) in zip(route, route.dropFirst()) {
-            let d = CLLocation(latitude: a.latitude, longitude: a.longitude).distance(from: CLLocation(latitude: b.latitude, longitude: b.longitude))
-            let n = max(1, Int(d / 12))
-            for i in 0..<n {
-                let t = Double(i) / Double(n)
-                let j = 0.00004 // about 4 m
-                out.append(.init(latitude: a.latitude + (b.latitude - a.latitude) * t + rnd() * j,
-                                 longitude: a.longitude + (b.longitude - a.longitude) * t + rnd() * j))
-            }
-        }
-        if let last = route.last { out.append(last) }
-        return out
-    }
 
     /// Map card: tap anywhere to open the full-screen map.
     private func mapCard(height: CGFloat, hint: Bool) -> some View {
@@ -580,22 +374,12 @@ struct TimelineScreen: View {
             .overlay(alignment: .bottomTrailing) {
                 GlassEffectContainer(spacing: 14) {
                     VStack(spacing: 14) {
-                        if mapSheet.isEmpty {
-                        VStack(spacing: 0) {
-                            mapToggle("Route", "point.topleft.down.to.point.bottomright.curvepath", $showRoute)
-                            mapToggle("Photos", "photo", $showPhotos)
-                            mapToggle("Journal", "doc.text", $showJournal)
-                        }
-                        .padding(4)
-                        .glassEffect(.regular, in: .capsule)
-                        }
-                        if map3DFlag {
-                            // map.3d: like Apple Maps, a 2D/3D button sits on top of the location button in one glass capsule.
+                            // Like Apple Maps, a 2D/3D button sits on top of the location button in one glass capsule.
                             // The location button always goes to your current location.
                             VStack(spacing: 0) {
                                 Button { withAnimation(.smooth(duration: 0.8)) { set3D(!is3D) } } label: {
                                     // Shows the current mode; each tap switches 2D <-> 3D.
-                                    Text(is3D ? "3D" : "2D").font(.system(size: 18, weight: .semibold))
+                                    Text(is3D ? "3D" : "2D").font(.headline)
                                         .foregroundStyle(.primary).frame(width: 54, height: 58).contentShape(.rect)
                                 }
                                 .buttonStyle(.plain)
@@ -604,7 +388,7 @@ struct TimelineScreen: View {
                                 Button { recenterOnMe() } label: {
                                     // Filled = the map is centered on you; outline as soon as you pan away. Not a follow mode.
                                     Image(systemName: onMyLocation ? "location.fill" : "location")
-                                        .font(.system(size: 20, weight: .semibold))
+                                        .font(.title3)
                                         .foregroundStyle(.primary).frame(width: 54, height: 58).contentShape(.rect)
                                 }
                                 .buttonStyle(.plain)
@@ -613,36 +397,17 @@ struct TimelineScreen: View {
                             }
                             .padding(.vertical, 6)
                             .glassEffect(.regular, in: .capsule)
-                        } else {
-                        Button { recenterOnMe() } label: {
-                            Image(systemName: onMyLocation ? "location.fill" : "location").font(.scaled(size: 20, weight: .semibold))
-                                .foregroundStyle(.primary).frame(width: 64, height: 64)
-                        }
-                        .buttonStyle(.plain)
-                        .glassEffect(.regular.interactive(), in: .circle)
-                        .accessibilityLabel("Show my location")
-                        .accessibilityIdentifier("locateMe")
-                        }
                     }
                 }
                 // Clear space above the range bar / the taller Find My style panel.
-                .padding(.trailing, 16).padding(.bottom, mapSheet == "G" ? 112 : 92)
+                .padding(.trailing, 16).padding(.bottom, 112)
             }
             .overlay(alignment: .bottom) {
-                if mapSheet.isEmpty {
-                CapsuleSegmented(selection: $range, options: MapRange.allCases.map { ($0, $0.rawValue) }, plain: true)
-                    .padding(4)
-                    .glassEffect(.regular, in: .capsule)
-                    .padding(.horizontal, 16).padding(.bottom, 6)
-                } else if mapSheet == "G" {
-                    backSheet
-                } else {
-                    pullUpBar
-                }
+                backSheet
             }
     }
 
-    /// map.sheet "G" (Find My style): one bigger glass panel sits behind the range bar. Closed, only its thin
+    /// Find My style panel: one bigger glass panel sits behind the range bar. Closed, only its thin
     /// outline and grabber show around the bar; pulled up, the same panel grows and the switches come out
     /// from behind the bar. The bar itself never moves.
     private var backSheet: some View {
@@ -653,28 +418,18 @@ struct TimelineScreen: View {
                 VStack(alignment: .leading, spacing: 16) {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Map").font(.largeTitle.weight(.bold))
-                        Text("\(title) · \(daySummary)").font(.body.weight(.medium)).foregroundStyle(.secondary)
+                        Text("\(title) · \(daySummary)").font(.subheadline).foregroundStyle(.secondary)
                     }
                     .padding(.horizontal, 20)
-                    // Preview flag "map.sheetRows" inside panel G: D = one card, E = separate cards with a line, F = one card with a line.
-                    if sheetRows == "E" {
-                        VStack(spacing: 10) {
-                            findMyRow("Journal", rowSubtitle(.notes), $showJournal).findMyCard(glass: true)
-                            findMyRow("Photos", rowSubtitle(.photos), $showPhotos).findMyCard(glass: true)
-                            findMyRow("Route", rowSubtitle(.route), $showRoute).findMyCard(glass: true)
-                        }
-                        .padding(.horizontal, 12)
-                    } else {
-                        VStack(spacing: 0) {
-                            findMyRow("Journal", sheetRows == "F" ? rowSubtitle(.notes) : nil, $showJournal)
-                            Divider().padding(.leading, 20)
-                            findMyRow("Photos", sheetRows == "F" ? rowSubtitle(.photos) : nil, $showPhotos)
-                            Divider().padding(.leading, 20)
-                            findMyRow("Route", sheetRows == "F" ? rowSubtitle(.route) : nil, $showRoute)
-                        }
-                        .findMyCard(glass: true)
-                        .padding(.horizontal, 12)
+                    VStack(spacing: 0) {
+                        findMyRow("Journal", rowSubtitle(.notes), $showJournal)
+                        Divider().padding(.leading, 20)
+                        findMyRow("Photos", rowSubtitle(.photos), $showPhotos)
+                        Divider().padding(.leading, 20)
+                        findMyRow("Route", rowSubtitle(.route), $showRoute)
                     }
+                    .findMyCard()
+                    .padding(.horizontal, 12)
                 }
                 .padding(.bottom, 14)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -708,92 +463,11 @@ struct TimelineScreen: View {
         })
     }
 
-    /// Range bar with a grabber; pull up (or tap the grabber) to show the map layer switches, like Find My.
-    private var pullUpBar: some View {
-        VStack(spacing: 0) {
-            if grabber.isEmpty || sheetOpen {
-            Capsule().fill(Color.secondary.opacity(0.5)).frame(width: 36, height: 5)
-                .padding(.top, 7).padding(.bottom, sheetOpen ? 10 : 2)
-                .frame(maxWidth: .infinity).contentShape(.rect)
-                .onTapGesture { withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) { sheetOpen.toggle() } }
-                .accessibilityIdentifier("mapGrabber")
-            }
-            if sheetOpen && ["D", "E", "F"].contains(mapSheet) {
-                // D/E/F: more like the Find My "Me" sheet. D = big title + summary, one card, taller bold rows.
-                // E = D with each switch in its own card and a short line under it. F = D with a line under each row, one card.
-                VStack(alignment: .leading, spacing: 16) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Map").font(.largeTitle.weight(.bold))
-                        Text("\(title) · \(daySummary)").font(.body.weight(.medium)).foregroundStyle(.secondary)
-                    }
-                    .padding(.horizontal, 24)
-                    if mapSheet == "E" {
-                        VStack(spacing: 12) {
-                            findMyRow("Journal", rowSubtitle(.notes), $showJournal).findMyCard()
-                            findMyRow("Photos", rowSubtitle(.photos), $showPhotos).findMyCard()
-                            findMyRow("Route", rowSubtitle(.route), $showRoute).findMyCard()
-                        }
-                        .padding(.horizontal, 16)
-                    } else {
-                        VStack(spacing: 0) {
-                            findMyRow("Journal", mapSheet == "F" ? rowSubtitle(.notes) : nil, $showJournal)
-                            Divider().padding(.leading, 20)
-                            findMyRow("Photos", mapSheet == "F" ? rowSubtitle(.photos) : nil, $showPhotos)
-                            Divider().padding(.leading, 20)
-                            findMyRow("Route", mapSheet == "F" ? rowSubtitle(.route) : nil, $showRoute)
-                        }
-                        .findMyCard()
-                        .padding(.horizontal, 16)
-                    }
-                }
-                .padding(.top, 4).padding(.bottom, 14)
-                .transition(.move(edge: .bottom).combined(with: .opacity))
-            } else if sheetOpen {
-                VStack(alignment: .leading, spacing: mapSheet == "C" ? 8 : 14) {
-                    if mapSheet != "C" {
-                        Text("Show on Map").font(.title2.weight(.bold)).padding(.horizontal, 20)
-                    }
-                    VStack(spacing: 0) {
-                        layerRow("Journal", "book.closed.fill", $showJournal)
-                        Divider().padding(.leading, mapSheet == "A" ? 20 : 58)
-                        layerRow("Photos", "photo.fill", $showPhotos)
-                        Divider().padding(.leading, mapSheet == "A" ? 20 : 58)
-                        layerRow("Route", "point.topleft.down.to.point.bottomright.curvepath", $showRoute)
-                    }
-                    .background(Color.primary.opacity(0.06), in: .rect(cornerRadius: 22))
-                    .padding(.horizontal, 12)
-                }
-                .padding(.bottom, 12)
-                .transition(.move(edge: .bottom).combined(with: .opacity))
-            }
-            CapsuleSegmented(selection: $range, options: MapRange.allCases.map { ($0, $0.rawValue) }, plain: true)
-                .padding(.horizontal, 4)
-                .padding(.top, !grabber.isEmpty && !sheetOpen ? (grabber == "C" ? 12 : 4) : 0)
-                .padding(.bottom, grabber == "C" && !sheetOpen ? 12 : 4)
-        }
-        .overlay(alignment: .top) {
-            if !grabber.isEmpty && !sheetOpen {
-                Capsule().fill(Color.secondary.opacity(0.5)).frame(width: 36, height: 5)
-                    .padding(.top, grabber == "A" ? 3 : (grabber == "C" ? 6 : 0))
-                    .offset(y: grabber == "B" ? -12 : 0)
-                    .frame(width: 120, height: 20, alignment: .top).contentShape(.rect)
-                    .onTapGesture { withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) { sheetOpen.toggle() } }
-                    .accessibilityIdentifier("mapGrabber")
-            }
-        }
-        .glassEffect(.regular, in: .rect(cornerRadius: sheetOpen ? 34 : 30))
-        .padding(.horizontal, 12).padding(.bottom, 6)
-        .gesture(DragGesture(minimumDistance: 12).onEnded { g in
-            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                if g.translation.height < -30 { sheetOpen = true } else if g.translation.height > 30 { sheetOpen = false }
-            }
-        })
-    }
 
     private func findMyRow(_ title: String, _ detail: String?, _ on: Binding<Bool>) -> some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.body.weight(.semibold))
+                Text(title).font(.body)
                 if let detail { Text(detail).font(.subheadline).foregroundStyle(.secondary) }
             }
             Spacer()
@@ -803,19 +477,6 @@ struct TimelineScreen: View {
         .accessibilityIdentifier("layer\(title)")
     }
 
-    private func layerRow(_ title: String, _ symbol: String, _ on: Binding<Bool>) -> some View {
-        HStack(spacing: 12) {
-            if mapSheet == "B" || mapSheet == "C" {
-                Image(systemName: symbol).font(.system(size: 15, weight: .semibold)).foregroundStyle(.white)
-                    .frame(width: 30, height: 30).background(Theme.accent, in: .rect(cornerRadius: 8))
-            }
-            Text(title).font(.body)
-            Spacer()
-            Toggle(title, isOn: on).labelsHidden().tint(Theme.accent)
-        }
-        .padding(.horizontal, mapSheet == "A" ? 20 : 14).padding(.vertical, 10)
-        .accessibilityIdentifier("layer\(title)")
-    }
 
     /// Tilts the camera over the day's places (3D) or flattens it back (2D).
     private func set3D(_ on: Bool) {
@@ -829,20 +490,6 @@ struct TimelineScreen: View {
                     : .automatic
     }
 
-    private func mapToggle(_ title: String, _ symbol: String, _ on: Binding<Bool>) -> some View {
-        Button { withAnimation(.snappy) { on.wrappedValue.toggle() } } label: {
-            Image(systemName: symbol).font(.scaled(size: 19, weight: .semibold))
-                // Preview flag "toggle.black": off = black like the tab bar, on = blue.
-                .foregroundStyle(on.wrappedValue ? Theme.accent : (UserDefaults.standard.bool(forKey: "toggle.black") ? Color.primary : Color.secondary))
-                .frame(width: 56, height: 56)
-                .contentShape(.circle)
-                .glassEffect(on.wrappedValue ? .regular.interactive() : .identity, in: .circle)
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(title)
-        .accessibilityAddTraits(on.wrappedValue ? .isSelected : [])
-        .accessibilityIdentifier("toggle\(title)")
-    }
 
     private func infoChip(_ value: String, _ label: String) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 4) {
@@ -853,15 +500,6 @@ struct TimelineScreen: View {
         .glassEffect(.regular, in: .capsule)
     }
 
-    private func glassChip(_ value: String, _ label: String) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 4) {
-            Text(value).font(.subheadline.bold())
-            Text(label).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-        }
-        .lineLimit(1)
-        .padding(.horizontal, 12).padding(.vertical, 7)
-        .glassEffect(.regular, in: .capsule)
-    }
 
     private var placeCount: Int { Set(rangeVisits.filter { $0.category != .home }.map(\.placeKey)).count }
     private var meters: Double {
@@ -870,26 +508,12 @@ struct TimelineScreen: View {
                 .distance(from: CLLocation(latitude: pair.1.latitude, longitude: pair.1.longitude))
         }
     }
-    /// Preview flag "map.subtitles" (gray line under Journal / Photos / Route), awaiting David's pick:
-    /// B (default) = the same words for every range ("Shows where you journaled"), A = follows the range ("Where you journaled this month"),
-    /// C = what's in the range ("4 entries this month"). "" = the old words that always said "today".
-    @AppStorage("map.subtitles") private var subtitleStyle = "B"
     private enum RowKind { case notes, photos, route }
     private func rowSubtitle(_ kind: RowKind) -> String {
-        let when = switch range { case .day: "today"; case .week: "this week"; case .month: "this month"; case .year: "this year" }
-        switch (subtitleStyle, kind) {
-        case ("A", .notes): return "Where you journaled \(when)"
-        case ("A", .photos): return "Photos you took \(when)"
-        case ("A", .route): return "The way you went \(when)"
-        case ("B", .notes): return "Shows where you journaled"
-        case ("B", .photos): return "Shows your photos on the map"
-        case ("B", .route): return "Shows the way you went"
-        case ("C", .notes): let n = rangeNotes.count; return "\(n) entr\(n == 1 ? "y" : "ies") \(when)"
-        case ("C", .photos): let n = rangePhotos.count; return "\(n) photo\(n == 1 ? "" : "s") \(when)"
-        case ("C", .route): return "\(distanceText) \(when)"
-        case (_, .notes): return "Where you journaled today"
-        case (_, .photos): return "Photos you took today"
-        case (_, .route): return "The way you went"
+        switch kind {
+        case .notes: "Shows where you journaled"
+        case .photos: "Shows your photos on the map"
+        case .route: "Shows the way you went"
         }
     }
 
@@ -997,17 +621,12 @@ struct MostVisitedList: View {
     var clusters: [TimelineScreen.Cluster]
     /// Preview flag "visited.icon" (David picks, Sep 24): "tile" = blue tile (default, now);
     /// A = no icon; B = bold blue symbol, no tile; C = blue symbol in a light round circle (Maps style).
-    @AppStorage("visited.icon") private var visitedIcon = "C" // B dropped
     /// Global "Show Symbols" (Profile > Look). On = C (round tint), off = no symbol (option A).
     @AppStorage("symbols.show") private var showSymbols = true
-    private var iconStyle: String { showSymbols ? visitedIcon : "A" }
     @ViewBuilder private func icon(_ c: TimelineScreen.Cluster) -> some View {
-        switch iconStyle {
-        case "A": EmptyView()
-        case "B": Image(systemName: c.category.symbol).font(.title3.weight(.bold)).foregroundStyle(Theme.accent).frame(width: 30, height: 30)
-        case "C": Image(systemName: c.category.symbol).font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.accent)
+        if showSymbols {
+            Image(systemName: c.category.symbol).font(.subheadline).foregroundStyle(Theme.accent)
                 .frame(width: 34, height: 34).background(Theme.accent.opacity(0.14), in: .circle)
-        default: CategoryIcon(category: c.category, size: 30)
         }
     }
     var body: some View {
@@ -1019,15 +638,15 @@ struct MostVisitedList: View {
                 Text("No places in this period yet.").font(.subheadline).foregroundStyle(.secondary).padding(4)
             }
             ForEach(Array(top.enumerated()), id: \.element.key) { i, c in
-                if i > 0 { Divider().padding(.leading, iconStyle == "A" ? 4 : 50) }
+                if i > 0 { Divider().padding(.leading, showSymbols ? 50 : 4) }
                 HStack(spacing: 12) {
                     icon(c)
                     VStack(alignment: .leading, spacing: 1) {
-                        Text(c.name).font(.body.weight(.semibold)).lineLimit(1)
-                        Text("\(c.visits) visit\(c.visits == 1 ? "" : "s")").font(.caption).foregroundStyle(.secondary)
+                        Text(c.name).font(.body).lineLimit(1)
+                        Text("\(c.visits) visit\(c.visits == 1 ? "" : "s")").font(.subheadline).foregroundStyle(.secondary)
                     }
                     Spacer()
-                    Text(c.hours >= 1 ? "\(Int(c.hours.rounded()))h" : "\(Int(c.hours * 60)) min").font(.subheadline.weight(.bold))
+                    Text(c.hours >= 1 ? "\(Int(c.hours.rounded()))h" : "\(Int(c.hours * 60)) min").font(.body).monospacedDigit().foregroundStyle(.secondary)
                 }
                 .padding(.vertical, 10).padding(.horizontal, 4)
             }
@@ -1035,92 +654,10 @@ struct MostVisitedList: View {
     }
 }
 
-/// Day view: one card per stop, with that stop's photos across the top and any voice note inside.
-struct DayPhotoCards: View {
-    var visits: [Visit]
-    var journal: [JournalEntry]
-    @State private var openGroup: JournalGroup?
-
-    var body: some View {
-        VStack(spacing: 10) {
-            if stops.isEmpty {
-                ContentUnavailableView("No places yet", systemImage: "location",
-                                       description: Text("Your timeline builds itself as you move around."))
-            }
-            ForEach(stops) { visit in
-                let items = journal.filter { $0.date >= visit.arrival && $0.date < (visit.departure ?? .distantFuture) }
-                let photos = items.compactMap { $0.kind == .photo ? $0.thumbnail.flatMap(UIImage.init(data:)) : nil }
-                let voice = items.first { $0.kind == .voice }
-                VStack(alignment: .leading, spacing: 0) {
-                    if !photos.isEmpty {
-                        // Same as the Journal cards (David, Sep 24): photos inside the card with a white border,
-                        // a big photo and a narrow one side by side.
-                        GeometryReader { g in
-                            let shown = Array(photos.prefix(2)); let gap: CGFloat = 6
-                            HStack(spacing: gap) {
-                                ForEach(Array(shown.enumerated()), id: \.offset) { i, img in
-                                    let w = shown.count == 1 ? g.size.width : (i == 0 ? (g.size.width - gap) * 0.62 : (g.size.width - gap) * 0.38)
-                                    Color.clear.frame(width: w, height: g.size.height)
-                                        .overlay { Image(uiImage: img).resizable().scaledToFill() }
-                                        .clipShape(.rect(cornerRadius: 16, style: .continuous))
-                                }
-                            }
-                        }
-                        .frame(height: 140)
-                        .padding([.horizontal, .top], 10)
-                    }
-                    VStack(alignment: .leading, spacing: 10) {
-                        HStack(alignment: .center) {
-                            VStack(alignment: .leading, spacing: 1) {
-                                Text(visit.placeName).font(.headline)
-                                Text(timeText(visit)).font(.footnote).foregroundStyle(.secondary)
-                            }
-                            Spacer()
-                            if visit.departure == nil {
-                                Text("Here now").font(.caption.weight(.bold)).foregroundStyle(.white)
-                                    .padding(.horizontal, 9).padding(.vertical, 4)
-                                    .background(Theme.accent, in: .capsule)
-                            } else {
-                                CategoryIcon(category: visit.category, size: 30)
-                            }
-                        }
-                        if let voice {
-                            // Same voice-note design as the Journal.
-                            VoiceBubble(seconds: voice.audioDuration, words: voice.text, transcribed: voice.isTranscribed,
-                                        seed: voice.audioFileName ?? "\(voice.date)",
-                                        audioURL: voice.audioFileName.map { VoiceNoteService.folder.appending(path: $0) })
-                        }
-                    }
-                    .padding(.horizontal, 14).padding(.vertical, 12)
-                }
-                .background(Color(.secondarySystemGroupedBackground).opacity(0.92), in: .rect(cornerRadius: Theme.cardRadius, style: .continuous))
-                .clipShape(.rect(cornerRadius: Theme.cardRadius, style: .continuous))
-                .shadow(color: .black.opacity(0.06), radius: 10, y: 4)
-                .contentShape(.rect(cornerRadius: Theme.cardRadius))
-                .onTapGesture { if !items.isEmpty { openGroup = JournalGroup(entries: items, place: visit.placeName) } }
-                .accessibilityIdentifier("stop-\(visit.placeName)")
-            }
-        }
-        .navigationDestination(isPresented: Binding(get: { openGroup != nil }, set: { if !$0 { openGroup = nil } })) {
-            if let openGroup { JournalEntryView(group: openGroup) }
-        }
-    }
-
-    private var stops: [Visit] { visits.filter { $0.category != .home || $0.duration < 12 * 3600 }.sorted { $0.arrival < $1.arrival } }
-
-    private func timeText(_ v: Visit) -> String {
-        guard let d = v.departure else { return "Since \(v.arrival.shortTime)" }
-        let minutes = Int(d.timeIntervalSince(v.arrival) / 60)
-        let dur = minutes < 60 ? "\(minutes) min" : "\(minutes / 60) h \(minutes % 60) min"
-        return "\(TimelineClock.string(from: v.arrival)) – \(TimelineClock.string(from: d)) · \(dur)"
-    }
-}
 
 private extension View {
     /// Rounded translucent card like the groups in Find My's sheet.
-    /// glass: real Liquid Glass (see-through, map color shows), like the cards in Find My's "Me" sheet.
-    @ViewBuilder func findMyCard(glass: Bool = false) -> some View {
-        if glass { glassEffect(.regular.tint(Color.white.opacity(0.06)), in: .rect(cornerRadius: 26, style: .continuous)) }
-        else { background(Color.primary.opacity(0.06), in: .rect(cornerRadius: 26, style: .continuous)) }
+    func findMyCard() -> some View {
+        glassEffect(.regular.tint(Color.white.opacity(0.06)), in: .rect(cornerRadius: 26, style: .continuous))
     }
 }

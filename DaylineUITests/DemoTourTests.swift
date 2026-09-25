@@ -533,6 +533,22 @@ final class DemoTourTests: XCTestCase {
         tapID(app, "peopleButton"); pause(2); shot("fpc-people")
     }
 
+    /// People circles (Contacts-style monograms): Streak rows, People, a person, Add People.
+    func testPeopleCircles() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo"]
+        app.launch(); pause(1.5)
+        tab(app, "Insights"); pause(1.5)
+        app.buttons["Month"].firstMatch.tap(); pause(1.2)
+        tapID(app, "streakCard"); pause(2); shot("pc1-streak")
+        app.swipeUp(); pause(1.2); shot("pc1b-streak-friends"); app.swipeDown(); pause(1)
+        tapID(app, "peopleButton"); pause(2); shot("pc2-people")
+        app.swipeUp(); pause(1.2); shot("pc2b-people-scrolled"); app.swipeDown(); pause(1)
+        tapID(app, "person-Sam"); pause(2); shot("pc3-person-sam"); goBack(app); pause(1)
+        app.swipeUp(); pause(1)
+        tapID(app, "addPerson"); pause(2); shot("pc4-add-people")
+    }
+
     /// Anything good wins points back: a run from Apple Health and lots of steps, on the ring and in the day story.
     func testMakeUpRun() throws {
         for (name, hour) in [("mu-1-10am", 10), ("mu-2-4pm", 16), ("mu-3-8pm", 20)] {

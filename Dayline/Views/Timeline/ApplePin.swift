@@ -1,12 +1,12 @@
 import SwiftUI
 
 /// Apple Maps-style place pin: round colored badge with a white edge, a small tail, and (big style) a dot on the spot.
-/// Preview flag "pin.style": A = big with dot (like Apple's Maps splash), B = compact with tail, C = native MapKit Marker.
+/// Map pins use the small size with the dot; the splash uses the hero size.
 struct ApplePin: View {
     var symbol: String
     var color: Color
     var big = true
-    /// Small size with Apple's dot under the pin (pin.style D: A's shape at C's size, theme blue).
+    /// Small size with Apple's dot under the pin.
     var dot: Bool? = nil
     /// Hero size (splash): the badge diameter in points, like the big pin on Apple's Maps splash.
     var hero: CGFloat? = nil
