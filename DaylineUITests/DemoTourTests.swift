@@ -565,7 +565,7 @@ final class DemoTourTests: XCTestCase {
 
     /// Widget design choices: each design's Home Screen page and its large + Lock Screen page.
     func testWidgetDesigns() throws {
-        for n in 1...10 {
+        for n in 1...12 {
             for p in 1...2 {
                 let app = XCUIApplication()
                 app.launchArguments = ["-demo", "-widgetDesign", "\(n)", "-widgetPage", "\(p)"]
