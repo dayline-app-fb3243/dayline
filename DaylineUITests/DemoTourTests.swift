@@ -1562,7 +1562,7 @@ final class DemoTourTests: XCTestCase {
         app.buttons["Year"].firstMatch.tap(); pause(1.5)
         app.swipeUp(); pause(1.2); shot("ib-year")
         let yd = app.descendants(matching: .any)["yearDaysCard"]
-        if yd.waitForExistence(timeout: 4) { yd.tap() }
+        if yd.waitForExistence(timeout: 4) { yd.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.62)).tap() }
         pause(2); shot("ib-year-open")
     }
 
