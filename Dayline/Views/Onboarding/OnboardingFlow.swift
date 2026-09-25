@@ -269,10 +269,16 @@ struct SplashView: View {
             Color(.systemBackground).ignoresSafeArea()
             Color.clear.frame(maxWidth: .infinity).frame(height: 730)
                 .overlay(alignment: .top) {
-                    if liveMap.isEmpty || liveMap == "loop" {
-                        SplashLoop().frame(height: 730).allowsHitTesting(false)
-                    } else {
-                        SplashLiveMap(style: liveMap).frame(height: 730).allowsHitTesting(false)
+                    ZStack {
+                        // Show a real map frame immediately; the live MapKit animation fades in
+                        // after its tiles render, so returning users never see a blank splash.
+                        Image("SplashMap").resizable().scaledToFill()
+                            .frame(maxWidth: .infinity).frame(height: 730).clipped()
+                        if liveMap.isEmpty || liveMap == "loop" {
+                            SplashLoop().frame(height: 730).allowsHitTesting(false)
+                        } else {
+                            SplashLiveMap(style: liveMap).frame(height: 730).allowsHitTesting(false)
+                        }
                     }
                 }
                 .clipped()
