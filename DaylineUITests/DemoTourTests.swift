@@ -1547,6 +1547,21 @@ final class DemoTourTests: XCTestCase {
     }
 
     /// Insights: Best day in Month and best/lowest days in Year, each opening that day.
+    /// Where friends show now: Insights > Month > Streak card (friends' streaks), a friend, and People.
+    func testFriendsWhere() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo"]
+        app.launch(); pause(1.5)
+        tab(app, "Insights"); pause(1.5)
+        app.buttons["Month"].firstMatch.tap(); pause(1.5); shot("fr-1-month")
+        tapID(app, "streakCard"); pause(2); shot("fr-2-streak")
+        app.swipeUp(); pause(1.2); shot("fr-3-streak-scrolled")
+        app.swipeDown(); pause(1)
+        tapID(app, "friend-Sam"); pause(2); shot("fr-4-friend")
+        app.navigationBars.buttons.firstMatch.tap(); pause(1.2)
+        tapID(app, "peopleButton"); pause(2); shot("fr-5-people")
+    }
+
     func testInsightsBestDay() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-demo"]

@@ -145,7 +145,11 @@ struct ScoreRing: View {
     /// Where along the fill orange takes over.
     private var splitAt: Double { 0.74 - 0.12 * slip }
     private var joining: Bool { behind && paceStyle == "B" && !join.isEmpty }
+    /// A finished low day (label in orange, score under 45): the ring is orange too, in the Today ring's
+    /// shade-B oranges, so ring and label always match.
+    private var lowDay: Bool { lost == nil && score < 45 }
     private var gradient: Gradient {
+        if lowDay { return Gradient(colors: [softStart, softEnd]) }
         if joining {
             let a = splitAt
             switch join {
