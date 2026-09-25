@@ -29,12 +29,15 @@ final class PhotoService {
         guard await requestAccess() else { throw PhotoError.noAccess }
         let options = PHFetchOptions()
         options.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
-        options.fetchLimit = max(1, min(count, 20))
+        let requested = max(1, min(count, 20))
+        let known = Set(((try? context.fetch(FetchDescriptor<JournalEntry>())) ?? []).compactMap(\.photoAssetID))
         let assets = PHAsset.fetchAssets(with: .image, options: options)
         guard assets.count > 0 else { throw PhotoError.noPhotos }
-        let known = Set(((try? context.fetch(FetchDescriptor<JournalEntry>())) ?? []).compactMap(\.photoAssetID))
         var list: [PHAsset] = []
-        assets.enumerateObjects { a, _, _ in if !known.contains(a.localIdentifier) { list.append(a) } }
+        assets.enumerateObjects { asset, _, stop in
+            if !known.contains(asset.localIdentifier) { list.append(asset) }
+            if list.count >= requested { stop.pointee = true }
+        }
         var out: [JournalEntry] = []
         for a in list { out.append(try await addEntry(for: a, context: context)) }
         return out
