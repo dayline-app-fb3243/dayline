@@ -164,6 +164,8 @@ enum DemoData {
     }
 
     static func seed(_ context: ModelContext, calendar: Calendar = .current) {
+        // Root can reappear after demo sign-out/sign-in; do not duplicate the same history.
+        guard ((try? context.fetchCount(FetchDescriptor<Visit>())) ?? 0) == 0 else { return }
         let today = calendar.startOfDay(for: .now)
         func at(_ day: Date, _ h: Int, _ m: Int) -> Date { calendar.date(bySettingHour: h, minute: m, second: 0, of: day)! }
         func place(_ dx: Double, _ dy: Double) -> (Double, Double) { (base.lat + dy, base.lon + dx) }

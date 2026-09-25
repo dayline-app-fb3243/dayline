@@ -333,9 +333,10 @@ final class DemoTourTests: XCTestCase {
     func testEmptyTabsDark() { emptyTabs("Dark") }
     func testEmptyTabsLight() { emptyTabs("Light") }
 
-    /// The Demo Xcode target, launched without flags or permissions, must already contain history.
+    /// The normal test target's -demo flag uses the same seed path as the Demo Xcode target.
     func testFreshDemoHistory() throws {
         let app = XCUIApplication()
+        app.launchArguments = ["-demo"]
         app.launch(); pause(5)
         XCTAssertTrue(app.tabBars.buttons["Timeline"].waitForExistence(timeout: 8))
         tab(app, "Timeline"); pause(3)
