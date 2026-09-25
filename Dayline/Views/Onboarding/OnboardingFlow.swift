@@ -256,12 +256,12 @@ struct SplashView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(alignment: .top) {
             Color(.systemBackground).ignoresSafeArea()
-            Color.clear.frame(maxWidth: .infinity).frame(height: 610)
+            Color.clear.frame(maxWidth: .infinity).frame(height: 730)
                 .overlay(alignment: .top) {
                     if liveMap.isEmpty || liveMap == "loop" {
-                        SplashLoop().frame(height: 610).allowsHitTesting(false)
+                        SplashLoop().frame(height: 730).allowsHitTesting(false)
                     } else {
-                        SplashLiveMap(style: liveMap).frame(height: 610).allowsHitTesting(false)
+                        SplashLiveMap(style: liveMap).frame(height: 730).allowsHitTesting(false)
                     }
                 }
                 .clipped()
@@ -271,6 +271,7 @@ struct SplashView: View {
                                            .init(color: Color(.systemBackground), location: 1)],
                                    startPoint: .top, endPoint: .bottom).frame(height: 215)
                 }
+                .offset(y: -130)
                 .ignoresSafeArea(edges: .top)
         }
     }
