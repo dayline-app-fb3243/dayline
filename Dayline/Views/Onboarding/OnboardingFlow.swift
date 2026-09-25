@@ -132,7 +132,7 @@ struct SplashView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background {
-            Image("SplashMap").resizable().scaledToFill().ignoresSafeArea()
+            SplashLiveMap(style: "M").ignoresSafeArea()
         }
         .clipped()
     }
@@ -158,7 +158,7 @@ struct SplashView: View {
     // --- Map-based options (Sep 24, David wants ideas close to the faded map) ---
     private func fadedMap(height: CGFloat, fade: CGFloat) -> some View {
         Color.clear.frame(maxWidth: .infinity).frame(height: height)
-            .overlay(alignment: .top) { Image("SplashMap").resizable().scaledToFill() }
+            .overlay(alignment: .top) { SplashLiveMap(style: "M") }
             .clipped()
             .overlay(alignment: .bottom) {
                 LinearGradient(stops: [.init(color: Color(.systemBackground).opacity(0), location: 0), .init(color: Color(.systemBackground), location: 0.85)],
@@ -209,7 +209,7 @@ struct SplashView: View {
     // F: the map as a rounded card at the top, title under it.
     private var splashF: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Image("SplashMap").resizable().scaledToFill()
+            SplashLiveMap(style: "M")
                 .frame(maxWidth: .infinity).frame(height: 440)
                 .clipShape(.rect(cornerRadius: 36, style: .continuous))
                 .shadow(color: .black.opacity(0.12), radius: 20, y: 10)
@@ -1323,13 +1323,13 @@ struct MapReadyProbe: UIViewRepresentable {
     func makeUIView(context: Context) -> MKMapView {
         let m = MKMapView()
         m.delegate = context.coordinator
-        m.overrideUserInterfaceStyle = UITraitCollection.current.userInterfaceStyle
+        m.overrideUserInterfaceStyle = context.environment.colorScheme == .dark ? .dark : .light
         m.pointOfInterestFilter = .excludingAll
         m.camera = MKMapCamera(lookingAtCenter: center, fromDistance: 600, pitch: 45, heading: 60)
         return m
     }
     func updateUIView(_ uiView: MKMapView, context: Context) {
-        uiView.overrideUserInterfaceStyle = UITraitCollection.current.userInterfaceStyle
+        uiView.overrideUserInterfaceStyle = context.environment.colorScheme == .dark ? .dark : .light
     }
     final class Coordinator: NSObject, MKMapViewDelegate {
         let onReady: () -> Void
