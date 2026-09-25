@@ -71,6 +71,7 @@ struct NewEntryView: View {
     @State private var blocks: [EntryBlock] = [EntryBlock(kind: .text)]
     @State private var picks: [PhotosPickerItem] = []
     @State private var showLibrary = false
+    @State private var showMediaChoices = false
     @State private var camera: CameraMode?
     @FocusState private var focus: UUID?
     @FocusState private var titleFocused: Bool
@@ -171,6 +172,11 @@ struct NewEntryView: View {
         .safeAreaInset(edge: .bottom) {
             VoiceRecorderBar(voice: voice, onSend: { await stopVoice() }, leading: { addMediaButton }) { addBar }
         }
+        .confirmationDialog("Add photo or video", isPresented: $showMediaChoices, titleVisibility: .visible) {
+            Button("Photo and Video Library", systemImage: "photo.fill") { showLibrary = true }
+            if cameraOK { Button("Take Photo", systemImage: "camera.fill") { camera = .photo } }
+            Button("Cancel", role: .cancel) {}
+        }
         .photosPicker(isPresented: $showLibrary, selection: $picks, maxSelectionCount: 10,
                       matching: .any(of: [.images, .videos]))
         .onChange(of: picks) { _, items in
@@ -211,16 +217,13 @@ struct NewEntryView: View {
     private var cameraOK: Bool { UIImagePickerController.isSourceTypeAvailable(.camera) || ProcessInfo.processInfo.arguments.contains("-demo") }
 
     private var addMediaButton: some View {
-        Menu {
-            Button("Take Photo", systemImage: "camera.fill") { camera = .photo }
-                .disabled(!cameraOK)
-            Button("Photo and Video Library", systemImage: "photo.fill") { showLibrary = true }
-        } label: {
+        Button { focus = nil; titleFocused = false; showMediaChoices = true } label: {
             Image(systemName: "plus").font(.title2.weight(.medium)).foregroundStyle(.primary)
                 .frame(width: 48, height: 48)
                 .glassEffect(.regular.interactive(), in: .circle)
         }
         .accessibilityLabel("Add photo or video")
+        .accessibilityIdentifier("entryAddMedia")
     }
 
     private var addBar: some View {

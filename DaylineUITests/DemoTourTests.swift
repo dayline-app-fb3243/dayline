@@ -164,6 +164,19 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    func testJournalMediaDialogDark() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-onboarding.done", "YES", "-appearance", "dark"]
+        app.launch()
+        app.tabBars.buttons["Journal"].tap()
+        tapID(app, "newEntry")
+        let add = app.buttons["entryAddMedia"]
+        XCTAssertTrue(add.waitForExistence(timeout: 6))
+        add.tap(); pause(1)
+        XCTAssertTrue(app.buttons["Photo and Video Library"].waitForExistence(timeout: 4))
+        shot("journal-media-dialog-dark")
+    }
+
     func testEmptyTabsDark() { emptyTabs("Dark") }
     func testEmptyTabsLight() { emptyTabs("Light") }
 
