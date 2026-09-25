@@ -95,7 +95,7 @@ struct SeamlessWidgetScoreRing: View {
                     .init(color: Color(red: 0.0, green: 0.38, blue: 0.9), location: Double(progress)),
                     .init(color: Color(red: 0.0, green: 0.38, blue: 0.9), location: 1)
                 ], center: .center, startAngle: .degrees(-90), endAngle: .degrees(270)),
-                        style: StrokeStyle(lineWidth: width, lineCap: .butt))
+                        style: StrokeStyle(lineWidth: width, lineCap: .round))
                 .rotationEffect(.degrees(-90))
                 .frame(width: diameter, height: diameter)
                 .widgetAccentable()
