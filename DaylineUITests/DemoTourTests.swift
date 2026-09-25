@@ -1561,9 +1561,13 @@ final class DemoTourTests: XCTestCase {
         app.swipeDown(); pause(0.8)
         app.buttons["Year"].firstMatch.tap(); pause(1.5)
         app.swipeUp(); pause(1.2); shot("ib-year")
-        let yd = app.descendants(matching: .any)["yearDaysCard"]
-        if yd.waitForExistence(timeout: 4) { yd.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.62)).tap() }
+        // Two rows share the id (best day, lowest day): tap each one and show the day it opens.
+        let rows = app.buttons.matching(identifier: "yearDaysCard")
+        if rows.firstMatch.waitForExistence(timeout: 4) { rows.element(boundBy: 0).tap() }
         pause(2); shot("ib-year-open")
+        app.navigationBars.buttons.firstMatch.tap(); pause(1.2)
+        if rows.count > 1 { rows.element(boundBy: 1).tap() }
+        pause(2); shot("ib-year-open-low")
     }
 
     /// Journal: current cards and three close variants (journal.near A/B/C), top and scrolled.
