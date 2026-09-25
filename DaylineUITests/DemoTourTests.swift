@@ -975,7 +975,7 @@ final class DemoTourTests: XCTestCase {
     /// Steps page (picked: Health-style chart), opened from the Steps tile: D and W.
     func testStepsPage() throws {
         let app = XCUIApplication()
-        app.launchArguments = ["-demo"]
+        app.launchArguments = ["-demo", "-demoNoBanner"]
         app.launch(); pause(1.5)
         tapID(app, "stepsTile"); pause(2); shot("sp1-day")
         tapSegment(app, "W"); pause(1.5); shot("sp2-week")
@@ -1259,7 +1259,7 @@ final class DemoTourTests: XCTestCase {
     /// Dark-mode surface hierarchy: black canvas, lighter grouped cards across five tabs.
     func testInsightsDayDark() throws {
         let app = XCUIApplication()
-        app.launchArguments = ["-demo"]
+        app.launchArguments = ["-demo", "-demoNoBanner"]
         app.launch()
         tab(app, "Insights")
         tapSegment(app, "Day")

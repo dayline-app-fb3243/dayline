@@ -37,7 +37,8 @@ struct RootView: View {
             }
         }
         .task {
-            guard SampleMode.on, !didStartDemoBanners else { return }
+            guard SampleMode.on, !didStartDemoBanners,
+                  !ProcessInfo.processInfo.arguments.contains("-demoNoBanner") else { return }
             didStartDemoBanners = true
             // Seeded Xcode build only: preview in-app banner choreography. This is NOT an iOS
             // delivered notification and is never enabled in the Empty/production build.
