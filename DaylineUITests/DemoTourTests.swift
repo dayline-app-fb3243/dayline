@@ -1594,6 +1594,22 @@ final class DemoTourTests: XCTestCase {
         tab(app, "Today"); pause(1.5); tapID(app, "scoreCard"); pause(2); shot("fp-dayscore")
     }
 
+    /// Names next to profile circles: Apple's Contacts app next to Dayline's People page.
+    func testFontProofContacts() throws {
+        let contacts = XCUIApplication(bundleIdentifier: "com.apple.MobileAddressBook")
+        contacts.launch(); pause(3); shot("fpc-ios-contacts")
+        let first = contacts.cells.firstMatch
+        if first.waitForExistence(timeout: 4) { first.tap(); pause(2); shot("fpc-ios-contact") }
+        contacts.terminate()
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo"]
+        app.launch(); pause(1.5)
+        tab(app, "Insights"); pause(1.5)
+        app.buttons["Month"].firstMatch.tap(); pause(1.2)
+        tapID(app, "streakCard"); pause(2)
+        tapID(app, "peopleButton"); pause(2); shot("fpc-people")
+    }
+
     func testInsightsBestDay() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-demo"]
