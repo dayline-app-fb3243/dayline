@@ -236,7 +236,7 @@ struct NewEntryView: View {
 
     private func circleButton(_ symbol: String, _ label: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Image(systemName: symbol).font(.scaled(size: 19, weight: .regular)).foregroundStyle(Theme.accent)
+            Image(systemName: symbol).font(.scaled(size: 19, weight: .regular)).foregroundStyle(.primary)
                 .frame(width: 48, height: 48).contentShape(.circle)
         }
         .buttonStyle(.plain)

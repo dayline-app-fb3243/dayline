@@ -66,7 +66,7 @@ extension JournalView {
         Button { composing = true } label: {
             Image(systemName: "plus").font(.title3.weight(.medium)).frame(width: 44, height: 44)
         }
-        .buttonStyle(.plain).foregroundStyle(Theme.accent)
+        .buttonStyle(.plain).foregroundStyle(.primary)
         .accessibilityLabel("New entry")
         .accessibilityIdentifier("newEntry")
     }
@@ -74,7 +74,7 @@ extension JournalView {
         Button { searching = true } label: {
             Image(systemName: "magnifyingglass").font(.title3.weight(.medium)).frame(width: 44, height: 44)
         }
-        .buttonStyle(.plain).foregroundStyle(Theme.accent)
+        .buttonStyle(.plain).foregroundStyle(.primary)
         .accessibilityLabel("Search")
         .accessibilityIdentifier("journalSearch")
     }
