@@ -712,6 +712,21 @@ final class DemoTourTests: XCTestCase {
         }
     }
 
+    /// Quick mic tap shows an option's hint, without creating a recording.
+    func testVoiceHintOptions() throws {
+        for n in 1...4 {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-voiceHint", "\(n)"]
+            app.launch(); pause(1)
+            tab(app, "Journal"); pause(1)
+            tapID(app, "newEntry"); pause(1)
+            let mic = app.descendants(matching: .any)["voiceMic"].firstMatch
+            if mic.waitForExistence(timeout: 4) { mic.tap(); pause(0.3) }
+            shot("vh\(n)")
+            app.terminate()
+        }
+    }
+
     /// Day/Week/Month/Year: press and slide across the switcher (recorded as video).
     func testSegmentedVideo() throws {
         let app = XCUIApplication()

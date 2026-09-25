@@ -1,6 +1,5 @@
 import SwiftUI
 import AVFoundation
-import AudioToolbox
 
 /// Messages-style recorder for a journal entry (design: hold-3 #2).
 /// Hold the mic to record, slide up to lock, slide left to cancel.
@@ -16,6 +15,9 @@ struct VoiceRecorderBar<Tools: View>: View {
     @State private var holding = false
     @State private var player: AVAudioPlayer?
     @State private var pressStart: Date?
+    @State private var pressGeneration = 0
+    @State private var startTask: Task<Void, Never>?
+    private let minimumHold: TimeInterval = 0.45
     @State private var showTapHint = false
     @State private var hintToken = 0
 
@@ -45,21 +47,48 @@ struct VoiceRecorderBar<Tools: View>: View {
 
     // MARK: pieces
 
-    /// Quick tap on the mic (like Messages): a short hint in the bar instead of recording.
+    /// Quick tap previews. None of these start or save audio.
+    private var hintStyle: Int {
+        let a = ProcessInfo.processInfo.arguments
+        guard let i = a.firstIndex(of: "-voiceHint"), i + 1 < a.count else { return 1 }
+        return Int(a[i + 1]) ?? 1
+    }
     private var tapHint: some View {
-        GlassEffectContainer(spacing: 10) {
-            HStack(spacing: 10) {
-                Text("Tap and hold to record").font(.body).foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.leading, 18).frame(height: 48)
-                    .glassEffect(.regular, in: .capsule)
-                Image(systemName: "mic.fill").font(.scaled(size: 20, weight: .regular)).foregroundStyle(Theme.accent)
-                    .frame(width: 48, height: 48)
-                    .glassEffect(.regular.interactive(), in: .circle)
+        Group {
+            switch hintStyle {
+            case 2:
+                HStack(spacing: 8) {
+                    Image(systemName: "hand.point.up.left").foregroundStyle(Theme.accent)
+                    Text("Hold the mic to record").foregroundStyle(.secondary)
+                    Spacer()
+                    Image(systemName: "mic.fill").foregroundStyle(Theme.accent)
+                }
+                .font(.subheadline).padding(.horizontal, 16).frame(height: 48)
+                .background(Color(.secondarySystemGroupedBackground), in: .capsule)
+            case 3:
+                HStack {
+                    Spacer()
+                    Text("Hold to record").font(.caption).foregroundStyle(.secondary)
+                    Image(systemName: "mic.fill").foregroundStyle(Theme.accent)
+                        .frame(width: 48, height: 48).glassEffect(.regular, in: .circle)
+                }
+            case 4:
+                HStack {
+                    Spacer()
+                    Label("Hold for voice note", systemImage: "waveform")
+                        .font(.subheadline).foregroundStyle(.secondary)
+                        .padding(.horizontal, 14).frame(height: 42)
+                        .background(Color(.secondarySystemGroupedBackground), in: .capsule)
+                }
+            default:
+                HStack {
+                    Spacer()
+                    Image(systemName: "mic.fill").font(.title3).foregroundStyle(Theme.accent)
+                        .frame(width: 48, height: 48).glassEffect(.regular, in: .circle)
+                }
             }
         }
-        .transition(.opacity)
-        .accessibilityElement(children: .combine)
+        .frame(height: 48).transition(.opacity)
         .accessibilityIdentifier("tapHoldHint")
     }
 
@@ -133,34 +162,43 @@ struct VoiceRecorderBar<Tools: View>: View {
                     .onChanged { value in
                         if !holding {
                             holding = true; locked = false; cancelled = false; pressStart = .now; showTapHint = false
-                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                            Task { try? await voice.start() }
+                            pressGeneration += 1
+                            let generation = pressGeneration
+                            startTask?.cancel()
+                            startTask = Task { @MainActor in
+                                try? await Task.sleep(for: .seconds(minimumHold))
+                                guard !Task.isCancelled, holding, !cancelled, pressGeneration == generation else { return }
+                                // Permission may take longer than the hold. If the finger lifts
+                                // during that prompt, discard any recorder that starts afterward.
+                                do { try await voice.start() } catch { return }
+                                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                                if !holding && !locked { voice.cancel() }
+                            }
                         }
                         guard !locked, !cancelled else { return }
                         drag = value.translation
                         if value.translation.height < -lockDistance {
-                            locked = true; drag = .zero
-                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            // Lock only after the minimum hold has actually been reached.
+                            if voice.isRecording { locked = true; drag = .zero; UIImpactFeedbackGenerator(style: .light).impactOccurred() }
                         } else if value.translation.width < -cancelDistance {
-                            cancelled = true; drag = .zero
-                            voice.cancel()
+                            cancelled = true; drag = .zero; pressGeneration += 1
+                            startTask?.cancel(); voice.cancel()
                             UINotificationFeedbackGenerator().notificationOccurred(.warning)
                         }
                     }
                     .onEnded { _ in
                         holding = false; drag = .zero
-                        let quick = pressStart.map { Date.now.timeIntervalSince($0) < 0.35 } ?? false
+                        let quick = pressStart.map { Date.now.timeIntervalSince($0) < minimumHold } ?? true
                         if quick && !locked && !cancelled {
-                            // Too short to be a recording: throw it away and show the hint, with a tick + haptic.
-                            Task { try? await Task.sleep(for: .milliseconds(150)); voice.cancel() }
-                            AudioServicesPlaySystemSound(1104)
-                            UINotificationFeedbackGenerator().notificationOccurred(.warning)
+                            pressGeneration += 1; startTask?.cancel(); voice.cancel()
                             hintToken += 1; let token = hintToken
                             withAnimation(.snappy(duration: 0.2)) { showTapHint = true }
-                            Task { try? await Task.sleep(for: .seconds(2)); if token == hintToken { withAnimation(.snappy(duration: 0.25)) { showTapHint = false } } }
+                            Task { try? await Task.sleep(for: .seconds(1.5)); if token == hintToken { withAnimation(.snappy(duration: 0.25)) { showTapHint = false } } }
                         } else if !locked && !cancelled {
-                            // Give start() a moment if the hold was very short.
-                            Task { try? await Task.sleep(for: .milliseconds(150)); voice.pause() }
+                            // A real press can still race microphone permission; do not keep a
+                            // late-started recorder once the finger is gone.
+                            pressGeneration += 1; startTask?.cancel()
+                            if voice.isRecording { voice.pause() }
                         }
                     }
             )

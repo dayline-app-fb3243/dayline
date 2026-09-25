@@ -289,7 +289,8 @@ struct NewEntryView: View {
     private func stopVoice() async {
         let secs = voice.elapsed
         let at = focusedIndex()
-        await voice.stop(context: context, coordinate: coordinate)   // saves the voice entry, pinned here
+        await voice.stop(context: context, coordinate: coordinate)   // saves only real voice, pinned here
+        guard secs >= 1.0 else { return }
         let next = EntryBlock(kind: .text)
         blocks.insert(contentsOf: [EntryBlock(kind: .voice, seconds: secs), next], at: min(at + 1, blocks.count))
         focus = next.id

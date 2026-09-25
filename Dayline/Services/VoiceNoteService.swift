@@ -105,6 +105,7 @@ final class VoiceNoteService: NSObject, ObservableObject {
     func stop(context: ModelContext, coordinate: (Double, Double)?) async {
         guard let recorder, let file = currentFile else { return }
         let duration = max(recorder.currentTime, elapsed)
+        if duration < 1.0 { cancel(); return }
         recorder.stop()
         meterTimer?.invalidate()
         isRecording = false
