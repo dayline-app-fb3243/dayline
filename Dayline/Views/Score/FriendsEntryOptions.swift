@@ -97,7 +97,9 @@ struct TodayFriendsCircleCard: View {
         NavigationLink { StreakView() } label: {
             Card {
                 HStack(spacing: 16) {
-                    StreakRing(arcs: arcs, center: streak, size: 98, lineWidthBase: 13)
+                    DaylineWidgetFriendsRing(days: streak,
+                        friends: friends.map { DaylineWidgetFriend(name: $0.name, days: $0.current, color: $0.color) },
+                        size: 94, width: 17, namesInside: false)
                     VStack(alignment: .leading, spacing: 4) {
                         Text("FRIENDS").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
                         Text("Your streak").font(.title3.weight(.semibold)).foregroundStyle(.primary)
