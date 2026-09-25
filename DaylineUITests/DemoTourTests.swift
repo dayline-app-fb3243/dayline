@@ -1047,6 +1047,9 @@ final class DemoTourTests: XCTestCase {
         XCTAssertTrue(app.descendants(matching: .any)["todaySchedule"].firstMatch.exists)
         shot("today-office-rows-native")
         tab(app, "Insights"); pause(1)
+        let day = app.buttons["Day"].firstMatch
+        XCTAssertTrue(day.waitForExistence(timeout: 4))
+        day.tap(); pause(1)
         shot("insights-office-factor-rows-native")
     }
 
