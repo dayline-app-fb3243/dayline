@@ -148,7 +148,7 @@ struct TimelineScreen: View {
     }
     /// Day: map, title, captioned photos in a row, then stops grouped by part of day.
     @ViewBuilder private var dayPage: some View {
-        mapCard(height: 250, hint: true)
+        waitingOrLiveMap(height: 250, hint: true)
         if !DemoData.isDemo && visits.isEmpty && samples.isEmpty && journal.isEmpty {
             ContentUnavailableView("Not enough data yet", systemImage: "mappin.and.ellipse",
                                    description: Text("Dayline saves location checks as you move. Your route appears on this map as it learns your day; places and photos follow."))
@@ -170,7 +170,7 @@ struct TimelineScreen: View {
     }
     /// Week / Month / Year: map, title, the range's photos in a row, then the places card.
     @ViewBuilder private var rangePage: some View {
-        mapCard(height: 250, hint: false)
+        waitingOrLiveMap(height: 250, hint: false)
         if !DemoData.isDemo && visits.isEmpty && samples.isEmpty && journal.isEmpty {
             ContentUnavailableView("Not enough data yet", systemImage: "mappin.and.ellipse",
                                    description: Text("Dayline saves location checks as you move. Your route appears on this map as it learns your day; places and photos follow."))
@@ -384,6 +384,26 @@ struct TimelineScreen: View {
         return out.map(\.coordinate)
     }
 
+
+    /// With no permission/fix, show a non-geographic placeholder instead of MapKit's
+    /// misleading continent-wide automatic camera. The live map takes its place at the first fix.
+    @ViewBuilder private func waitingOrLiveMap(height: CGFloat, hint: Bool) -> some View {
+        if hasFreshFix || !rangeVisits.isEmpty || !rangeSamples.isEmpty {
+            mapCard(height: height, hint: hint)
+        } else {
+            RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
+                .fill(Color(.secondarySystemGroupedBackground))
+                .frame(height: height)
+                .overlay {
+                    VStack(spacing: 8) {
+                        Image(systemName: "location.circle").font(.largeTitle)
+                        Text("Waiting for your location").font(.subheadline)
+                    }
+                    .foregroundStyle(.secondary)
+                }
+                .accessibilityIdentifier("mapWaitingForLocation")
+        }
+    }
 
     /// Map card: tap anywhere to open the full-screen map.
     private func mapCard(height: CGFloat, hint: Bool) -> some View {

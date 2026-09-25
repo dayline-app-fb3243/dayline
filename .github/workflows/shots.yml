@@ -100,6 +100,9 @@ jobs:
             exit 0
           fi
           xcrun simctl ui "${{ steps.sim.outputs.udid }}" appearance light
+          if [[ "${{ inputs.tests }}" == *EmptyTabs* ]]; then
+            xcrun simctl privacy "${{ steps.sim.outputs.udid }}" grant location app.dayline || true
+          fi
           # Journal hold recording should be visible in the video, not blocked by first-use permission.
           if [[ "${{ inputs.tests }}" == *JournalAudio* ]]; then
             xcrun simctl privacy "${{ steps.sim.outputs.udid }}" grant microphone app.dayline || true
