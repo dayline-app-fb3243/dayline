@@ -313,13 +313,16 @@ struct SignInSheet: View {
                 .frame(maxWidth: .infinity).padding(.top, 18)
                 .accessibilityIdentifier("signInContinue")
         }
-        .padding(.horizontal, 20).padding(.top, 20).padding(.bottom, 8)
+        .padding(.horizontal, 20).padding(.top, 20).padding(.bottom, 24)
         .fixedSize(horizontal: false, vertical: true)
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { fitHeight = $0 }
-        .frame(maxHeight: .infinity, alignment: .top)
+        .frame(maxHeight: .infinity, alignment: .bottom)
+        // Button near the sheet's bottom edge like Apple's sheets: lay out through the home-indicator area
+        // instead of stacking its inset under the button.
+        .ignoresSafeArea(.container, edges: .bottom)
         .background(Color(.systemGroupedBackground))
         // The sheet is exactly as tall as its content, like Apple's own sheets.
-        .presentationDetents(fitHeight > 0 ? [.height(fitHeight + 12)] : [.height(500)])
+        .presentationDetents(fitHeight > 0 ? [.height(fitHeight)] : [.height(500)])
         .sheet(isPresented: $showAppleDemo, onDismiss: {
             // Only move on once the Apple sheet is fully gone, so the sign-in sheet can close too.
             if appleDone { next() }
@@ -438,12 +441,15 @@ struct AppleSignInDemoSheet: View {
             Text("Use a different Apple Account").font(.subheadline).foregroundStyle(Theme.accent)
                 .frame(maxWidth: .infinity).padding(.top, 12)
         }
-        .padding(.horizontal, 20).padding(.top, 20).padding(.bottom, 8)
+        .padding(.horizontal, 20).padding(.top, 20).padding(.bottom, 24)
         .fixedSize(horizontal: false, vertical: true)
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { fitHeight = $0 }
-        .frame(maxHeight: .infinity, alignment: .top)
+        .frame(maxHeight: .infinity, alignment: .bottom)
+        // Button near the sheet's bottom edge like Apple's sheets: lay out through the home-indicator area
+        // instead of stacking its inset under the button.
+        .ignoresSafeArea(.container, edges: .bottom)
         .background(Color(.systemGroupedBackground))
-        .presentationDetents(fitHeight > 0 ? [.height(fitHeight + 12)] : [.height(520)])
+        .presentationDetents(fitHeight > 0 ? [.height(fitHeight)] : [.height(520)])
     }
 
     private func choice(_ title: String, _ detail: String, selected: Bool, _ action: @escaping () -> Void) -> some View {
@@ -627,7 +633,8 @@ struct SetupStep<Content: View>: View {
             }
             .controlSize(.large)
         }
-        .padding(.horizontal, 32).padding(.bottom, 20)
+        // Close to the bottom edge (or the keyboard), like Apple's setup screens.
+        .padding(.horizontal, 32).padding(.bottom, 8)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(Color(.systemBackground))
     }
