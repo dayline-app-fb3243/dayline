@@ -843,6 +843,25 @@ final class DemoTourTests: XCTestCase {
         shot("search-back-results")
     }
 
+    func testPlaceFiveFreshOptions() throws {
+        for n in 4...8 {
+            let app = XCUIApplication()
+            app.launchArguments = ["-demo", "-journalSearch", "Blue Door Coffee", "-placeDesign", "\(n)"]
+            app.launch(); tab(app, "Journal"); pause(0.5)
+            tapID(app, "journalSearch"); pause(0.7)
+            let field = app.textFields["searchField"]
+            if field.waitForExistence(timeout: 4) { field.tap(); field.typeText("Blue Door Coffee") }
+            pause(0.8)
+            let hit = app.descendants(matching: .any)["searchHit"].firstMatch
+            if hit.waitForExistence(timeout: 4) {
+                hit.tap(); pause(4)
+                XCTAssertTrue(app.descendants(matching: .any)["placeGoButton"].firstMatch.exists, "GO button missing")
+                shot("place-fresh-option-\(n)")
+            }
+            app.terminate()
+        }
+    }
+
     func testPlaceDesigns() throws {
         for n in 1...3 {
             let app = XCUIApplication()

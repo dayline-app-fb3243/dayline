@@ -490,9 +490,82 @@ struct SearchPlaceView: View {
     @ViewBuilder private var directions: some View {
         if let mapsURL {
             Link(destination: mapsURL) {
-                Label("Directions in Apple Maps", systemImage: "arrow.triangle.turn.up.right.diamond")
-            }.font(.body).foregroundStyle(Theme.accent)
+                Label("GO", systemImage: "arrow.triangle.turn.up.right.diamond.fill")
+                    .font(.headline).frame(maxWidth: .infinity).frame(height: 50)
+            }
+            .buttonStyle(.glassProminent).tint(Theme.accent)
+            .accessibilityLabel("GO: directions in Apple Maps")
+            .accessibilityIdentifier("placeGoButton")
         }
+    }
+    private var placePhoto: UIImage? { hit.thumbnail.flatMap(UIImage.init(data:)) }
+    private var countLabel: String { recalled.map { "\($0.timesVisited) visits" } ?? "Your visit" }
+    @ViewBuilder private var photoPanel: some View {
+        if let image = placePhoto {
+            Image(uiImage: image).resizable().scaledToFill().frame(maxWidth: .infinity).frame(height: 300)
+                .clipped().clipShape(.rect(cornerRadius: 22))
+        } else { placeMap }
+    }
+    @ViewBuilder private var photoFirstPage: some View {
+        photoPanel
+        Text(hit.place).font(.largeTitle.weight(.regular))
+        Text(visitLabel).font(.subheadline).foregroundStyle(.secondary)
+        directions
+        HStack { Label(countLabel, systemImage: "clock.arrow.circlepath"); Spacer(); Text(hit.reason) }
+            .font(.subheadline).foregroundStyle(.secondary).padding(.top, 8)
+    }
+    @ViewBuilder private var mapFocusPage: some View {
+        Text(hit.place).font(.largeTitle.weight(.regular)).padding(.top, 12)
+        Text(visitLabel).font(.subheadline).foregroundStyle(.secondary)
+        placeMap.frame(height: 260)
+        directions
+        Text(countLabel).font(.subheadline).foregroundStyle(.secondary)
+        photos
+    }
+    @ViewBuilder private var journalPage: some View {
+        Text(visitLabel.uppercased()).font(.caption.weight(.semibold)).foregroundStyle(.secondary).padding(.top, 16)
+        Text(hit.place).font(.largeTitle.weight(.regular))
+        if let image = placePhoto {
+            Image(uiImage: image).resizable().scaledToFit().clipShape(.rect(cornerRadius: 12))
+        }
+        Text(hit.reason).font(.body)
+        Divider()
+        HStack { Text(countLabel); Spacer(); Text(hit.date.formatted(date: .abbreviated, time: .shortened)) }
+            .font(.subheadline).foregroundStyle(.secondary)
+        directions
+    }
+    @ViewBuilder private var actionPage: some View {
+        Text(hit.place).font(.largeTitle.weight(.regular)).padding(.top, 18)
+        Text(visitLabel).font(.subheadline).foregroundStyle(.secondary)
+        directions
+        Card(padding: 0) {
+            VStack(alignment: .leading, spacing: 0) {
+                HStack { Label("Your visits", systemImage: "clock"); Spacer(); Text(countLabel) }
+                    .padding(16)
+                Divider()
+                HStack { Label("From your journal", systemImage: "book"); Spacer(); Text(hit.reason).lineLimit(1) }
+                    .padding(16)
+            }.font(.subheadline)
+        }
+        photoPanel
+    }
+    @ViewBuilder private var splitPage: some View {
+        HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("PLACE").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                Text(hit.place).font(.title2.weight(.medium))
+                Text(countLabel).font(.subheadline).foregroundStyle(.secondary)
+            }.frame(maxWidth: .infinity, alignment: .leading)
+            if let image = placePhoto {
+                Image(uiImage: image).resizable().scaledToFill().frame(width: 132, height: 132)
+                    .clipped().clipShape(.rect(cornerRadius: 16))
+            }
+        }.padding(.top, 18)
+        Divider()
+        Text(visitLabel).font(.body)
+        Text(hit.reason).font(.subheadline).foregroundStyle(.secondary)
+        directions
+        placeMap
     }
     @ViewBuilder private var photos: some View {
         if let recalled, !recalled.photos.isEmpty {
@@ -507,6 +580,11 @@ struct SearchPlaceView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 switch design {
+                case 4: photoFirstPage
+                case 5: mapFocusPage
+                case 6: journalPage
+                case 7: actionPage
+                case 8: splitPage
                 case 2:
                     // A place-first page: name and visit context, then a calm map card.
                     VStack(alignment: .leading, spacing: 8) {
