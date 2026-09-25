@@ -907,16 +907,13 @@ struct SplashLoop: View {
                                   if abs(p.x - heroPoint.x) > 0.5 || abs(p.y - heroPoint.y) > 0.5 { heroPoint = p }
                               } : nil,
                               track: routePin ? tracks.track(i) : nil)
-                    // Route pin: center each place in the clear top part of the map, above the white fade
-                    // and the sign-in sheet (the map still draws under the padding).
-                    .safeAreaPadding(.bottom, routePin ? 180 : 0)
                     .opacity(i == next && !showNext ? 0.001 : 1)
             }
         }
         .overlay(alignment: .top) {
             // Preview "splash.pin" = smooth: one pin that never moves (every scene is centered on its place),
             // and only its symbol changes, with a soft spring, while the maps crossfade underneath.
-            if routePin && shown {
+            if false && routePin && shown {
                 TimelineView(.animation) { ctx in
                     let p = routePoint(at: ctx.date)
                     let c = crossFraction(at: ctx.date)
@@ -1049,6 +1046,17 @@ final class SplashPinTrack {
         if !cur.isEmpty { out.append(cur) }
         return out
     }
+    /// Where the riding pin is on the map right now (glides the last ~300 m of the walked route to the place).
+    func coordinate(now: Date) -> CLLocationCoordinate2D? {
+        guard route.count > 1, heroIndex < cum.count else { return nil }
+        let end = cum[heroIndex]
+        let begin = max(0, end - 300)
+        let raw = min(1, max(0, now.timeIntervalSince(start) / glide))
+        let t = 1 - pow(1 - raw, 3)
+        return coordinate(at: begin + (end - begin) * t)
+    }
+    var gliding: Bool { Date().timeIntervalSince(start) < glide + 0.2 }
+    var unproject: ((CGPoint) -> CLLocationCoordinate2D?)?
     func point(at now: Date) -> CGPoint? {
         guard let convert, route.count > 1, heroIndex < cum.count else { return nil }
         let end = cum[heroIndex]
@@ -1094,6 +1102,13 @@ struct SplashLiveMap: View {
     var track: SplashPinTrack? = nil
     @State private var drift = false
     @State private var route: [CLLocationCoordinate2D] = []
+    /// splash.pin "route": camera (so it can be moved once to frame the place) and the pin's spot on the walked route.
+    @State private var cam: MapCameraPosition?
+    @State private var pinCoord: CLLocationCoordinate2D?
+    private var routeMode: Bool { track != nil }
+    /// Route mode: Apple's logo and Legal sit at the bottom of the map's safe area, so a tall bottom inset
+    /// puts them in the top-left corner, small, instead of in the middle of the picture.
+    private static let logoInset: CGFloat = 470
     private struct Stop: Identifiable { let id = UUID(); let name: String; let time: String; let symbol: String; let c: CLLocationCoordinate2D }
     private var stops: [Stop] {
         switch style {
@@ -1137,9 +1152,21 @@ struct SplashLiveMap: View {
     ]
     var body: some View {
         MapReader { proxy in
-        Map(initialPosition: position, interactionModes: []) {
-            // splash.pin "route" draws the line on top of the map instead (see RouteLine), so skip it here.
-            if route.count > 1 && track == nil {
+        Map(position: Binding(get: { cam ?? position }, set: { cam = $0 }), interactionModes: []) {
+            if routeMode, route.count > 1 {
+                // Drawn by MapKit on the real streets (walking directions), above the labels so it isn't lost.
+                MapPolyline(coordinates: route).stroke(.white, style: StrokeStyle(lineWidth: 11, lineCap: .round, lineJoin: .round))
+                    .mapOverlayLevel(level: .aboveLabels)
+                MapPolyline(coordinates: route).stroke(Theme.accent, style: StrokeStyle(lineWidth: 7, lineCap: .round, lineJoin: .round))
+                    .mapOverlayLevel(level: .aboveLabels)
+            }
+            if routeMode, let c = pinCoord, let hero = stops.first(where: { $0.name == heroName }) {
+                // The pin rides the line: its dot's center (not its bottom edge) is on the route.
+                Annotation("", coordinate: c, anchor: UnitPoint(x: 0.5, y: 0.926)) {
+                    ApplePin(symbol: hero.symbol, color: Theme.accent, hero: heroSize ?? 104)
+                }
+            }
+            if route.count > 1 && !routeMode {
                 if ["D", "J", "K", "L", "M", "N", "P", "Q", "R"].contains(style) {
                     // D: thick route with a white edge, close and steep, like Apple Maps directions.
                     MapPolyline(coordinates: route).stroke(.white, style: StrokeStyle(lineWidth: 11, lineCap: .round, lineJoin: .round))
@@ -1184,11 +1211,26 @@ struct SplashLiveMap: View {
             KeyframeTrack(\MapCamera.heading) { LinearKeyframe(cam.heading + 18, duration: 12) }
             KeyframeTrack(\MapCamera.distance) { LinearKeyframe(cam.distance * 0.85, duration: 12) }
         }
+        .safeAreaPadding(.bottom, routeMode ? Self.logoInset : 0)
         .task {
+            if routeMode {
+                await loadRoute()
+                await frameForRoute()
+                if drifting { drift = true }
+                // Move the pin along the line ~30 times a second while it glides, then leave it still.
+                while !Task.isCancelled {
+                    if let track { pinCoord = track.coordinate(now: .now) }
+                    try? await Task.sleep(for: .milliseconds(track?.gliding == true ? 33 : 250))
+                }
+                return
+            }
             if drifting { try? await Task.sleep(for: .milliseconds(400)); drift = true }
             await loadRoute()
         }
-        .onAppear { track?.convert = { proxy.convert($0, to: .local) } }
+        .onAppear {
+            track?.convert = { proxy.convert($0, to: .local) }
+            track?.unproject = { proxy.convert($0, from: .local) }
+        }
         .onChange(of: route.count) { _, _ in
             guard let track else { return }
             track.hero = stops.first(where: { $0.name == heroName })?.c
@@ -1228,6 +1270,24 @@ struct SplashLiveMap: View {
         if style == "F" { return .camera(MapCamera(centerCoordinate: center, distance: 2800, heading: 210, pitch: 55)) }
         return .region(MKCoordinateRegion(center: center, span: .init(latitudeDelta: 0.021, longitudeDelta: 0.021)))
     }
+    /// Route mode: the camera centers in the thin safe area at the top (because of the logo inset), which would put
+    /// the place right under the status bar. Move the camera once, before the scene shows, so the place sits
+    /// about a third of the way down the map, in the clear part above the white fade.
+    private func frameForRoute() async {
+        guard let track, let c0 = (cam ?? position).camera else { return }
+        var tries = 0
+        while tries < 30 {
+            try? await Task.sleep(for: .milliseconds(100)); tries += 1
+            guard let hero = stops.first(where: { $0.name == heroName }), let hp = track.convert?(hero.c) else { continue }
+            let target: CGFloat = 190
+            guard let c = track.unproject?(CGPoint(x: hp.x, y: 2 * hp.y - target)) else { continue }
+            var t = Transaction(); t.disablesAnimations = true
+            withTransaction(t) { cam = .camera(MapCamera(centerCoordinate: c, distance: c0.distance, heading: c0.heading, pitch: c0.pitch)) }
+            try? await Task.sleep(for: .milliseconds(150))
+            return
+        }
+    }
+
     /// Walking routes are fetched once per scene and reused every time the loop comes back around.
     @MainActor private static var routeCache: [String: [CLLocationCoordinate2D]] = [:]
     private func loadRoute() async {
