@@ -1,0 +1,35 @@
+name: Diagnose first-launch predicate warning
+on:
+  workflow_dispatch:
+jobs:
+  reproduce:
+    runs-on: xcode-27
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: brew install xcodegen && xcodegen generate
+      - name: Build and capture live first-launch logs
+        run: |
+          set -euo pipefail
+          UDID=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin)["devices"];print(next(x["udid"] for k in sorted(d,reverse=True) if "iOS" in k for x in d[k] if "iPhone" in x["name"] and "Pro" in x["name"] and "Max" not in x["name"]))')
+          xcrun simctl boot "$UDID" || true
+          xcrun simctl bootstatus "$UDID" -b
+          xcodebuild -project Dayline.xcodeproj -scheme Dayline -destination "id=$UDID" -derivedDataPath build -quiet build CODE_SIGN_IDENTITY="-" CODE_SIGNING_REQUIRED=NO
+          APP=$(find build/Build/Products -maxdepth 2 -name Dayline.app -path '*iphonesimulator*' | head -1)
+          mkdir -p diagnostics
+          xcrun simctl install "$UDID" "$APP"
+          (xcrun simctl spawn "$UDID" log stream --style compact --level debug --predicate 'process == "Dayline" OR process == "photolibraryd"' > diagnostics/first-launch-log.txt 2>&1) & LOGGER=$!
+          sleep 2
+          xcrun simctl launch --console "$UDID" app.dayline > diagnostics/launch-console.txt 2>&1 & LAUNCHER=$!
+          sleep 20
+          xcrun simctl io "$UDID" screenshot diagnostics/empty-first-launch.png
+          xcrun simctl terminate "$UDID" app.dayline || true
+          kill "$LAUNCHER" "$LOGGER" 2>/dev/null || true
+          wait "$LAUNCHER" "$LOGGER" 2>/dev/null || true
+          echo 'Predicate warnings:'
+          grep -i -n -C 2 'evaluationBlocked\|NSPredicate.*copy' diagnostics/*.txt || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: first-launch-predicate-diagnostics
+          path: diagnostics/
